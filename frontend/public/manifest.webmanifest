@@ -1,0 +1,9 @@
+{
+  "name": "Computerized Maintenance Management System (CMMS)",
+  "short_name": "CMMS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f5f2",
+  "theme_color": "#23282b",
+  "icons": []
+}
