@@ -1,4 +1,4 @@
-# CMMS 2.0 — Proof of Concept
+# CMMS — Proof of Concept
 
 A full-stack Computerised Maintenance Management System POC built with **FastAPI + React**.
 
@@ -32,21 +32,6 @@ npm run build      # outputs to frontend/dist/
 # FastAPI already serves dist/ and falls back to index.html for SPA routing
 # Just start the backend — open http://localhost:8000
 ```
-
----
-
-## Demo accounts
-
-| Role        | Email                   | Password     | What they can do                                    |
-|-------------|-------------------------|--------------|-----------------------------------------------------|
-| Admin       | admin@cmms.test         | Admin@123    | Manage users, assets, locations, spare parts        |
-| Manager     | manager@cmms.test       | Manager@123  | Approve jobs & transfers, see all jobs, dashboard   |
-| Technician  | tech@cmms.test          | Tech@123     | Create & work on jobs, use phone QR scan            |
-| Technician  | tech2@cmms.test         | Tech@123     | Same as above (second user for assignment demos)    |
-| Executive   | ceo@cmms.test           | Exec@123     | Read-only: dashboard KPIs and reports               |
-
----
-
 ## Switch to PostgreSQL
 
 Set the environment variable before starting the backend:
