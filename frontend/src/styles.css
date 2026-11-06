@@ -1787,30 +1787,6 @@ div[style*="overflowX:auto"] {
   }
 }
 
-/* High Contrast Mode (Industrial Daylight & Low-Vision Accessibility) */
-[data-contrast="high"] {
-  --ink: #000000;
-  --ink-2: #111111;
-  --ink-3: #222222;
-  --paper: #ffffff;
-  --panel: #ffffff;
-  --line: #000000;
-  --yellow: #ffd700;
-}
-[data-contrast="high"] button,
-[data-contrast="high"] .btn {
-  border: 2px solid #000000 !important;
-  font-weight: 700;
-}
-[data-contrast="high"] .badge,
-[data-contrast="high"] .crit-badge {
-  border: 2px solid #000000 !important;
-  font-weight: 700;
-}
-[data-contrast="high"] .ticket {
-  border: 2px solid #000000 !important;
-}
-
 /* Dark Mode Theme */
 [data-theme="dark"] {
   --paper: #121618;

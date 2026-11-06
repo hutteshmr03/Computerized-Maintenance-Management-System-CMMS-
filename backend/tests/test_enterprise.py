@@ -28,7 +28,7 @@ def test_seven_roles_authentication(client, superadmin, admin, planner, manager,
     assert "gantt" in client.get("/api/me", headers=planner).json()["menu"]
     assert "transfers" in client.get("/api/me", headers=manager).json()["menu"]
     assert "scan" in client.get("/api/me", headers=tech).json()["menu"]
-    assert client.get("/api/me", headers=contractor).json()["menu"] == ["portal"]
+    assert client.get("/api/me", headers=contractor).json()["menu"] == ["dashboard", "contractor_portal"]
     assert client.get("/api/me", headers=ceo).json()["menu"] == ["dashboard", "reports"]
 
 

@@ -9,7 +9,7 @@ const DEMO = [
   ['Planner', 'planner@cmms.test', 'Planner@123', 'Maintenance plans & Gantt calendar'],
   ['Manager', 'manager@cmms.test', 'Manager@123', 'Approvals, transfers, cost oversight'],
   ['Technician', 'tech@cmms.test', 'Tech@123', 'Mobile execution, QR scan, LOTO, checklists'],
-  ['Contractor', 'contractor@cmms.test', 'Vendor@123', 'External portal: assigned jobs & invoices'],
+  ['Contractor', 'contractor@cmms.test', 'Contractor@123', 'External portal: assigned jobs & invoices'],
   ['Executive', 'ceo@cmms.test', 'Exec@123', 'EN 13306 KPIs & reports read-only'],
 ]
 

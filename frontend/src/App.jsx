@@ -37,7 +37,7 @@ const MENU = {
   procurement: { to: '/procurement', label: 'Procurement', icon: '📦' },
   readings: { to: '/readings', label: 'Condition Telemetry', icon: '📡' },
   contracts: { to: '/contracts', label: 'Contracts & SLAs', icon: '📜' },
-  contractor_portal: { to: '/contractor-portal', label: 'Vendor Portal', icon: '🏢' },
+  contractor_portal: { to: '/contractor-portal', label: 'My Jobs', icon: '🛠️' },
   transfers: { to: '/transfers', label: 'Transfers', icon: '🚚' },
   reports: { to: '/reports', label: 'Reports & KPIs', icon: '📊' },
   users: { to: '/users', label: 'Users & GDPR', icon: '👥' },
@@ -100,9 +100,6 @@ function Bell() {
 function Shell() {
   const { user, ready, logout } = useAuth()
   const loc = useLocation()
-  const [highContrast, setHighContrast] = useState(() => {
-    try { return localStorage.getItem('cmms_contrast') === 'high' } catch { return false }
-  })
   const [darkMode, setDarkMode] = useState(() => {
     try { return localStorage.getItem('cmms_theme') === 'dark' } catch { return false }
   })
@@ -216,9 +213,9 @@ function Shell() {
   }, [])
 
   useEffect(() => {
-    document.documentElement.dataset.contrast = highContrast ? 'high' : 'normal'
-    try { localStorage.setItem('cmms_contrast', highContrast ? 'high' : 'normal') } catch { /* ignore */ }
-  }, [highContrast])
+    delete document.documentElement.dataset.contrast
+    try { localStorage.removeItem('cmms_contrast') } catch { /* ignore */ }
+  }, [])
 
   useEffect(() => {
     document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
@@ -243,7 +240,7 @@ function Shell() {
   if (user.role === 'technician') {
     mobileItems = [MENU.dashboard, MENU.scan, MENU.jobs, MENU.kanban, MENU.readings].filter(Boolean)
   } else if (user.role === 'contractor') {
-    mobileItems = [MENU.contractor_portal, MENU.jobs, MENU.scan].filter(Boolean)
+    mobileItems = [MENU.dashboard, MENU.contractor_portal].filter(Boolean)
   } else if (user.role === 'planner') {
     mobileItems = [MENU.dashboard, MENU.plans, MENU.kanban, MENU.gantt, MENU.jobs].filter(Boolean)
   } else if (user.role === 'manager') {
@@ -360,20 +357,6 @@ function Shell() {
             <button
               type="button"
               className="small"
-              onClick={() => setHighContrast(!highContrast)}
-              title="Toggle High Contrast (Glove & Daylight Mode)"
-              style={{
-                backgroundColor: highContrast ? 'var(--yellow)' : 'transparent',
-                color: highContrast ? '#000000' : 'inherit',
-                fontWeight: 600,
-              }}
-            >
-              {highContrast ? '⚡ High Contrast: ON' : 'High Contrast'}
-            </button>
-
-            <button
-              type="button"
-              className="small"
               onClick={() => setDarkMode(!darkMode)}
               title="Toggle Dark / Light Theme"
             >
@@ -420,17 +403,6 @@ function Shell() {
                   >
                     🔍 Find / Scan Asset
                   </Link>
-                  <button
-                    type="button"
-                    className="item"
-                    onClick={() => {
-                      setHighContrast(!highContrast)
-                      setMobileOverflowOpen(false)
-                    }}
-                    style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', padding: '8px 12px' }}
-                  >
-                    {highContrast ? '⚡ Turn Off High Contrast' : '⚡ High Contrast Mode'}
-                  </button>
                   <button
                     type="button"
                     className="item"

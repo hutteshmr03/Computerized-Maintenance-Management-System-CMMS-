@@ -69,7 +69,7 @@ MENUS = {
     "planner": ["dashboard", "jobs", "kanban", "gantt", "plans", "assets", "parts", "reports"],
     "manager": ["dashboard", "jobs", "kanban", "transfers", "assets", "parts", "procurement", "reports", "audit"],
     "technician": ["dashboard", "jobs", "scan", "parts", "readings"],
-    "contractor": ["portal"],
+    "contractor": ["dashboard", "contractor_portal"],
     "executive": ["dashboard", "reports"],
 }
 

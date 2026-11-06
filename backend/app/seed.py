@@ -13,12 +13,14 @@ from .security import hash_password
 # 7 Roles
 DEMO_USERS = [
     ("Vikram Super Admin", "superadmin@cmms.test", "SuperAdmin@123", "super_admin", "", "+49 711 901201"),
+    ("Super Admin", "super@cmms.test", "Super@123", "super_admin", "", "+49 711 901201"),
     ("Asha Admin", "admin@cmms.test", "Admin@123", "admin", "", "+49 711 901202"),
     ("Klaus Planner", "planner@cmms.test", "Planner@123", "planner", "", "+49 711 901203"),
     ("Mohan Manager", "manager@cmms.test", "Manager@123", "manager", "", "+49 711 901204"),
     ("Tara Technician", "tech@cmms.test", "Tech@123", "technician", "", "+49 711 901205"),
     ("Tarun Technician", "tech2@cmms.test", "Tech@123", "technician", "", "+49 711 901206"),
     ("Hans Contractor (Siemens Energy)", "contractor@cmms.test", "Contractor@123", "contractor", "Siemens Energy Service", "+49 711 901207"),
+    ("Hans Contractor", "vendor@cmms.test", "Vendor@123", "contractor", "Siemens Energy Service", "+49 711 901207"),
     ("Chitra CEO", "ceo@cmms.test", "Exec@123", "executive", "", "+49 711 901208"),
 ]
 
