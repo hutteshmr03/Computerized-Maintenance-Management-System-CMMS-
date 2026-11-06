@@ -10,6 +10,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -55,7 +56,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -377,11 +378,6 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     pw_ok = False
     if user:
         pw_ok = verify_password(body.password, user.password_hash)
-        if not pw_ok:
-            if user.role == "super_admin" and body.password in ("Super@123", "SuperAdmin@123"):
-                pw_ok = True
-            elif user.role == "contractor" and body.password in ("Vendor@123", "Contractor@123"):
-                pw_ok = True
 
     if not user or not pw_ok:
         if user:
@@ -1969,12 +1965,42 @@ def export_reports_csv(report_type: str = "kpis", db: Session = Depends(get_db),
 
 
 @app.post("/api/reports/schedule-email")
-def schedule_report_email(body: dict, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
-    """Trigger scheduled report email dispatch."""
+async def schedule_report_email(body: dict, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    """Trigger scheduled report email dispatch using FastMail with SMTP config."""
     email = body.get("recipient_email", user.email)
     freq = body.get("frequency", "weekly")
+    report_type = body.get("report_type", "summary")
     audit(db, user, "schedule_report", "report", None, f"Scheduled {freq} maintenance report to {email}")
     db.commit()
+
+    mail_username = os.getenv("MAIL_USERNAME")
+    mail_password = os.getenv("MAIL_PASSWORD")
+    mail_from = os.getenv("MAIL_FROM")
+    mail_server = os.getenv("MAIL_SERVER")
+    mail_port = int(os.getenv("MAIL_PORT", "587"))
+
+    if mail_server and mail_from:
+        conf = ConnectionConfig(
+            MAIL_USERNAME=mail_username or "",
+            MAIL_PASSWORD=mail_password or "",
+            MAIL_FROM=mail_from,
+            MAIL_PORT=mail_port,
+            MAIL_SERVER=mail_server,
+            MAIL_STARTTLS=os.getenv("MAIL_STARTTLS", "True").lower() in ("true", "1"),
+            MAIL_SSL_TLS=os.getenv("MAIL_SSL_TLS", "False").lower() in ("true", "1"),
+            USE_CREDENTIALS=bool(mail_username and mail_password),
+            VALIDATE_CERTS=False,
+        )
+        message = MessageSchema(
+            subject=f"CMMS Scheduled {freq.capitalize()} Maintenance Report",
+            recipients=[email],
+            body=f"Hello,\n\nHere is your scheduled {freq} maintenance report ({report_type}) from Computerized Maintenance Management System (CMMS).\n\nGenerated: {utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}\n\nBest regards,\nCMMS Automation",
+            subtype=MessageType.plain,
+        )
+        fm = FastMail(conf)
+        await fm.send_message(message)
+        return {"message": f"Report scheduled and sent to {email} ({freq})."}
+
     return {"message": f"Report scheduled for delivery to {email} ({freq})."}
 
 

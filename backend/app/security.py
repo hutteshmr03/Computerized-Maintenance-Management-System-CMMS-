@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .db import get_db, utcnow
 from .models import User
 
-SECRET = os.getenv("CMMS_SECRET", "enterprise-din-cmms-secret-key-prod-9876543210")
+SECRET = os.getenv("CMMS_SECRET", "change-me-in-production")
 ALGO = "HS256"
 bearer = HTTPBearer(auto_error=False)
 
