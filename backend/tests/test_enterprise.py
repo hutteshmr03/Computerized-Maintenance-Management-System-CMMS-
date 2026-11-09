@@ -155,3 +155,94 @@ def test_superadmin_user_management_and_gdpr(client, superadmin):
     gdpr_export = client.get(f"/api/gdpr/export/{users[0]['id']}", headers=superadmin).json()
     assert "user_profile" in gdpr_export
     assert "audit_logs" in gdpr_export
+
+
+def test_five_new_roles_authentication(client):
+    # 1. Plant Head
+    ph = login(client, "planthead@cmms.test", "PlantHead@123")
+    ph_menu = client.get("/api/me", headers=ph).json()["menu"]
+    assert "calibration" in ph_menu
+    assert "reports" in ph_menu
+    assert "jobs" in ph_menu
+
+    # 2. Store Manager
+    sm = login(client, "store@cmms.test", "Store@123")
+    assert client.get("/api/me", headers=sm).json()["menu"] == ["dashboard", "parts", "procurement"]
+
+    # 3. Production Manager
+    pm = login(client, "production@cmms.test", "Prod@123")
+    assert client.get("/api/me", headers=pm).json()["menu"] == ["dashboard", "assets", "jobs"]
+
+    # 4. Purchase Manager
+    purch = login(client, "purchase@cmms.test", "Purchase@123")
+    assert client.get("/api/me", headers=purch).json()["menu"] == ["dashboard", "procurement"]
+
+    # 5. Auditor
+    aud = login(client, "auditor@cmms.test", "Audit@123")
+    assert client.get("/api/me", headers=aud).json()["menu"] == ["dashboard", "assets", "jobs", "parts", "reports", "audit"]
+
+
+def test_calibration_module(client, admin):
+    # 1. List calibrations
+    cals = client.get("/api/calibrations", headers=admin).json()
+    assert len(cals) >= 1
+    first = cals[0]
+    assert "certificate_number" in first
+    assert "result" in first
+
+    # 2. Filter due soon
+    due_soon = client.get("/api/calibrations?due_soon=true", headers=admin).json()
+    assert isinstance(due_soon, list)
+
+    # 3. Log calibration
+    asset_id = first["asset_id"]
+    new_cal = client.post("/api/calibrations", headers=admin, json={
+        "asset_id": asset_id,
+        "last_calibrated_date": "2026-11-01",
+        "next_due_date": "2027-11-01",
+        "calibrated_by": "TÜV Rheinland",
+        "certificate_number": "CERT-2026-TEST",
+        "standard_used": "ISO 9001",
+        "result": "pass",
+        "notes": "Annual certification test"
+    })
+    assert new_cal.status_code == 201
+    created = new_cal.json()
+    assert created["certificate_number"] == "CERT-2026-TEST"
+
+    # 4. Update calibration
+    updated = client.put(f"/api/calibrations/{created['id']}", headers=admin, json={
+        "result": "conditional",
+        "notes": "Updated note"
+    })
+    assert updated.status_code == 200
+    assert updated.json()["result"] == "conditional"
+
+
+def test_live_downtime_endpoint(client, admin):
+    res = client.get("/api/downtime/live", headers=admin)
+    assert res.status_code == 200
+    data = res.json()
+    assert isinstance(data, list)
+    if data:
+        assert "asset_name" in data[0]
+        assert "downtime_hours" in data[0]
+        assert "hours_down" in data[0]
+
+
+def test_asset_utility_type(client, admin):
+    # Create asset with utility_type
+    loc = client.get("/api/locations", headers=admin).json()[0]["id"]
+    r = client.post("/api/assets", headers=admin, json={
+        "name": "Chiller Unit 1",
+        "category": "Utilities",
+        "location_id": loc,
+        "utility_type": "chiller"
+    })
+    assert r.status_code == 201
+    asset = r.json()
+    assert asset["utility_type"] == "chiller"
+
+    # Filter by utility_type
+    filtered = client.get("/api/assets?utility_type=chiller", headers=admin).json()
+    assert any(a["id"] == asset["id"] for a in filtered)

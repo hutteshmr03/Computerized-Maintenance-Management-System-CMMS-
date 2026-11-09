@@ -11,6 +11,11 @@ const DEMO = [
   ['Technician', 'tech@cmms.test', 'Tech@123', 'Mobile execution, QR scan, LOTO, checklists'],
   ['Contractor', 'contractor@cmms.test', 'Contractor@123', 'External portal: assigned jobs & invoices'],
   ['Executive', 'ceo@cmms.test', 'Exec@123', 'EN 13306 KPIs & reports read-only'],
+  ['Plant Head', 'planthead@cmms.test', 'PlantHead@123', 'Plant maintenance, assets, downtime & calibrations'],
+  ['Store Manager', 'store@cmms.test', 'Store@123', 'Spare parts inventory & procurement management'],
+  ['Production Manager', 'production@cmms.test', 'Prod@123', 'Breakdown reporting & machine status tracking'],
+  ['Purchase Manager', 'purchase@cmms.test', 'Purchase@123', 'Purchase orders approval & procurement placement'],
+  ['Auditor', 'auditor@cmms.test', 'Audit@123', 'Read-only compliance audit & logs review'],
 ]
 
 export default function Login() {
@@ -89,7 +94,7 @@ export default function Login() {
         </button>
 
         <div className="demo-list">
-          <h3>Demo Enterprise Roles (7 Roles)</h3>
+          <h3>Demo Enterprise Roles (12 Roles)</h3>
           <p className="small muted">Click any role to populate credentials:</p>
           <div className="stack" style={{ gap: '6px' }}>
             {DEMO.map(([role, e, p, what]) => (

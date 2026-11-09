@@ -40,10 +40,42 @@ LOCK_MINUTES = 5
 @asynccontextmanager
 async def lifespan(_app):
     Base.metadata.create_all(engine)
+    # Check if utility_type column exists in assets table
+    with engine.connect() as conn:
+        try:
+            res = conn.exec_driver_sql("PRAGMA table_info(assets)").fetchall()
+            col_names = [r[1] for r in res]
+            if "utility_type" not in col_names:
+                conn.exec_driver_sql("ALTER TABLE assets ADD COLUMN utility_type VARCHAR(30)")
+        except Exception:
+            pass
+
     with SessionLocal() as db:
         if not db.scalar(select(func.count()).select_from(m.User)):
             from .seed import seed
             seed(db)
+        else:
+            # Ensure new roles exist in DB
+            from .seed import DEMO_USERS
+            for name, email, pw, role, company, phone in DEMO_USERS:
+                existing = db.scalar(select(m.User).where(func.lower(m.User.email) == email.lower()))
+                if not existing:
+                    db.add(m.User(name=name, email=email, password_hash=hash_password(pw), role=role, contractor_company=company, phone=phone))
+            # Ensure sample calibrations exist
+            if not db.scalar(select(func.count()).select_from(m.Calibration)):
+                ast = db.scalar(select(m.Asset))
+                if ast:
+                    db.add(m.Calibration(
+                        asset_id=ast.id,
+                        last_calibrated_date=date.today() - timedelta(days=120),
+                        next_due_date=date.today() + timedelta(days=14),
+                        calibrated_by="TÜV SÜD Calibration Services",
+                        certificate_number="CAL-2026-0091",
+                        standard_used="ISO 230-1 / VDI/DGQ 3441",
+                        result="pass",
+                        notes="Calibration compliant with ISO standards.",
+                    ))
+            db.commit()
     yield
 
 
@@ -343,6 +375,7 @@ def asset_dict(db: Session, a: m.Asset) -> dict:
         "location_id": a.location_id,
         "cost_centre_id": a.cost_centre_id,
         "cost_centre": a.cost_centre.code if a.cost_centre else None,
+        "utility_type": a.utility_type,
         "open_job_id": oj.id if oj else None,
         "open_job_status": oj.status if oj else None,
         "open_job_priority": oj.priority if oj else None,
@@ -524,10 +557,12 @@ def list_locations(db: Session = Depends(get_db), user: m.User = Depends(current
 
 
 @app.get("/api/assets")
-def list_assets(q: str = "", tier: str = "", db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+def list_assets(q: str = "", tier: str = "", utility_type: str = "", db: Session = Depends(get_db), user: m.User = Depends(current_user)):
     stmt = select(m.Asset).order_by(m.Asset.code)
     if tier:
         stmt = stmt.where(m.Asset.tier == tier)
+    if utility_type:
+        stmt = stmt.where(m.Asset.utility_type == utility_type)
     if q:
         like = f"%{q.lower()}%"
         stmt = stmt.where(
@@ -550,6 +585,7 @@ class AssetIn(BaseModel):
     tier: str = "asset"
     criticality: str = "B"
     parent_id: int | None = None
+    utility_type: str | None = None
 
 
 @app.post("/api/assets", status_code=201)
@@ -571,6 +607,7 @@ def create_asset(body: AssetIn, db: Session = Depends(get_db), user: m.User = De
         tier=body.tier,
         criticality=body.criticality,
         parent_id=body.parent_id,
+        utility_type=body.utility_type,
     )
     db.add(asset)
     db.flush()
@@ -1893,14 +1930,20 @@ def get_downtime_report(asset_id: int | None = None, year: int | None = None, db
     if asset_id:
         stmt = stmt.where(m.Job.asset_id == asset_id)
 
+    for m_name in months:
+        monthly[m_name]["pm_completed"] = 0
+        monthly[m_name]["downtime_hours"] = 0.0
+
     for j in db.scalars(stmt):
         m_idx = j.created_at.month - 1
         m_name = months[m_idx]
         dt = hours_between(j.start_time, j.end_time)
-        if j.type == "repair":
+        if j.type == "repair" or j.din_type == "repair":
             monthly[m_name]["repair"] += dt
+            monthly[m_name]["downtime_hours"] += dt
         else:
             monthly[m_name]["scheduled"] += dt
+            monthly[m_name]["pm_completed"] += 1
         monthly[m_name]["total"] += dt
 
     for m_name in months:
@@ -2070,6 +2113,44 @@ def dashboard(db: Session = Depends(get_db), user: m.User = Depends(current_user
     due_today_count = sum(1 for t in my_tasks if t["due_date"] and date.fromisoformat(t["due_date"]) <= date.today())
     waiting_approval_count = sum(1 for t in my_tasks if t["status"] == "sent_for_approval")
 
+    # Equipment status distribution for donut chart
+    all_assets = db.scalars(select(m.Asset)).all()
+    total_assets = len(all_assets)
+    bd_asset_ids = set(db.scalars(
+        select(m.Job.asset_id).where(
+            or_(m.Job.din_type == "repair", m.Job.type == "repair"),
+            m.Job.status.in_(["in_progress", "approved"]),
+        )
+    ).all())
+    pm_asset_ids = set(db.scalars(
+        select(m.Job.asset_id).where(
+            or_(m.Job.din_type.in_(["inspection", "servicing"]), m.Job.type == "scheduled"),
+            m.Job.status.in_(OPEN_STATES),
+        )
+    ).all()) - bd_asset_ids
+    maint_asset_ids = set(db.scalars(
+        select(m.Job.asset_id).where(m.Job.status.in_(OPEN_STATES))
+    ).all()) - bd_asset_ids - pm_asset_ids
+
+    breakdown_count = sum(1 for a in all_assets if a.id in bd_asset_ids or a.status == "degraded")
+    pm_count = sum(1 for a in all_assets if a.id in pm_asset_ids)
+    in_maint_count = sum(1 for a in all_assets if a.id in maint_asset_ids or a.status == "in_maintenance")
+    active_count = max(0, total_assets - breakdown_count - pm_count - in_maint_count)
+
+    equipment_status = {
+        "total": total_assets,
+        "active": active_count,
+        "in_pm": pm_count,
+        "in_maintenance": in_maint_count,
+        "breakdown": breakdown_count,
+    }
+
+    # Recent 8 jobs
+    recent_jobs = [
+        job_dict(db, j, user)
+        for j in db.scalars(select(m.Job).order_by(m.Job.created_at.desc()).limit(8))
+    ]
+
     return {
         "kpis": kpis,
         "downtime": downtime_data,
@@ -2086,6 +2167,8 @@ def dashboard(db: Session = Depends(get_db), user: m.User = Depends(current_user
         "my_tasks": my_tasks,
         "due_today": due_today_count,
         "waiting_approval": waiting_approval_count,
+        "equipment_status": equipment_status,
+        "recent_jobs": recent_jobs,
     }
 
 
@@ -2208,3 +2291,197 @@ def mark_notifications_read(db: Session = Depends(get_db), user: m.User = Depend
         n.read = True
     db.commit()
     return {"message": "All marked as read."}
+
+# ---------------------------------------------------------------- CALIBRATION MANAGEMENT
+class CalibrationIn(BaseModel):
+    asset_id: int
+    last_calibrated_date: date
+    next_due_date: date
+    calibrated_by: str
+    certificate_number: str
+    standard_used: str | None = None
+    result: str = "pass"  # pass | fail | conditional
+    notes: str = ""
+
+
+class CalibrationUpdateIn(BaseModel):
+    asset_id: int | None = None
+    last_calibrated_date: date | None = None
+    next_due_date: date | None = None
+    calibrated_by: str | None = None
+    certificate_number: str | None = None
+    standard_used: str | None = None
+    result: str | None = None
+    notes: str | None = None
+
+
+def calibration_dict(c: m.Calibration) -> dict:
+    today = date.today()
+    due_within_30 = 0 <= (c.next_due_date - today).days <= 30
+    is_overdue = c.next_due_date < today
+    return {
+        "id": c.id,
+        "asset_id": c.asset_id,
+        "asset_name": c.asset.name if c.asset else "Unknown Asset",
+        "asset_code": c.asset.code if c.asset else "N/A",
+        "asset_location": c.asset.location.name if c.asset and c.asset.location else "",
+        "last_calibrated_date": c.last_calibrated_date.isoformat(),
+        "next_due_date": c.next_due_date.isoformat(),
+        "calibrated_by": c.calibrated_by,
+        "certificate_number": c.certificate_number,
+        "standard_used": c.standard_used or "",
+        "result": c.result,
+        "notes": c.notes or "",
+        "created_at": c.created_at.isoformat(),
+        "due_soon": due_within_30,
+        "overdue": is_overdue,
+    }
+
+
+@app.get("/api/calibrations")
+def list_calibrations(
+    asset_id: int | None = None,
+    due_within_days: int | None = None,
+    due_soon: bool = False,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    stmt = select(m.Calibration).order_by(m.Calibration.next_due_date.asc())
+    if asset_id:
+        stmt = stmt.where(m.Calibration.asset_id == asset_id)
+    if due_soon or due_within_days:
+        days = due_within_days or 30
+        cutoff = date.today() + timedelta(days=days)
+        stmt = stmt.where(m.Calibration.next_due_date <= cutoff)
+    return [calibration_dict(c) for c in db.scalars(stmt)]
+
+
+@app.post("/api/calibrations", status_code=201)
+def create_calibration(
+    body: CalibrationIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    # Verify permission (asset.manage / asset.edit / asset.create / calibration.manage or super_admin / admin / plant_head)
+    user_perms = PERMISSIONS.get(user.role, set())
+    allowed = (
+        user.role in ("super_admin", "admin", "plant_head")
+        or "asset.manage" in user_perms
+        or "asset.edit" in user_perms
+        or "asset.create" in user_perms
+        or "calibration.manage" in user_perms
+    )
+    if not allowed:
+        raise HTTPException(403, "Your role is not allowed to perform action: asset.manage.")
+
+    asset = db.get(m.Asset, body.asset_id)
+    if not asset:
+        raise HTTPException(404, "Asset not found.")
+
+    cal = m.Calibration(
+        asset_id=body.asset_id,
+        last_calibrated_date=body.last_calibrated_date,
+        next_due_date=body.next_due_date,
+        calibrated_by=body.calibrated_by.strip(),
+        certificate_number=body.certificate_number.strip(),
+        standard_used=body.standard_used.strip() if body.standard_used else None,
+        result=body.result.strip().lower(),
+        notes=body.notes.strip(),
+    )
+    db.add(cal)
+    db.commit()
+    db.refresh(cal)
+    audit(db, user, "create", "calibration", cal.id, f"Logged calibration {cal.certificate_number} for {asset.code} ({cal.result})")
+    return calibration_dict(cal)
+
+
+@app.put("/api/calibrations/{id}")
+def update_calibration(
+    id: int,
+    body: CalibrationUpdateIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    user_perms = PERMISSIONS.get(user.role, set())
+    allowed = (
+        user.role in ("super_admin", "admin", "plant_head")
+        or "asset.manage" in user_perms
+        or "asset.edit" in user_perms
+        or "calibration.manage" in user_perms
+    )
+    if not allowed:
+        raise HTTPException(403, "Your role is not allowed to update calibration.")
+
+    cal = db.get(m.Calibration, id)
+    if not cal:
+        raise HTTPException(404, "Calibration record not found.")
+
+    if body.asset_id is not None:
+        cal.asset_id = body.asset_id
+    if body.last_calibrated_date is not None:
+        cal.last_calibrated_date = body.last_calibrated_date
+    if body.next_due_date is not None:
+        cal.next_due_date = body.next_due_date
+    if body.calibrated_by is not None:
+        cal.calibrated_by = body.calibrated_by.strip()
+    if body.certificate_number is not None:
+        cal.certificate_number = body.certificate_number.strip()
+    if body.standard_used is not None:
+        cal.standard_used = body.standard_used.strip()
+    if body.result is not None:
+        cal.result = body.result.strip().lower()
+    if body.notes is not None:
+        cal.notes = body.notes.strip()
+
+    db.commit()
+    db.refresh(cal)
+    audit(db, user, "update", "calibration", cal.id, f"Updated calibration {cal.certificate_number}")
+    return calibration_dict(cal)
+
+
+@app.get("/api/calibrations/{id}")
+def get_calibration(
+    id: int,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    cal = db.get(m.Calibration, id)
+    if not cal:
+        raise HTTPException(404, "Calibration record not found.")
+    return calibration_dict(cal)
+
+
+# ---------------------------------------------------------------- LIVE DOWNTIME MONITORING
+@app.get("/api/downtime/live")
+def get_live_downtime(db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    now = utcnow()
+    # Assets currently in breakdown (open repair jobs with status in_progress or approved)
+    stmt = (
+        select(m.Job)
+        .where(
+            or_(m.Job.din_type == "repair", m.Job.type == "repair"),
+            m.Job.status.in_(["in_progress", "approved"]),
+        )
+        .order_by(m.Job.created_at.asc())
+    )
+    jobs = db.scalars(stmt).all()
+    res = []
+    for j in jobs:
+        dt_hours = round(max(0.0, (now - j.created_at).total_seconds() / 3600.0), 1)
+        res.append({
+            "id": j.id,
+            "job_id": j.id,
+            "job_title": j.title,
+            "asset_id": j.asset_id,
+            "asset_name": j.asset.name if j.asset else "Unknown Asset",
+            "asset_code": j.asset.code if j.asset else "N/A",
+            "location": j.asset.location.name if j.asset and j.asset.location else "Plant 1",
+            "status": j.status,
+            "priority": j.priority,
+            "created_at": j.created_at.isoformat(),
+            "downtime_hours": dt_hours,
+            "hours_down": dt_hours,
+        })
+    # Sort by hours_down descending
+    res.sort(key=lambda x: x["hours_down"], reverse=True)
+    return res

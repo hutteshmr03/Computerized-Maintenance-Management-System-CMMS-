@@ -61,6 +61,8 @@ class Asset(Base):
     location: Mapped[Location] = relationship()
     cost_centre_id: Mapped[int | None] = mapped_column(ForeignKey("cost_centres.id"), nullable=True)
     cost_centre: Mapped[CostCentre | None] = relationship()
+    # Utility type enum: compressor | boiler | chiller | generator | other | None
+    utility_type: Mapped[str | None] = mapped_column(String(30), nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     parent: Mapped["Asset | None"] = relationship("Asset", remote_side=[id], back_populates="children")
@@ -69,6 +71,7 @@ class Asset(Base):
     boms: Mapped[list["BOMItem"]] = relationship(back_populates="asset", cascade="all, delete-orphan")
     readings: Mapped[list["ConditionReading"]] = relationship(back_populates="asset", cascade="all, delete-orphan")
     contracts: Mapped[list["Contract"]] = relationship(back_populates="asset", cascade="all, delete-orphan")
+    calibrations: Mapped[list["Calibration"]] = relationship(back_populates="asset", cascade="all, delete-orphan")
 
 
 class AssetDocument(Base):
@@ -367,4 +370,22 @@ class Notification(Base):
     message: Mapped[str] = mapped_column(String(300))
     link: Mapped[str] = mapped_column(String(100), default="")
     read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+class Calibration(Base):
+    """
+    Calibration management module.
+    Tracks instrument/asset calibration, certificates, standards, pass/fail/conditional results, and due dates.
+    """
+    __tablename__ = "calibrations"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id", ondelete="CASCADE"))
+    asset: Mapped[Asset] = relationship(back_populates="calibrations")
+    last_calibrated_date: Mapped[date] = mapped_column(Date)
+    next_due_date: Mapped[date] = mapped_column(Date)
+    calibrated_by: Mapped[str] = mapped_column(String(120))
+    certificate_number: Mapped[str] = mapped_column(String(80))
+    standard_used: Mapped[str | None] = mapped_column(String(120), nullable=True, default=None)
+    result: Mapped[str] = mapped_column(String(30))  # pass | fail | conditional
+    notes: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

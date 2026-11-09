@@ -22,6 +22,11 @@ DEMO_USERS = [
     ("Hans Contractor (Siemens Energy)", "contractor@cmms.test", "Contractor@123", "contractor", "Siemens Energy Service", "+49 711 901207"),
     ("Hans Contractor", "vendor@cmms.test", "Vendor@123", "contractor", "Siemens Energy Service", "+49 711 901207"),
     ("Chitra CEO", "ceo@cmms.test", "Exec@123", "executive", "", "+49 711 901208"),
+    ("Ravi Plant Head", "planthead@cmms.test", "PlantHead@123", "plant_head", "", "+49 711 901209"),
+    ("Meena Store", "store@cmms.test", "Store@123", "store_manager", "", "+49 711 901210"),
+    ("Arjun Production", "production@cmms.test", "Prod@123", "production_manager", "", "+49 711 901211"),
+    ("Priya Purchase", "purchase@cmms.test", "Purchase@123", "purchase_manager", "", "+49 711 901212"),
+    ("Suresh Auditor", "auditor@cmms.test", "Audit@123", "auditor", "", "+49 711 901213"),
 ]
 
 COST_CENTRES = [
@@ -615,6 +620,48 @@ def seed(db: Session):
     )
     db.add(wo_planned)
 
-    # 15. Initial Audit Entries
+    # 15. Seed Sample Calibrations (Calibration Management Module)
+    calibrations_to_seed = [
+        m.Calibration(
+            asset_id=ast_cnc.id,
+            last_calibrated_date=date.today() - timedelta(days=165),
+            next_due_date=date.today() + timedelta(days=15),
+            calibrated_by="TÜV SÜD Calibration Services",
+            certificate_number="CAL-2026-0091",
+            standard_used="ISO 230-1 / VDI/DGQ 3441",
+            result="pass",
+            notes="Full 5-axis linear and volumetric positioning accuracy verified.",
+            created_at=now - timedelta(days=165),
+        ),
+        m.Calibration(
+            asset_id=ast_comp.id,
+            last_calibrated_date=date.today() - timedelta(days=350),
+            next_due_date=date.today() + timedelta(days=8),
+            calibrated_by="Atlas Copco Certified Metrology",
+            certificate_number="CAL-2026-0012",
+            standard_used="ISO 1217 / DIN 1945",
+            result="conditional",
+            notes="Recalibrate pressure transducer after valve overhaul. Drift noted at 7.5 bar.",
+            created_at=now - timedelta(days=350),
+        ),
+        m.Calibration(
+            asset_id=ast_gen.id,
+            last_calibrated_date=date.today() - timedelta(days=90),
+            next_due_date=date.today() + timedelta(days=275),
+            calibrated_by="DEKRA Metrology GmbH",
+            certificate_number="CAL-2026-0044",
+            standard_used="DIN EN ISO 7500-1",
+            result="pass",
+            notes="Governor frequency and voltage regulation within ±0.5% tolerance.",
+            created_at=now - timedelta(days=90),
+        ),
+    ]
+    db.add_all(calibrations_to_seed)
+
+    # Assign utility types to sample assets
+    ast_comp.utility_type = "compressor"
+    ast_gen.utility_type = "generator"
+
+    # 16. Initial Audit Entries
     db.add(m.AuditLog(user_name="Asha Admin", action="seed_database", entity="system", detail="Initialized Enterprise CMMS DIN 31051 baseline"))
     db.commit()
