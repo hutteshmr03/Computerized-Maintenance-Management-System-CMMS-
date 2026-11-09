@@ -25,7 +25,7 @@ function ManagerHome({ d }) {
 
       <div className="cols">
         <div className="stack">
-          <section>
+          <section className="panel">
             <div className="panel-head">
               <h2>Waiting for your approval</h2>
               {attention > 0 && <Pill tone="amber">{d.pending_approvals.length} jobs, {d.pending_transfers} transfers</Pill>}
@@ -36,7 +36,7 @@ function ManagerHome({ d }) {
             {d.pending_transfers > 0 && <p style={{ marginTop: '.75rem' }}><Link to="/transfers">{d.pending_transfers} asset transfer(s) need a decision</Link></p>}
           </section>
 
-          <section>
+          <section className="panel">
             <div className="panel-head"><h2>Servicing due within 10 days</h2></div>
             {d.due_soon.length === 0
               ? <Empty title="No servicing due soon" />
@@ -45,7 +45,7 @@ function ManagerHome({ d }) {
         </div>
 
         <div className="stack">
-          <section>
+          <section className="panel">
             <div className="panel-head"><h2>Repairs in progress</h2></div>
             {d.ongoing.length === 0
               ? <Empty title="No repairs running right now" />
@@ -74,15 +74,17 @@ function TechHome({ d }) {
         <Link to="/scan" className="btn primary">Scan or enter asset code</Link>
         <Link to="/jobs/new" className="btn">Report a problem</Link>
       </div>
-      <div className="figures" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <div className="figures">
         <Figure value={d.my_tasks.length} label="My open tasks" />
         <Figure value={d.due_today} label="Due today or overdue" attn={d.due_today > 0} />
         <Figure value={d.waiting_approval} label="Waiting for approval" />
       </div>
-      <div className="panel-head"><h2>My tasks, most urgent first</h2></div>
-      {d.my_tasks.length === 0
-        ? <Empty title="You have no open tasks">Jobs assigned to you will appear here.</Empty>
-        : <div className="tickets">{d.my_tasks.map((j) => <JobRow key={j.id} job={j} />)}</div>}
+      <section className="panel">
+        <div className="panel-head"><h2>My tasks, most urgent first</h2></div>
+        {d.my_tasks.length === 0
+          ? <Empty title="You have no open tasks">Jobs assigned to you will appear here.</Empty>
+          : <div className="tickets">{d.my_tasks.map((j) => <JobRow key={j.id} job={j} />)}</div>}
+      </section>
     </>
   )
 }

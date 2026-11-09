@@ -99,28 +99,61 @@ export function JobRow({ job, showAsset = true }) {
   const asset = job.asset?.name ?? job.asset
   const code = job.asset?.code ?? job.asset_code
   const dinType = job.din_type || (job.type === 'repair' ? 'repair' : 'servicing')
+  const prioTone = job.priority === 'critical' ? 'red' : job.priority === 'high' ? 'amber' : 'grey'
+  const prioLabel = `${PRIORITY[job.priority] || job.priority} priority`
+
+  const infoParts = []
+  if (showAsset && (asset || code)) {
+    infoParts.push(<span key="asset">{asset}{code ? ` (${code})` : ''}</span>)
+  }
+  if (job.due_date) {
+    infoParts.push(
+      <span key="due" className={job.overdue ? 'text-bad' : ''}>
+        {job.overdue ? 'Overdue, was due ' : 'Due '}{fmtDate(job.due_date)}
+      </span>
+    )
+  }
+  if (job.assigned_to_name) {
+    infoParts.push(<span key="assigned">For {job.assigned_to_name}</span>)
+  } else if (job.contractor_company) {
+    infoParts.push(<span key="vendor">Vendor: {job.contractor_company}</span>)
+  }
+
   return (
     <Link to={`/jobs/${job.id}`} className={`ticket p-${job.priority}`}>
       <div className="ticket-main">
-        <div className="ticket-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        {/* Row 1 (title row): Job title (bold, full width). WO number as a small muted monospace chip to the right */}
+        <div className="ticket-title">
           <span>{title}</span>
-          {job.wo_number && <span className="small muted" style={{ fontFamily: 'monospace' }}>[{job.wo_number}]</span>}
-          {job.loto_required && <span className="badge red small" title="Mandatory Lockout/Tagout Required">LOTO</span>}
+          {job.wo_number && <span className="ticket-wo">[{job.wo_number}]</span>}
         </div>
-        <div className="ticket-meta">
-          {showAsset && <span>{asset} ({code})</span>}
+
+        {/* Row 2 (tags row): DIN type badge + LOTO badge (if present) + Priority badge */}
+        <div className="ticket-tags">
           <DinTypeBadge type={dinType} />
-          <span>{PRIORITY[job.priority] || job.priority} priority</span>
-          {job.due_date && (
-            <span className={job.overdue ? 'text-bad' : ''}>
-              {job.overdue ? 'Overdue, was due ' : 'Due '}{fmtDate(job.due_date)}
-            </span>
+          {job.loto_required && (
+            <span className="badge red small" title="Mandatory Lockout/Tagout Required">LOTO</span>
           )}
-          {job.assigned_to_name && <span>For {job.assigned_to_name}</span>}
-          {job.contractor_company && <span className="badge purple small">Vendor: {job.contractor_company}</span>}
+          <span className={`badge ${prioTone} small`}>{prioLabel}</span>
         </div>
+
+        {/* Row 3 (info row): Asset name · Due date (overdue in red) · Assigned to — small muted text, separated by · dots */}
+        {infoParts.length > 0 && (
+          <div className="ticket-info">
+            {infoParts.map((item, idx) => (
+              <span key={idx} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                {idx > 0 && <span style={{ margin: '0 0.35rem', opacity: 0.5 }}>·</span>}
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
-      <StatusBadge status={job.status} />
+
+      {/* Status badge: Floated to the far right, vertically centered across all 3 rows */}
+      <div className="ticket-status">
+        <StatusBadge status={job.status} />
+      </div>
     </Link>
   )
 }

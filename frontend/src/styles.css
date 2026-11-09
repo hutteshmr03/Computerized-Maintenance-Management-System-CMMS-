@@ -5,6 +5,10 @@
   --line: #d9ddd8;
   --paper: #f4f5f2;
   --panel: #ffffff;
+  --border: var(--line);
+  --surface: var(--panel);
+  --muted: var(--ink-2);
+  --bg: var(--paper);
   --graphite: #23282b;
   --graphite-2: #2f363a;
   --yellow: #f2b705;
@@ -526,10 +530,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); }
 
 .panel-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: .75rem;
-  margin-bottom: .6rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
   width: 100%;
 }
@@ -587,53 +591,32 @@ input:focus, select:focus, textarea:focus { border-color: var(--ink); }
 
 .ticket {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 1rem;
-  padding: .75rem 1rem;
-  background: var(--panel);
-  color: inherit;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  background: var(--surface);
   text-decoration: none;
-  border: 1px solid var(--line);
-  border-left: 5px solid var(--line);
-  border-radius: 4px;
+  color: inherit;
+  transition: box-shadow 0.15s;
+  margin-bottom: 0.5rem;
   width: 100%;
-  min-width: 0;
-  max-width: 100%;
   box-sizing: border-box;
-  overflow-wrap: break-word;
-  word-break: break-word;
 }
-.ticket:hover { border-color: var(--ink-3); border-left-color: inherit; }
+.ticket:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 .ticket.p-critical { border-left-color: var(--bad); }
 .ticket.p-high { border-left-color: #d9731a; }
 .ticket.p-medium { border-left-color: var(--yellow); }
 .ticket.p-low { border-left-color: #9aa5a1; }
 
-.ticket-main {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.ticket .badge {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.ticket-title {
-  font-weight: 600;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-.ticket-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .15rem 1rem;
-  font-size: .85rem;
-  color: var(--ink-2);
-}
+.ticket-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.ticket-title { font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.ticket-wo { font-size: 0.75rem; font-family: monospace; color: var(--muted); background: var(--bg); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.ticket-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.ticket-info { font-size: 0.8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.2rem 0.5rem; align-items: center; }
+.ticket-status { flex-shrink: 0; align-self: center; min-width: 130px; text-align: right; display: flex; justify-content: flex-end; }
 
 /* ---------- figures strip ---------- */
 .figures {
@@ -1471,27 +1454,6 @@ tr.click:hover td { background: #fafbf9; }
     grid-column: 1 / -1;
   }
 
-  /* Cards and ticket rows stack vertically on mobile */
-  .ticket {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0.6rem !important;
-    padding: 0.85rem !important;
-  }
-  .ticket-main {
-    width: 100% !important;
-  }
-  .ticket-meta {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0.3rem !important;
-    margin-top: 4px !important;
-  }
-  .ticket .badge {
-    margin-left: 0 !important;
-    align-self: flex-start !important;
-  }
-
   /* Columns & Grids */
   .cols {
     grid-template-columns: 1fr !important;
@@ -1567,6 +1529,12 @@ tr.click:hover td { background: #fafbf9; }
   .toast {
     max-width: 100%;
   }
+}
+
+/* ---------- Mobile ticket cards (<640px) ---------- */
+@media (max-width: 640px) {
+  .ticket { flex-direction: column; }
+  .ticket-status { align-self: flex-start; min-width: unset; }
 }
 
 /* ---------- Mobile Drawer Component Styling ---------- */
@@ -1795,6 +1763,10 @@ div[style*="overflowX:auto"] {
   --ink-2: #c0c6c8;
   --ink-3: #8a9498;
   --line: #2d3539;
+  --border: var(--line);
+  --surface: var(--panel);
+  --muted: var(--ink-2);
+  --bg: var(--paper);
   --grey-bg: #242b2f;
   --ok-bg: #143220;
   --warn-bg: #3d2a00;
