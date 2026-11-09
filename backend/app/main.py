@@ -170,14 +170,14 @@ def job_actions(job: m.Job, user: m.User) -> list[str]:
     perms = PERMISSIONS.get(role, set())
     acts: list[str] = []
 
-    # Super Admin and Admin can perform all lifecycle transitions
-    if role in ("super_admin", "admin"):
+    # Super Admin, Maintenance Manager, and Plant Head
+    if role in ("super_admin", "maintenance_manager", "plant_head"):
         if job.status == "created":
             acts += ["send", "plan", "edit", "cancel"]
         elif job.status == "planned":
             acts += ["send", "approve", "reject", "edit"]
         elif job.status == "sent_for_approval":
-            acts += ["approve", "reject", "plan"]
+            acts += ["approve", "reject"]
         elif job.status == "approved":
             acts += ["start", "assign"]
         elif job.status == "in_progress":
@@ -188,38 +188,36 @@ def job_actions(job: m.Job, user: m.User) -> list[str]:
             acts += ["revise"]
         return acts
 
-    # Role-specific transitions
-    if role == "planner":
+    # Maintenance Engineer
+    if role == "maintenance_engineer":
         if job.status in ("created", "planned"):
             acts += ["plan", "send", "edit"]
         elif job.status == "sent_for_approval":
-            acts += ["plan"]
-
-    elif role == "manager":
-        if job.status in ("sent_for_approval", "planned"):
             acts += ["approve", "reject"]
+        elif job.status == "approved":
+            acts += ["start", "assign"]
+        elif job.status == "in_progress":
+            acts += ["review", "close"]
         elif job.status == "review":
             acts += ["close", "revise"]
-        elif job.status == "approved":
-            acts += ["start"]
+        elif job.status == "rejected":
+            acts.append("revise")
 
+    # Technician
     elif role == "technician":
         if job.status == "created":
             acts += ["send", "edit"]
         elif job.status == "approved":
-            # If safety LOTO is required, must sign off first before starting
             acts.append("start")
         elif job.status == "in_progress":
             acts += ["review", "close"]
         elif job.status == "rejected":
             acts.append("revise")
 
-    elif role == "contractor":
-        if job.contractor_id == user.id:
-            if job.status == "approved":
-                acts.append("start")
-            elif job.status == "in_progress":
-                acts.append("review")
+    # Production Manager can report/send breakdown work orders
+    elif role == "production_manager":
+        if job.status == "created":
+            acts += ["send", "edit"]
 
     return acts
 
@@ -1098,7 +1096,7 @@ def sign_loto_permit(
     job_id: int,
     body: dict,
     db: Session = Depends(get_db),
-    user: m.User = Depends(require("loto.sign")),
+    user: m.User = Depends(require("job.work")),
 ):
     """Mandatory safety permit sign-off. Technicians verify each physical lockout."""
     job = db.get(m.Job, job_id)
@@ -1126,7 +1124,7 @@ def toggle_checklist_step(
     step_id: int,
     body: dict,
     db: Session = Depends(get_db),
-    user: m.User = Depends(require("checklist.sign")),
+    user: m.User = Depends(require("job.work")),
 ):
     step = db.get(m.WorkOrderChecklist, step_id)
     if not step or step.job_id != job_id:
@@ -1180,7 +1178,7 @@ def perform_job_action(
 
     if action == "send":
         job.status = "sent_for_approval"
-        notify(db, users_with_role(db, "manager", "admin"), f"Job #{job.id} awaiting approval: {job.title}", f"/jobs/{job.id}")
+        notify(db, users_with_role(db, "maintenance_manager", "super_admin", "plant_head"), f"Job #{job.id} awaiting approval: {job.title}", f"/jobs/{job.id}")
 
     elif action == "plan":
         job.status = "planned"
@@ -1213,7 +1211,7 @@ def perform_job_action(
             job.contractor_invoice_amount = float(body["contractor_invoice_amount"])
         if "contractor_invoice_ref" in body:
             job.contractor_invoice_ref = body["contractor_invoice_ref"]
-        notify(db, users_with_role(db, "manager", "admin"), f"Job #{job.id} submitted for review: {job.title}", f"/jobs/{job.id}")
+        notify(db, users_with_role(db, "maintenance_manager", "super_admin", "plant_head"), f"Job #{job.id} submitted for review: {job.title}", f"/jobs/{job.id}")
 
     elif action == "close":
         if job.type == "repair" and not (job.breakdown_reason or body.get("breakdown_reason")):
@@ -1480,24 +1478,35 @@ def procurement_action(
     pr_id: int,
     action: str,
     db: Session = Depends(get_db),
-    user: m.User = Depends(require("procurement.decide")),
+    user: m.User = Depends(current_user),
 ):
     pr = db.get(m.PurchaseRequest, pr_id)
     if not pr:
         raise HTTPException(404, "Purchase request not found.")
 
+    user_perms = PERMISSIONS.get(user.role, set())
+    has_all = "*" in user_perms or user.role == "super_admin"
+
     if action == "approve":
+        if not (has_all or "procurement.approve" in user_perms or "procurement.manage" in user_perms):
+            raise HTTPException(403, "Permission denied")
         pr.status = "approved"
         pr.approved_by = user.id
     elif action == "order":
+        if not (has_all or "procurement.order" in user_perms or "procurement.manage" in user_perms):
+            raise HTTPException(403, "Permission denied")
         pr.status = "ordered"
         pr.ordered_at = utcnow()
     elif action == "receive":
+        if not (has_all or "procurement.manage" in user_perms or "procurement.order" in user_perms):
+            raise HTTPException(403, "Permission denied")
         pr.status = "received"
         pr.received_at = utcnow()
         pr.part.stock += pr.qty  # Automatically replenish stock
         audit(db, user, "receive_pr", "purchase_request", pr.id, f"Received {pr.qty} {pr.part.unit} of {pr.part.name}")
     elif action == "reject":
+        if not (has_all or "procurement.approve" in user_perms or "procurement.manage" in user_perms):
+            raise HTTPException(403, "Permission denied")
         pr.status = "rejected"
 
     db.commit()
@@ -2206,7 +2215,7 @@ def request_transfer(asset_id: int, body: dict, db: Session = Depends(get_db), u
 
     t = m.Transfer(asset_id=asset.id, to_location_id=to_loc.id, requested_by=user.id, reason=body.get("reason", ""))
     db.add(t)
-    notify(db, users_with_role(db, "manager", "admin"), f"Transfer requested for {asset.name} to {to_loc.name}", "/transfers")
+    notify(db, users_with_role(db, "maintenance_manager", "super_admin", "plant_head"), f"Transfer requested for {asset.name} to {to_loc.name}", "/transfers")
     audit(db, user, "request_transfer", "asset", asset.id, f"Requested transfer to {to_loc.name}")
     db.commit()
     return {"id": t.id, "message": "Transfer requested."}
@@ -2365,7 +2374,7 @@ def create_calibration(
     # Verify permission (asset.manage / asset.edit / asset.create / calibration.manage or super_admin / admin / plant_head)
     user_perms = PERMISSIONS.get(user.role, set())
     allowed = (
-        user.role in ("super_admin", "admin", "plant_head")
+        user.role in ("super_admin", "maintenance_manager", "plant_head")
         or "asset.manage" in user_perms
         or "asset.edit" in user_perms
         or "asset.create" in user_perms
@@ -2404,7 +2413,7 @@ def update_calibration(
 ):
     user_perms = PERMISSIONS.get(user.role, set())
     allowed = (
-        user.role in ("super_admin", "admin", "plant_head")
+        user.role in ("super_admin", "maintenance_manager", "plant_head")
         or "asset.manage" in user_perms
         or "asset.edit" in user_perms
         or "calibration.manage" in user_perms

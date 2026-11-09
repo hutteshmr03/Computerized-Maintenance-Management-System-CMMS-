@@ -11,29 +11,26 @@ def superadmin(client):
     return login(client, "superadmin@cmms.test", "SuperAdmin@123")
 
 
-@pytest.fixture(scope="session")
-def planner(client):
-    return login(client, "planner@cmms.test", "Planner@123")
+def test_nine_hr_roles_authentication(client):
+    expected_menus = {
+        ("superadmin@cmms.test", "SuperAdmin@123"): ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users"],
+        ("planthead@cmms.test", "PlantHead@123"): ["dashboard", "assets", "jobs", "reports", "audit", "calibration"],
+        ("manager@cmms.test", "Manager@123"): ["dashboard", "assets", "transfers", "jobs", "parts", "reports", "audit", "calibration"],
+        ("engineer@cmms.test", "Engineer@123"): ["dashboard", "assets", "jobs", "parts", "calibration"],
+        ("tech@cmms.test", "Tech@123"): ["dashboard", "assets", "jobs"],
+        ("store@cmms.test", "Store@123"): ["dashboard", "parts", "procurement"],
+        ("production@cmms.test", "Prod@123"): ["dashboard", "assets", "jobs"],
+        ("purchase@cmms.test", "Purchase@123"): ["dashboard", "procurement"],
+        ("auditor@cmms.test", "Audit@123"): ["dashboard", "assets", "jobs", "parts", "reports", "audit"],
+    }
+    for (email, pw), expected in expected_menus.items():
+        h = login(client, email, pw)
+        me = client.get("/api/me", headers=h).json()
+        assert me["menu"] == expected, f"{email} expected {expected} but got {me['menu']}" 
 
 
-@pytest.fixture(scope="session")
-def contractor(client):
-    return login(client, "contractor@cmms.test", "Contractor@123")
-
-
-def test_seven_roles_authentication(client, superadmin, admin, planner, manager, tech, contractor, ceo):
-    # Verify each role receives their exact segregated menu configuration
-    assert "users" in client.get("/api/me", headers=superadmin).json()["menu"]
-    assert "hierarchy" in client.get("/api/me", headers=admin).json()["menu"]
-    assert "gantt" in client.get("/api/me", headers=planner).json()["menu"]
-    assert "transfers" in client.get("/api/me", headers=manager).json()["menu"]
-    assert "scan" in client.get("/api/me", headers=tech).json()["menu"]
-    assert client.get("/api/me", headers=contractor).json()["menu"] == ["dashboard", "contractor_portal"]
-    assert client.get("/api/me", headers=ceo).json()["menu"] == ["dashboard", "reports"]
-
-
-def test_asset_hierarchy_tree(client, admin):
-    tree = client.get("/api/hierarchy", headers=admin).json()
+def test_asset_hierarchy_tree(client, superadmin):
+    tree = client.get("/api/hierarchy", headers=superadmin).json()
     assert len(tree) >= 1
     root = tree[0]
     assert root["tier"] == "site"
@@ -98,36 +95,32 @@ def test_loto_safety_permit_blocks_start_until_signed(client, tech, admin):
     assert r_start_ok.json()["status"] == "in_progress"
 
 
-def test_procurement_workflow_replenishes_stock(client, admin, manager, tech):
+def test_procurement_workflow_replenishes_stock(client, store, purchase, tech):
     # Choose a normal stock part so low-stock test invariants are preserved
-    parts = client.get("/api/parts", headers=admin).json()
+    parts = client.get("/api/parts", headers=store).json()
     part = next(p for p in parts if not p["low"])
     before_stock = part["stock"]
 
-    # Create Purchase Request as Admin
-    pr_res = client.post("/api/procurement/requests", headers=admin, json={
+    # Create Purchase Request as Store Manager
+    pr_res = client.post("/api/procurement/requests", headers=store, json={
         "part_id": part["id"],
         "qty": 10,
     })
     assert pr_res.status_code == 201
     pr = pr_res.json()
 
-    # Manager approves, orders, and marks received
-    client.post(f"/api/procurement/requests/{pr['id']}/action/approve", headers=manager, json={})
-    client.post(f"/api/procurement/requests/{pr['id']}/action/order", headers=manager, json={})
-    client.post(f"/api/procurement/requests/{pr['id']}/action/receive", headers=manager, json={})
+    # Purchase Manager approves & orders; Store Manager marks received
+    client.post(f"/api/procurement/requests/{pr['id']}/action/approve", headers=purchase, json={})
+    client.post(f"/api/procurement/requests/{pr['id']}/action/order", headers=purchase, json={})
+    client.post(f"/api/procurement/requests/{pr['id']}/action/receive", headers=store, json={})
 
     updated_part = next(p for p in client.get("/api/parts", headers=tech).json() if p["id"] == part["id"])
     assert updated_part["stock"] == before_stock + 10
 
 
-def test_contractor_portal_isolation(client, contractor):
-    jobs = client.get("/api/contractor/jobs", headers=contractor).json()
-    assert len(jobs) >= 1
-    # Contractor should only see jobs assigned to them
-    me = client.get("/api/me", headers=contractor).json()
-    for j in jobs:
-        assert j["contractor_id"] == me["id"]
+def test_maintenance_engineer_work(client, engineer):
+    jobs = client.get("/api/jobs", headers=engineer).json()
+    assert isinstance(jobs, list)
 
 
 def test_en13306_kpis_and_oee(client, ceo):
@@ -149,7 +142,7 @@ def test_en13306_kpis_and_oee(client, ceo):
 def test_superadmin_user_management_and_gdpr(client, superadmin):
     # View users
     users = client.get("/api/admin/users", headers=superadmin).json()
-    assert len(users) >= 7
+    assert len(users) >= 9
 
     # GDPR Data Export
     gdpr_export = client.get(f"/api/gdpr/export/{users[0]['id']}", headers=superadmin).json()
@@ -157,29 +150,7 @@ def test_superadmin_user_management_and_gdpr(client, superadmin):
     assert "audit_logs" in gdpr_export
 
 
-def test_five_new_roles_authentication(client):
-    # 1. Plant Head
-    ph = login(client, "planthead@cmms.test", "PlantHead@123")
-    ph_menu = client.get("/api/me", headers=ph).json()["menu"]
-    assert "calibration" in ph_menu
-    assert "reports" in ph_menu
-    assert "jobs" in ph_menu
 
-    # 2. Store Manager
-    sm = login(client, "store@cmms.test", "Store@123")
-    assert client.get("/api/me", headers=sm).json()["menu"] == ["dashboard", "parts", "procurement"]
-
-    # 3. Production Manager
-    pm = login(client, "production@cmms.test", "Prod@123")
-    assert client.get("/api/me", headers=pm).json()["menu"] == ["dashboard", "assets", "jobs"]
-
-    # 4. Purchase Manager
-    purch = login(client, "purchase@cmms.test", "Purchase@123")
-    assert client.get("/api/me", headers=purch).json()["menu"] == ["dashboard", "procurement"]
-
-    # 5. Auditor
-    aud = login(client, "auditor@cmms.test", "Audit@123")
-    assert client.get("/api/me", headers=aud).json()["menu"] == ["dashboard", "assets", "jobs", "parts", "reports", "audit"]
 
 
 def test_calibration_module(client, admin):

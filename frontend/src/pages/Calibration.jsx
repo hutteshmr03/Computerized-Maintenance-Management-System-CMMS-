@@ -176,7 +176,7 @@ export default function Calibration() {
   const { data: calibrations, error, loading, reload } = useLoad(() => api.get('/api/calibrations'), [])
   const { data: assets } = useLoad(() => api.get('/api/assets'), [])
 
-  const canManage = can('asset.create') || can('asset.edit') || can('calibration.manage') || ['super_admin', 'admin', 'plant_head'].includes(user?.role)
+  const canManage = can('asset.create') || can('asset.edit') || can('calibration.manage') || ['super_admin', 'maintenance_manager', 'plant_head'].includes(user?.role)
 
   const filtered = useMemo(() => {
     if (!calibrations) return []

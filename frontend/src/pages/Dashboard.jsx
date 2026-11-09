@@ -83,7 +83,7 @@ function EnterpriseDashboard({ d, user }) {
   const [liveDowntime, setLiveDowntime] = useState([])
   const [mtbfData, setMtbfData] = useState(null)
 
-  const isManagerOrPlantHead = ['manager', 'plant_head', 'super_admin'].includes(user.role)
+  const isManagerOrPlantHead = ['maintenance_manager', 'plant_head', 'super_admin'].includes(user.role)
 
   // Fetch live downtime with 60-second polling
   useEffect(() => {

@@ -18,7 +18,6 @@ import Parts from './pages/Parts.jsx'
 import Procurement from './pages/Procurement.jsx'
 import Readings from './pages/Readings.jsx'
 import Contracts from './pages/Contracts.jsx'
-import ContractorPortal from './pages/ContractorPortal.jsx'
 import Transfers from './pages/Transfers.jsx'
 import Reports from './pages/Reports.jsx'
 import Users from './pages/Users.jsx'
@@ -38,7 +37,6 @@ const MENU = {
   procurement: { to: '/procurement', label: 'Procurement', icon: '📦' },
   readings: { to: '/readings', label: 'Condition Telemetry', icon: '📡' },
   contracts: { to: '/contracts', label: 'Contracts & SLAs', icon: '📜' },
-  contractor_portal: { to: '/contractor-portal', label: 'My Jobs', icon: '🛠️' },
   transfers: { to: '/transfers', label: 'Transfers', icon: '🚚' },
   reports: { to: '/reports', label: 'Reports & KPIs', icon: '📊' },
   users: { to: '/users', label: 'Users & GDPR', icon: '👥' },
@@ -237,25 +235,13 @@ function Shell() {
     .map((k) => MENU[k])
     .filter(Boolean)
 
-  // Mobile bottom navigation bar items (top 5 role-relevant shortcuts)
+  // Mobile bottom navigation bar items (top 5 role-relevant shortcuts for the 9 HR roles)
   let mobileItems = userMenuItems.slice(0, 5)
   if (user.role === 'technician') {
-    mobileItems = [MENU.dashboard, MENU.scan, MENU.jobs, MENU.kanban, MENU.readings].filter(Boolean)
-  } else if (user.role === 'contractor') {
-    mobileItems = [MENU.dashboard, MENU.contractor_portal].filter(Boolean)
-  } else if (user.role === 'planner') {
-    mobileItems = [MENU.dashboard, MENU.plans, MENU.kanban, MENU.gantt, MENU.jobs].filter(Boolean)
-  } else if (user.role === 'manager') {
-    mobileItems = [MENU.dashboard, MENU.jobs, MENU.kanban, MENU.transfers, MENU.reports].filter(Boolean)
-  } else if (user.role === 'super_admin') {
-    mobileItems = [MENU.dashboard, MENU.hierarchy, MENU.jobs, MENU.kanban, MENU.users].filter(Boolean)
-  } else if (user.role === 'admin') {
-    mobileItems = [MENU.dashboard, MENU.hierarchy, MENU.jobs, MENU.parts, MENU.plans].filter(Boolean)
-  } else if (user.role === 'executive') {
-    mobileItems = [MENU.dashboard, MENU.reports].filter(Boolean)
+    mobileItems = [MENU.dashboard, MENU.assets, MENU.jobs].filter(Boolean)
   }
 
-  const roleName = user.role === 'executive' ? 'Executive' : user.role.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const roleName = user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
   return (
     <div
@@ -347,11 +333,7 @@ function Shell() {
             <Link to="/scan" className="btn desktop-only-btn" style={{ fontWeight: 600 }}>
               🔍 Find / Scan Asset
             </Link>
-            {user.role === 'planner' && (
-              <Link to="/gantt" className="btn small desktop-only-btn">
-                📅 Gantt View
-              </Link>
-            )}
+
           </div>
 
           {/* Desktop & Tablet Topbar Right Controls: single row, no wrapping */}
@@ -525,7 +507,6 @@ export default function App() {
         <Route path="procurement" element={<Procurement />} />
         <Route path="readings" element={<Readings />} />
         <Route path="contracts" element={<Contracts />} />
-        <Route path="contractor-portal" element={<ContractorPortal />} />
         <Route path="transfers" element={<Transfers />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<Users />} />

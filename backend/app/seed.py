@@ -10,23 +10,17 @@ from . import models as m
 from .db import utcnow
 from .security import hash_password
 
-# 7 Roles
+# Exactly 9 HR Roles
 DEMO_USERS = [
-    ("Vikram Super Admin", "superadmin@cmms.test", "SuperAdmin@123", "super_admin", "", "+49 711 901201"),
-    ("Super Admin", "super@cmms.test", "Super@123", "super_admin", "", "+49 711 901201"),
-    ("Asha Admin", "admin@cmms.test", "Admin@123", "admin", "", "+49 711 901202"),
-    ("Klaus Planner", "planner@cmms.test", "Planner@123", "planner", "", "+49 711 901203"),
-    ("Mohan Manager", "manager@cmms.test", "Manager@123", "manager", "", "+49 711 901204"),
-    ("Tara Technician", "tech@cmms.test", "Tech@123", "technician", "", "+49 711 901205"),
-    ("Tarun Technician", "tech2@cmms.test", "Tech@123", "technician", "", "+49 711 901206"),
-    ("Hans Contractor (Siemens Energy)", "contractor@cmms.test", "Contractor@123", "contractor", "Siemens Energy Service", "+49 711 901207"),
-    ("Hans Contractor", "vendor@cmms.test", "Vendor@123", "contractor", "Siemens Energy Service", "+49 711 901207"),
-    ("Chitra CEO", "ceo@cmms.test", "Exec@123", "executive", "", "+49 711 901208"),
-    ("Ravi Plant Head", "planthead@cmms.test", "PlantHead@123", "plant_head", "", "+49 711 901209"),
-    ("Meena Store", "store@cmms.test", "Store@123", "store_manager", "", "+49 711 901210"),
-    ("Arjun Production", "production@cmms.test", "Prod@123", "production_manager", "", "+49 711 901211"),
-    ("Priya Purchase", "purchase@cmms.test", "Purchase@123", "purchase_manager", "", "+49 711 901212"),
-    ("Suresh Auditor", "auditor@cmms.test", "Audit@123", "auditor", "", "+49 711 901213"),
+    ("Super Admin", "superadmin@cmms.test", "SuperAdmin@123", "super_admin", "", "+49 711 901201"),
+    ("Ravi Plant Head", "planthead@cmms.test", "PlantHead@123", "plant_head", "", "+49 711 901202"),
+    ("Anita Manager", "manager@cmms.test", "Manager@123", "maintenance_manager", "", "+49 711 901203"),
+    ("Kiran Engineer", "engineer@cmms.test", "Engineer@123", "maintenance_engineer", "", "+49 711 901204"),
+    ("Suresh Tech", "tech@cmms.test", "Tech@123", "technician", "", "+49 711 901205"),
+    ("Meena Store", "store@cmms.test", "Store@123", "store_manager", "", "+49 711 901206"),
+    ("Arjun Production", "production@cmms.test", "Prod@123", "production_manager", "", "+49 711 901207"),
+    ("Priya Purchase", "purchase@cmms.test", "Purchase@123", "purchase_manager", "", "+49 711 901208"),
+    ("Suresh Auditor", "auditor@cmms.test", "Audit@123", "auditor", "", "+49 711 901209"),
 ]
 
 COST_CENTRES = [
@@ -299,10 +293,10 @@ def seed(db: Session):
 
     # 8. Document Management Attachments
     db.add_all([
-        m.AssetDocument(asset_id=ast_gen.id, title="Caterpillar 3512B Maintenance Manual (DIN EN 82079)", doc_type="manual", version="2.4", filename="manual_cat3512.pdf", file_size_bytes=4250000, uploaded_by="Asha Admin", notes="Full factory workshop overhaul guidelines"),
-        m.AssetDocument(asset_id=ast_gen.id, title="EC Declaration of Conformity (2006/42/EC)", doc_type="ce_certificate", version="1.0", filename="ce_cat3512.pdf", file_size_bytes=412000, uploaded_by="Asha Admin", notes="TÜV Rheinland certified"),
+        m.AssetDocument(asset_id=ast_gen.id, title="Caterpillar 3512B Maintenance Manual (DIN EN 82079)", doc_type="manual", version="2.4", filename="manual_cat3512.pdf", file_size_bytes=4250000, uploaded_by="Anita Manager", notes="Full factory workshop overhaul guidelines"),
+        m.AssetDocument(asset_id=ast_gen.id, title="EC Declaration of Conformity (2006/42/EC)", doc_type="ce_certificate", version="1.0", filename="ce_cat3512.pdf", file_size_bytes=412000, uploaded_by="Anita Manager", notes="TÜV Rheinland certified"),
         m.AssetDocument(asset_id=ast_cnc.id, title="DMU 50 High-Speed Spindle Calibration ISO 17025", doc_type="calibration", version="1.1", filename="calib_dmu50.pdf", file_size_bytes=890000, uploaded_by="Klaus Planner", notes="Spindle dynamic balancing & runout < 2 µm"),
-        m.AssetDocument(asset_id=ast_press.id, title="Schuler HP-500 Hydraulic Circuit Schematic", doc_type="schematic", version="3.0", filename="schematic_hp500.pdf", file_size_bytes=6100000, uploaded_by="Asha Admin", notes="Updated with proportional servo manifold"),
+        m.AssetDocument(asset_id=ast_press.id, title="Schuler HP-500 Hydraulic Circuit Schematic", doc_type="schematic", version="3.0", filename="schematic_hp500.pdf", file_size_bytes=6100000, uploaded_by="Anita Manager", notes="Updated with proportional servo manifold"),
     ])
     db.flush()
 
@@ -378,7 +372,7 @@ def seed(db: Session):
             next_due_date=date.today() + timedelta(days=12),
             priority="medium",
             estimated_hours=4.0,
-            assigned_to=users["tech2@cmms.test"].id,
+            assigned_to=users["tech@cmms.test"].id,
             loto_required=True,
             checklist_template=json.dumps([
                 "Isolate 415V electrical feed & verify zero voltage",
@@ -399,7 +393,7 @@ def seed(db: Session):
             next_due_date=date.today() + timedelta(days=18),
             priority="high",
             estimated_hours=2.5,
-            assigned_to=users["contractor@cmms.test"].id,
+            assigned_to=users["engineer@cmms.test"].id,
             loto_required=False,
             checklist_template=json.dumps([
                 "Clean spindle taper with alcohol and wipe test arbor",
@@ -446,7 +440,7 @@ def seed(db: Session):
     db.add_all([
         m.PurchaseRequest(pr_number="PR-2026-0001", part_id=parts["FLT-AIR01"].id, qty=10, estimated_cost=6500.0, vendor="FilterWorld", requested_by=users["tech@cmms.test"].id, status="requested"),
         m.PurchaseRequest(pr_number="PR-2026-0002", part_id=parts["OIL-HYD20"].id, qty=5, estimated_cost=21000.0, vendor="Lubetech", requested_by=users["tech@cmms.test"].id, approved_by=users["manager@cmms.test"].id, status="approved"),
-        m.PurchaseRequest(pr_number="PR-2026-0003", part_id=parts["BRG-6205"].id, qty=12, estimated_cost=3000.0, vendor="Sree Bearings", requested_by=users["admin@cmms.test"].id, approved_by=users["manager@cmms.test"].id, status="ordered", ordered_at=now - timedelta(days=2)),
+        m.PurchaseRequest(pr_number="PR-2026-0003", part_id=parts["BRG-6205"].id, qty=12, estimated_cost=3000.0, vendor="Sree Bearings", requested_by=users["manager@cmms.test"].id, approved_by=users["manager@cmms.test"].id, status="ordered", ordered_at=now - timedelta(days=2)),
     ])
     db.flush()
 
@@ -490,7 +484,7 @@ def seed(db: Session):
             failure_cause=cause,
             failure_effect=effect,
             action_taken=f"Executed DIN 31051 {din} procedures and verified functional operation.",
-            created_by=users["admin@cmms.test"].id,
+            created_by=users["manager@cmms.test"].id,
             assigned_to=users["tech@cmms.test"].id,
             cost_centre_id=ast.cost_centre_id,
             created_at=start - timedelta(days=2),
@@ -559,8 +553,8 @@ def seed(db: Session):
         estimated_cost=8500.0,
         estimated_hours=3.0,
         loto_required=True,
-        created_by=users["tech2@cmms.test"].id,
-        assigned_to=users["tech2@cmms.test"].id,
+        created_by=users["tech@cmms.test"].id,
+        assigned_to=users["tech@cmms.test"].id,
         cost_centre_id=ast_comp.cost_centre_id,
         created_at=now - timedelta(hours=4),
     )
@@ -582,13 +576,13 @@ def seed(db: Session):
         end_time=now - timedelta(days=1),
         estimated_hours=6.0,
         labour_hours=6.0,
-        contractor_id=users["contractor@cmms.test"].id,
+        contractor_id=users["engineer@cmms.test"].id,
         contractor_invoice_ref="INV-SIEM-9921",
         contractor_invoice_amount=48000.0,
         contractor_notes="Completed laser interferometer calibration. Positional deviation across 500 mm stroke measured at 1.8 µm (tolerance: 3 µm). Report attached.",
         action_taken="Re-leveled bed and updated CNC pitch compensation tables.",
-        created_by=users["planner@cmms.test"].id,
-        assigned_to=users["contractor@cmms.test"].id,
+        created_by=users["engineer@cmms.test"].id,
+        assigned_to=users["engineer@cmms.test"].id,
         cost_centre_id=ast_cnc.cost_centre_id,
         created_at=now - timedelta(days=5),
         loto_required=False,
@@ -613,7 +607,7 @@ def seed(db: Session):
         scheduled_start=now + timedelta(days=7, hours=9),
         scheduled_end=now + timedelta(days=7, hours=15),
         estimated_hours=6.0,
-        created_by=users["planner@cmms.test"].id,
+        created_by=users["engineer@cmms.test"].id,
         assigned_to=users["tech@cmms.test"].id,
         cost_centre_id=ast_gen.cost_centre_id,
         created_at=now - timedelta(days=1),
@@ -663,5 +657,5 @@ def seed(db: Session):
     ast_gen.utility_type = "generator"
 
     # 16. Initial Audit Entries
-    db.add(m.AuditLog(user_name="Asha Admin", action="seed_database", entity="system", detail="Initialized Enterprise CMMS DIN 31051 baseline"))
+    db.add(m.AuditLog(user_name="Anita Manager", action="seed_database", entity="system", detail="Initialized Enterprise CMMS DIN 31051 baseline"))
     db.commit()

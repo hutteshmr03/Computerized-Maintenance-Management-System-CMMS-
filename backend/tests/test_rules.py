@@ -26,8 +26,8 @@ def test_login_wrong_password_gives_clear_message(client):
 
 def test_lockout_after_five_wrong_attempts(client):
     for _ in range(5):
-        client.post("/api/login", json={"email": "tech2@cmms.test", "password": "bad"})
-    r = client.post("/api/login", json={"email": "tech2@cmms.test", "password": "Tech@123"})
+        client.post("/api/login", json={"email": "auditor@cmms.test", "password": "bad"})
+    r = client.post("/api/login", json={"email": "auditor@cmms.test", "password": "Audit@123"})
     assert r.status_code == 423
     assert "minute" in r.json()["detail"]
 
@@ -36,9 +36,9 @@ def test_requires_login(client):
     assert client.get("/api/jobs").status_code == 401
 
 
-def test_menu_depends_on_role(client, tech, ceo):
+def test_menu_depends_on_role(client, tech, purchase):
     assert "audit" not in client.get("/api/me", headers=tech).json()["menu"]
-    assert client.get("/api/me", headers=ceo).json()["menu"] == ["dashboard", "reports"]
+    assert client.get("/api/me", headers=purchase).json()["menu"] == ["dashboard", "procurement"]
 
 
 def test_technician_cannot_approve_or_see_audit(client, tech):
@@ -48,14 +48,14 @@ def test_technician_cannot_approve_or_see_audit(client, tech):
     assert r.status_code == 403
 
 
-def test_executive_cannot_create_job(client, ceo, tech):
+def test_purchase_manager_cannot_create_job(client, purchase, tech):
     asset = client.get("/api/assets", headers=tech).json()[-1]
-    assert new_job(client, ceo, asset["id"]).status_code == 403
+    assert new_job(client, purchase, asset["id"]).status_code == 403
 
 
 # ------------------------------------------------------------ jobs
-def test_one_open_job_per_asset(client, admin, tech):
-    a = new_asset(client, admin, "OneJob Machine")
+def test_one_open_job_per_asset(client, superadmin, tech):
+    a = new_asset(client, superadmin, "OneJob Machine")
     first = new_job(client, tech, a["id"])
     assert first.status_code == 201
     second = new_job(client, tech, a["id"])
@@ -63,8 +63,8 @@ def test_one_open_job_per_asset(client, admin, tech):
     assert f"#{first.json()['id']}" in second.json()["detail"]
 
 
-def test_full_lifecycle_and_stock_deduction(client, admin, tech, manager):
-    a = new_asset(client, admin, "Lifecycle Machine")
+def test_full_lifecycle_and_stock_deduction(client, superadmin, tech, manager):
+    a = new_asset(client, superadmin, "Lifecycle Machine")
     job = new_job(client, tech, a["id"], estimated_cost=1000).json()
     assert job["status"] == "created" and "send" in job["actions"]
     jid = job["id"]
@@ -136,14 +136,14 @@ def test_scheduled_job_needs_due_date(client, admin, tech):
 
 
 # ------------------------------------------------------------ transfers
-def test_transfer_flow_updates_location_and_history(client, admin, tech, manager):
+def test_transfer_flow_updates_location_and_history(client, admin, tech, manager, engineer):
     a = new_asset(client, admin, "Movable Cart", movable=True)
     locs = client.get("/api/locations", headers=tech).json()
     target = next(l for l in locs if l["name"] != a["location"])
-    t = client.post(f"/api/assets/{a['id']}/transfer", headers=tech, json={"to_location_id": target["id"]})
+    t = client.post(f"/api/assets/{a['id']}/transfer", headers=engineer, json={"to_location_id": target["id"]})
     assert t.status_code == 201
     # second request while pending is refused
-    assert client.post(f"/api/assets/{a['id']}/transfer", headers=tech,
+    assert client.post(f"/api/assets/{a['id']}/transfer", headers=engineer,
                        json={"to_location_id": target["id"]}).status_code == 409
     assert client.post(f"/api/transfers/{t.json()['id']}/approve", headers=tech, json={}).status_code == 403
     assert client.post(f"/api/transfers/{t.json()['id']}/approve", headers=manager, json={}).json()["status"] == "approved"
@@ -152,10 +152,10 @@ def test_transfer_flow_updates_location_and_history(client, admin, tech, manager
     assert detail["history"][0]["to"] == target["name"]
 
 
-def test_fixed_asset_cannot_be_transferred(client, admin, tech):
+def test_fixed_asset_cannot_be_transferred(client, admin, engineer):
     a = new_asset(client, admin, "Fixed Boiler", movable=False)
-    loc = client.get("/api/locations", headers=tech).json()[-1]["id"]
-    assert client.post(f"/api/assets/{a['id']}/transfer", headers=tech, json={"to_location_id": loc}).status_code == 409
+    loc = client.get("/api/locations", headers=engineer).json()[-1]["id"]
+    assert client.post(f"/api/assets/{a['id']}/transfer", headers=engineer, json={"to_location_id": loc}).status_code == 409
 
 
 # ------------------------------------------------------------ parts, reports, audit

@@ -12,12 +12,14 @@ import {
 
 const ROLES = [
   { id: 'super_admin', label: 'Super Admin', desc: 'Full enterprise access & user management' },
-  { id: 'admin', label: 'Admin', desc: 'Assets, parts, locations, system configuration' },
-  { id: 'planner', label: 'Planner', desc: 'Maintenance plans, scheduling, Gantt calendar' },
-  { id: 'manager', label: 'Manager', desc: 'Approvals, transfers, budgets, cost oversight' },
-  { id: 'technician', label: 'Technician', desc: 'Mobile execution, QR scan, LOTO, checklists' },
-  { id: 'contractor', label: 'Contractor', desc: 'External vendor portal, assigned jobs only' },
-  { id: 'executive', label: 'Executive', desc: 'Read-only EN 13306 KPIs and reports' },
+  { id: 'plant_head', label: 'Plant Head', desc: 'Plant oversight, assets, downtime & calibrations' },
+  { id: 'maintenance_manager', label: 'Maintenance Manager', desc: 'Maintenance approvals, transfers, work orders, parts' },
+  { id: 'maintenance_engineer', label: 'Maintenance Engineer', desc: 'Engineering execution, jobs, parts, calibrations' },
+  { id: 'technician', label: 'Technician', desc: 'Execution, work orders, asset maintenance' },
+  { id: 'store_manager', label: 'Store Manager', desc: 'Spare parts inventory & procurement management' },
+  { id: 'production_manager', label: 'Production Manager', desc: 'Breakdown reporting & machine status tracking' },
+  { id: 'purchase_manager', label: 'Purchase Manager', desc: 'Purchase orders approval & procurement placement' },
+  { id: 'auditor', label: 'Auditor', desc: 'Read-only compliance audit & logs review' },
 ]
 
 export default function Users() {

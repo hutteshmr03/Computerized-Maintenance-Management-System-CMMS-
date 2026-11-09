@@ -1,22 +1,47 @@
 from datetime import datetime, date
-from sqlalchemy import String, Integer, Float, Boolean, DateTime, Date, ForeignKey, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Integer, Float, Boolean, DateTime, Date, ForeignKey, Text, CheckConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from .db import Base, utcnow
+
+VALID_ROLES = (
+    "super_admin",
+    "plant_head",
+    "maintenance_manager",
+    "maintenance_engineer",
+    "technician",
+    "store_manager",
+    "production_manager",
+    "purchase_manager",
+    "auditor",
+)
 
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('super_admin', 'plant_head', 'maintenance_manager', 'maintenance_engineer', "
+            "'technician', 'store_manager', 'production_manager', 'purchase_manager', 'auditor')",
+            name="check_valid_user_role",
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(120), unique=True)
     password_hash: Mapped[str] = mapped_column(String(200))
-    # Roles: super_admin | admin | planner | manager | technician | contractor | executive
+    # Exactly 9 HR roles: super_admin, plant_head, maintenance_manager, maintenance_engineer, technician, store_manager, production_manager, purchase_manager, auditor
     role: Mapped[str] = mapped_column(String(30))
     contractor_company: Mapped[str] = mapped_column(String(120), default="")
     phone: Mapped[str] = mapped_column(String(40), default="")
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    @validates("role")
+    def validate_role(self, key, value):
+        if value not in VALID_ROLES:
+            raise ValueError(f"Invalid role: {value}. Allowed roles are: {', '.join(VALID_ROLES)}")
+        return value
 
 
 class CostCentre(Base):
