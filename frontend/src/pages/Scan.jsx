@@ -217,34 +217,34 @@ export default function Scan() {
   }, [cameraActive, code])
 
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto' }} className="stack">
+    <div style={{ maxWidth: 440, margin: '0 auto' }} className="stack">
       <style>{`
         /* Authentic PhonePe QR Scanner Styles */
         .phonepe-scanner-card {
           position: relative;
           width: 100%;
           background: #000000;
-          border-radius: 24px;
+          border-radius: 20px;
           overflow: hidden;
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 36px 16px 28px 16px;
+          padding: 24px 16px 20px 16px;
           box-sizing: border-box;
-          box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
 
         .phonepe-viewfinder-area {
           position: relative;
-          width: 270px;
-          height: 270px;
-          max-width: calc(100vw - 64px);
-          max-height: calc(100vw - 64px);
+          width: 220px;
+          height: 220px;
+          max-width: calc(100vw - 48px);
+          max-height: calc(100vw - 48px);
           display: flex;
           align-items: center;
           justify-content: center;
           background: #000000;
-          border-radius: 24px;
+          border-radius: 18px;
           cursor: pointer;
         }
 
@@ -252,7 +252,7 @@ export default function Scan() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          border-radius: 20px;
+          border-radius: 18px;
           background: #000000;
           transition: opacity 0.2s ease;
         }
@@ -268,8 +268,8 @@ export default function Scan() {
 
         .phonepe-corner {
           position: absolute;
-          width: 54px;
-          height: 54px;
+          width: 44px;
+          height: 44px;
           border-color: #8417f7;
           border-style: solid;
           border-width: 0;
@@ -278,67 +278,42 @@ export default function Scan() {
         .phonepe-corner.tl {
           top: 0;
           left: 0;
-          border-top-width: 4.5px;
-          border-left-width: 4.5px;
-          border-top-left-radius: 22px;
+          border-top-width: 4px;
+          border-left-width: 4px;
+          border-top-left-radius: 18px;
         }
 
         .phonepe-corner.tr {
           top: 0;
           right: 0;
-          border-top-width: 4.5px;
-          border-right-width: 4.5px;
-          border-top-right-radius: 22px;
+          border-top-width: 4px;
+          border-right-width: 4px;
+          border-top-right-radius: 18px;
         }
 
         .phonepe-corner.bl {
           bottom: 0;
           left: 0;
-          border-bottom-width: 4.5px;
-          border-left-width: 4.5px;
-          border-bottom-left-radius: 22px;
+          border-bottom-width: 4px;
+          border-left-width: 4px;
+          border-bottom-left-radius: 18px;
         }
 
         .phonepe-corner.br {
           bottom: 0;
           right: 0;
-          border-bottom-width: 4.5px;
-          border-right-width: 4.5px;
-          border-bottom-right-radius: 22px;
-        }
-
-        .phonepe-laser-beam {
-          position: absolute;
-          left: 14px;
-          right: 14px;
-          height: 2.5px;
-          background: linear-gradient(90deg, transparent 0%, #8417f7 20%, #c084fc 50%, #8417f7 80%, transparent 100%);
-          box-shadow: 0 0 12px 2px rgba(132, 23, 247, 0.85);
-          border-radius: 2px;
-          animation: phonepe-laser-sweep 2.2s ease-in-out infinite alternate;
-        }
-
-        @keyframes phonepe-laser-sweep {
-          0% {
-            top: 12px;
-            opacity: 0.75;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            top: calc(100% - 14px);
-            opacity: 0.75;
-          }
+          border-bottom-width: 4px;
+          border-right-width: 4px;
+          border-bottom-right-radius: 18px;
         }
 
         .phonepe-actions-row {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 52px;
-          margin-top: 32px;
-          margin-bottom: 6px;
+          gap: 48px;
+          margin-top: 22px;
+          margin-bottom: 4px;
           width: 100%;
         }
 
@@ -360,8 +335,8 @@ export default function Scan() {
         }
 
         .phonepe-action-icon {
-          width: 58px;
-          height: 58px;
+          width: 52px;
+          height: 52px;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.14);
           display: flex;
@@ -431,7 +406,6 @@ export default function Scan() {
             <span className="phonepe-corner tr" />
             <span className="phonepe-corner bl" />
             <span className="phonepe-corner br" />
-            <span className="phonepe-laser-beam" />
           </div>
         </div>
 
