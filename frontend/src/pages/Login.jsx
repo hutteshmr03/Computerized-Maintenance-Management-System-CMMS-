@@ -2,18 +2,6 @@ import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth.jsx'
 
-const DEMO_ACCOUNTS = [
-  { role: 'Super Admin', email: 'superadmin@cmms.test', password: 'SuperAdmin@123', desc: 'Full system access & users' },
-  { role: 'Plant Head', email: 'planthead@cmms.test', password: 'PlantHead@123', desc: 'Plant oversight & analytics' },
-  { role: 'Maintenance Manager', email: 'manager@cmms.test', password: 'Manager@123', desc: 'Approvals & work orders' },
-  { role: 'Maintenance Engineer', email: 'engineer@cmms.test', password: 'Engineer@123', desc: 'Maintenance execution & PM' },
-  { role: 'Technician', email: 'tech@cmms.test', password: 'Tech@123', desc: 'Field execution & maintenance' },
-  { role: 'Store Manager', email: 'store@cmms.test', password: 'Store@123', desc: 'Spare parts & procurement' },
-  { role: 'Production Manager', email: 'production@cmms.test', password: 'Prod@123', desc: 'Breakdown reporting & status' },
-  { role: 'Purchase Manager', email: 'purchase@cmms.test', password: 'Purchase@123', desc: 'PO approvals & purchasing' },
-  { role: 'Auditor', email: 'auditor@cmms.test', password: 'Audit@123', desc: 'Read-only compliance audit' },
-]
-
 export default function Login() {
   const { user, login } = useAuth()
   const [email, setEmail] = useState('')
@@ -38,12 +26,6 @@ export default function Login() {
     } finally {
       setBusy(false)
     }
-  }
-
-  const handleDemoSelect = (demoEmail, demoPassword) => {
-    setEmail(demoEmail)
-    setPassword(demoPassword)
-    setError('')
   }
 
   return (
@@ -112,12 +94,16 @@ export default function Login() {
         .login-headline {
           color: #ffffff;
           font-family: 'DM Sans', sans-serif;
-          font-size: clamp(28px, 3vw, 42px);
+          font-size: clamp(24px, 2.6vw, 38px);
           font-weight: 700;
-          line-height: 1.2;
-          max-width: 380px;
+          line-height: 1.25;
           margin: 0;
           letter-spacing: -0.02em;
+        }
+
+        .login-headline-row {
+          display: block;
+          white-space: nowrap;
         }
 
         .login-subtext {
@@ -155,7 +141,6 @@ export default function Login() {
           padding: 48px 32px;
           box-sizing: border-box;
           min-height: 100vh;
-          overflow-y: auto;
         }
 
         .login-form-container {
@@ -280,79 +265,6 @@ export default function Login() {
           line-height: 1.4;
         }
 
-        /* ---------------- Demo Accounts ---------------- */
-        .login-divider {
-          display: flex;
-          align-items: center;
-          text-align: center;
-          color: #CBD5E0;
-          font-size: 12px;
-          font-weight: 500;
-          margin: 24px 0 16px 0;
-          user-select: none;
-        }
-
-        .login-divider::before,
-        .login-divider::after {
-          content: '';
-          flex: 1;
-          border-bottom: 1px solid #E2E8F0;
-        }
-
-        .login-divider::before {
-          margin-right: 12px;
-        }
-
-        .login-divider::after {
-          margin-left: 12px;
-        }
-
-        .login-demo-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          width: 100%;
-        }
-
-        .login-demo-btn {
-          background: #ffffff;
-          border: 1px solid #E2E8F0;
-          border-radius: 8px;
-          padding: 10px 14px;
-          width: 100%;
-          text-align: left;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-          font-family: inherit;
-          box-sizing: border-box;
-        }
-
-        .login-demo-btn:hover {
-          border-color: #00C2E0;
-          background: #F0FAFE;
-        }
-
-        .login-demo-role {
-          font-weight: 600;
-          font-size: 13px;
-          color: #0D1B2A;
-          white-space: nowrap;
-        }
-
-        .login-demo-desc {
-          font-size: 12px;
-          color: #8B9BB4;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          text-align: right;
-          max-width: 58%;
-        }
-
         /* ---------------- Responsive ---------------- */
         @media (max-width: 767.98px) {
           .login-root {
@@ -373,8 +285,7 @@ export default function Login() {
           }
 
           .login-headline {
-            font-size: 28px;
-            max-width: 100%;
+            font-size: clamp(20px, 5.5vw, 26px);
           }
 
           .login-pills {
@@ -383,11 +294,7 @@ export default function Login() {
 
           .login-right-panel {
             min-height: auto;
-            padding: 32px 24px;
-          }
-
-          .login-demo-desc {
-            max-width: 50%;
+            padding: 40px 24px 48px;
           }
         }
       `}</style>
@@ -400,7 +307,10 @@ export default function Login() {
         </div>
 
         <div className="login-hero">
-          <h1 className="login-headline">Maintenance Intelligence for Industry</h1>
+          <h1 className="login-headline">
+            <span className="login-headline-row">Maintenance Intelligence</span>
+            <span className="login-headline-row">for Industry</span>
+          </h1>
           <p className="login-subtext">
             Asset management · Work orders · Downtime analytics
           </p>
@@ -464,25 +374,6 @@ export default function Login() {
 
             {error && <p className="login-error-text">{error}</p>}
           </form>
-
-          <div className="login-divider">
-            — Demo accounts —
-          </div>
-
-          <div className="login-demo-grid">
-            {DEMO_ACCOUNTS.map(({ role, email: demoEmail, password: demoPassword, desc }) => (
-              <button
-                key={role}
-                type="button"
-                className="login-demo-btn"
-                onClick={() => handleDemoSelect(demoEmail, demoPassword)}
-                title={`Populate credentials for ${role}`}
-              >
-                <span className="login-demo-role">{role}</span>
-                <span className="login-demo-desc">{desc}</span>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>
