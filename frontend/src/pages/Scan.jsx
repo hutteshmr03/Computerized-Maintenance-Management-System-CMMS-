@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { useAuth } from '../auth.jsx'
 import { CriticalityBadge, ErrorNote, Loading, fmtDate, money, useToast } from '../ui.jsx'
 
-const QUICK_TAGS = ['AST-0001', 'AST-0002', 'AST-0003', 'AST-0004', 'AST-0005', 'AST-0006', 'CMP-0001']
-
 export default function Scan() {
+  const { user } = useAuth()
   const { code: urlCode } = useParams()
   const [code, setCode] = useState(urlCode || '')
   const [error, setError] = useState('')
@@ -17,24 +17,67 @@ export default function Scan() {
   const [hasTorch, setHasTorch] = useState(false)
   const [facingMode, setFacingMode] = useState('environment')
 
+  // User-scoped recently searched tags
+  const userKey = user?.id || user?.email || 'guest'
+  const storageKey = `cmms_recent_searches_${userKey}`
+  const [recentSearches, setRecentSearches] = useState([])
+
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
   const toast = useToast()
 
+  // Load recently searched tags for the individual logged-in user
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) setRecentSearches(parsed)
+      } else {
+        setRecentSearches([])
+      }
+    } catch {
+      setRecentSearches([])
+    }
+  }, [storageKey])
+
+  const addRecentSearch = (itemCode) => {
+    if (!itemCode || !itemCode.trim()) return
+    const upper = itemCode.trim().toUpperCase()
+    setRecentSearches((prev) => {
+      const filtered = prev.filter((c) => c !== upper)
+      const updated = [upper, ...filtered].slice(0, 8)
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
+  }
+
+  const clearRecentSearches = () => {
+    setRecentSearches([])
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {}
+  }
+
   const lookupAsset = async (targetCode) => {
     if (!targetCode || !targetCode.trim()) return
+    const cleanCode = targetCode.trim().toUpperCase()
     setError('')
     setLoading(true)
     const startTime = performance.now()
     try {
-      const a = await api.get('/api/assets/by-code/' + encodeURIComponent(targetCode.trim()))
+      const a = await api.get('/api/assets/by-code/' + encodeURIComponent(cleanCode))
       const elapsed = Math.round(performance.now() - startTime)
       setAssetContext(a)
+      addRecentSearch(cleanCode)
       toast(`Asset identified in ${elapsed} ms: ${a.name}`, 'ok')
     } catch (e) {
       setError(e.message)
       setAssetContext(null)
+      addRecentSearch(cleanCode)
     } finally {
       setLoading(false)
     }
@@ -562,29 +605,67 @@ export default function Scan() {
           </button>
         </form>
 
-        {/* Quick Tag Chips for Instant Testing */}
+        {/* Recently Searched for current individual user */}
         <div>
-          <div className="small muted" style={{ marginBottom: '6px' }}>Quick Plant Equipment Tags:</div>
-          <div className="row" style={{ gap: '6px' }}>
-            {QUICK_TAGS.map((tag) => (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span className="small muted" style={{ fontWeight: 600 }}>
+              Recently Searched:
+            </span>
+            {recentSearches.length > 0 && (
               <button
-                key={tag}
                 type="button"
-                className="small"
-                onClick={() => {
-                  setCode(tag)
-                  lookupAsset(tag)
-                }}
+                onClick={clearRecentSearches}
                 style={{
-                  minHeight: '36px',
-                  fontFamily: 'monospace',
-                  backgroundColor: 'var(--paper)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: '0.75rem',
+                  color: '#9ca3af',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
                 }}
               >
-                {tag}
+                Clear history
               </button>
-            ))}
+            )}
           </div>
+
+          {recentSearches.length > 0 ? (
+            <div className="row" style={{ gap: '6px', flexWrap: 'wrap' }}>
+              {recentSearches.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className="small"
+                  onClick={() => {
+                    setCode(tag)
+                    lookupAsset(tag)
+                  }}
+                  style={{
+                    minHeight: '36px',
+                    fontFamily: 'monospace',
+                    fontWeight: 600,
+                    backgroundColor: 'var(--paper)',
+                    border: '1px solid var(--line)',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                  title={`Search ${tag}`}
+                >
+                  <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>⏱</span>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="small muted" style={{ fontStyle: 'italic', color: '#9ca3af' }}>
+              No recently searched equipment tags yet. Enter an equipment code above or scan a QR tag to begin.
+            </div>
+          )}
         </div>
       </div>
 
