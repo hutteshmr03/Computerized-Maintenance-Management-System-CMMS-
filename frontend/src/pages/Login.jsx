@@ -112,8 +112,34 @@ export default function Login() {
         .industrial-stripe {
           height: 10px;
           width: 100%;
-          background: repeating-linear-gradient(135deg, #f2b705 0 14px, #23282b 14px 28px);
+          background: linear-gradient(
+            135deg,
+            #f2b705 25%,
+            #23282b 25%,
+            #23282b 50%,
+            #f2b705 50%,
+            #f2b705 75%,
+            #23282b 75%,
+            #23282b 100%
+          );
+          background-size: 40px 40px;
+          animation: industrial-stripe-crawl 1.6s linear infinite;
           border-radius: 3px;
+        }
+
+        @keyframes industrial-stripe-crawl {
+          from {
+            background-position: 0 0;
+          }
+          to {
+            background-position: 40px 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .industrial-stripe {
+            animation: none;
+          }
         }
 
         /* ---------------- RIGHT PANEL ---------------- */
