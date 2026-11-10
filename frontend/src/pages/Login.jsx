@@ -3,18 +3,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth.jsx'
 import { ErrorNote } from '../ui.jsx'
 
-const DEMO = [
-  ['Super Admin', 'superadmin@cmms.test', 'SuperAdmin@123', 'Full system access & user management'],
-  ['Plant Head', 'planthead@cmms.test', 'PlantHead@123', 'Plant oversight, assets, downtime & calibrations'],
-  ['Maintenance Manager', 'manager@cmms.test', 'Manager@123', 'Approvals, transfers, work orders, parts & cost oversight'],
-  ['Maintenance Engineer', 'engineer@cmms.test', 'Engineer@123', 'Maintenance execution, work orders, parts & calibrations'],
-  ['Technician', 'tech@cmms.test', 'Tech@123', 'Mobile execution, work orders & asset maintenance'],
-  ['Store Manager', 'store@cmms.test', 'Store@123', 'Spare parts inventory & procurement management'],
-  ['Production Manager', 'production@cmms.test', 'Prod@123', 'Breakdown reporting & machine status tracking'],
-  ['Purchase Manager', 'purchase@cmms.test', 'Purchase@123', 'Purchase orders approval & procurement placement'],
-  ['Auditor', 'auditor@cmms.test', 'Audit@123', 'Read-only compliance audit & logs review'],
-]
-
 export default function Login() {
   const { user, login } = useAuth()
   const [email, setEmail] = useState('')
@@ -89,42 +77,6 @@ export default function Login() {
         <button className="primary" disabled={busy}>
           {busy ? 'Logging in…' : 'Log in'}
         </button>
-
-        <div className="demo-list">
-          <h3>Demo Enterprise Roles (9 Roles)</h3>
-          <p className="small muted">Click any role to populate credentials:</p>
-          <div className="stack" style={{ gap: '6px' }}>
-            {DEMO.map(([role, e, p, what]) => (
-              <button
-                type="button"
-                key={role}
-                onClick={() => {
-                  setEmail(e)
-                  setPassword(p)
-                }}
-                style={{
-                  textAlign: 'left',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  minHeight: '44px',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <div>
-                    <strong>{role}</strong>
-                    <span className="small muted" style={{ fontFamily: 'monospace', marginLeft: '8px' }}>
-                      ({e})
-                    </span>
-                  </div>
-                  <div className="small muted">{what}</div>
-                </div>
-                <span className="small muted">Select →</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </form>
     </div>
   )
