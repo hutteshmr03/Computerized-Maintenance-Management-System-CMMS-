@@ -104,8 +104,16 @@ export default function Login() {
           font-weight: 400;
         }
 
-        .login-left-spacer {
-          height: 24px;
+        .login-left-bottom {
+          width: 100%;
+          max-width: 440px;
+        }
+
+        .industrial-stripe {
+          height: 10px;
+          width: 100%;
+          background: repeating-linear-gradient(135deg, #f2b705 0 14px, #23282b 14px 28px);
+          border-radius: 3px;
         }
 
         /* ---------------- RIGHT PANEL ---------------- */
@@ -300,7 +308,9 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="login-left-spacer" aria-hidden="true" />
+        <div className="login-left-bottom">
+          <div className="industrial-stripe" aria-hidden="true" />
+        </div>
       </div>
 
       {/* RIGHT PANEL */}
