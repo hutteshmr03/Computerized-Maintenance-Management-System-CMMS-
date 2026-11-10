@@ -100,9 +100,6 @@ function Bell() {
 function Shell() {
   const { user, ready, logout } = useAuth()
   const loc = useLocation()
-  const [darkMode, setDarkMode] = useState(() => {
-    try { return localStorage.getItem('cmms_theme') === 'dark' } catch { return false }
-  })
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const [mobileOverflowOpen, setMobileOverflowOpen] = useState(false)
   const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false)
@@ -214,13 +211,12 @@ function Shell() {
 
   useEffect(() => {
     delete document.documentElement.dataset.contrast
-    try { localStorage.removeItem('cmms_contrast') } catch { /* ignore */ }
+    document.documentElement.dataset.theme = 'light'
+    try {
+      localStorage.removeItem('cmms_contrast')
+      localStorage.removeItem('cmms_theme')
+    } catch { /* ignore */ }
   }, [])
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
-    try { localStorage.setItem('cmms_theme', darkMode ? 'dark' : 'light') } catch { /* ignore */ }
-  }, [darkMode])
 
   // Close menus on route navigation
   useEffect(() => {
@@ -337,15 +333,6 @@ function Shell() {
 
           {/* Desktop & Tablet Topbar Right Controls: single row, no wrapping */}
           <div className="topbar-right desktop-topbar-controls">
-            <button
-              type="button"
-              className="small"
-              onClick={() => setDarkMode(!darkMode)}
-              title="Toggle Dark / Light Theme"
-            >
-              {darkMode ? '☀️ Light' : '🌙 Dark'}
-            </button>
-
             <span className="who" style={{ fontWeight: 500 }} title={user.name}>
               {user.name}
             </span>
@@ -386,17 +373,6 @@ function Shell() {
                   >
                     🔍 Find / Scan Asset
                   </Link>
-                  <button
-                    type="button"
-                    className="item"
-                    onClick={() => {
-                      setDarkMode(!darkMode)
-                      setMobileOverflowOpen(false)
-                    }}
-                    style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', padding: '8px 12px' }}
-                  >
-                    {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-                  </button>
                   <button
                     type="button"
                     className="item text-bad"
