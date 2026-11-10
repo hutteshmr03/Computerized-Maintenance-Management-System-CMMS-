@@ -630,23 +630,23 @@ function EnterpriseDashboard({ d, user }) {
                     }}
                   >
                     <colgroup>
-                      <col style={{ width: '32%' }} />
-                      <col style={{ width: '18%' }} />
-                      <col style={{ width: '34%' }} />
+                      <col style={{ width: '28%' }} />
                       <col style={{ width: '16%' }} />
+                      <col style={{ width: '36%' }} />
+                      <col style={{ width: '20%' }} />
                     </colgroup>
                     <thead>
                       <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                        <th style={{ padding: '8px 10px', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        <th style={{ padding: '9px 8px', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                           Asset
                         </th>
-                        <th style={{ padding: '8px 10px', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        <th style={{ padding: '9px 8px', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                           Location
                         </th>
-                        <th style={{ padding: '8px 10px', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        <th style={{ padding: '9px 8px', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                           Issue
                         </th>
-                        <th style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                        <th style={{ padding: '9px 8px', textAlign: 'right', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
                           Hours Down
                         </th>
                       </tr>
@@ -663,64 +663,66 @@ function EnterpriseDashboard({ d, user }) {
                               transition: 'background 0.1s',
                             }}
                           >
-                            <td style={{ padding: '8px 10px', verticalAlign: 'middle' }}>
+                            <td style={{ padding: '10px 8px', verticalAlign: 'top' }}>
+                              <Link
+                                to={`/assets/${item.asset_id}`}
+                                style={{
+                                  color: isSevere ? '#991b1b' : '#111827',
+                                  fontWeight: 600,
+                                  textDecoration: 'none',
+                                  lineHeight: 1.35,
+                                  display: 'block',
+                                  overflowWrap: 'break-word',
+                                  wordBreak: 'break-word',
+                                }}
+                              >
+                                {item.asset_name}
+                              </Link>
                               <div
                                 style={{
-                                  fontWeight: 600,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  lineHeight: 1.3,
+                                  color: '#6b7280',
+                                  fontSize: '0.72rem',
+                                  marginTop: '3px',
+                                  fontWeight: 500,
+                                  letterSpacing: '0.01em',
                                 }}
-                                title={`${item.asset_name} (${item.asset_code})`}
                               >
-                                <Link to={`/assets/${item.asset_id}`} style={{ color: isSevere ? '#991b1b' : '#111827', textDecoration: 'none' }}>
-                                  {item.asset_name}
-                                </Link>
-                              </div>
-                              <div style={{ color: '#6b7280', fontSize: '0.72rem', marginTop: '1px', fontWeight: 500 }}>
                                 {item.asset_code}
                               </div>
                             </td>
-                            <td style={{ padding: '8px 10px', color: '#4b5563', verticalAlign: 'middle' }}>
+                            <td style={{ padding: '10px 8px', color: '#4b5563', verticalAlign: 'top' }}>
                               <div
                                 style={{
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
+                                  lineHeight: 1.35,
+                                  overflowWrap: 'break-word',
+                                  wordBreak: 'break-word',
                                 }}
-                                title={item.location}
                               >
                                 {item.location || '—'}
                               </div>
                             </td>
-                            <td style={{ padding: '8px 10px', verticalAlign: 'middle' }}>
-                              <div
+                            <td style={{ padding: '10px 8px', verticalAlign: 'top' }}>
+                              <Link
+                                to={`/jobs/${item.job_id || item.id}`}
                                 style={{
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
+                                  textDecoration: 'none',
+                                  color: isSevere ? '#b91c1c' : '#374151',
+                                  lineHeight: 1.35,
+                                  display: 'block',
+                                  overflowWrap: 'break-word',
+                                  wordBreak: 'break-word',
                                 }}
-                                title={item.job_title}
                               >
-                                <Link
-                                  to={`/jobs/${item.job_id || item.id}`}
-                                  style={{
-                                    textDecoration: 'none',
-                                    color: isSevere ? '#b91c1c' : '#374151',
-                                  }}
-                                >
-                                  {item.job_title}
-                                </Link>
-                              </div>
+                                {item.job_title}
+                              </Link>
                             </td>
-                            <td style={{ padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle' }}>
+                            <td style={{ padding: '10px 8px', textAlign: 'right', verticalAlign: 'top' }}>
                               <span
                                 style={{
                                   display: 'inline-block',
-                                  padding: '2px 7px',
-                                  borderRadius: '5px',
-                                  fontSize: '0.78rem',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.8rem',
                                   fontWeight: 700,
                                   background: isSevere ? '#fee2e2' : '#fef3c7',
                                   color: isSevere ? '#dc2626' : '#b45309',
