@@ -57,34 +57,21 @@ export default function Login() {
           color: #FFFFFF;
         }
 
-        /* Top: Logo row */
-        .login-left-logo-row {
+        /* Top: Brand Header */
+        .login-left-header {
           display: flex;
           align-items: center;
           justify-content: flex-start;
         }
 
-        .login-left-logo-sq {
-          width: 36px;
-          height: 36px;
-          border-radius: 9px;
-          background: #FFFFFF;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: #111827;
-          font-size: 13px;
-          font-weight: 800;
-          user-select: none;
-          letter-spacing: -0.5px;
-        }
-
-        .login-left-logo-text {
-          color: #FFFFFF;
+        .login-brand-title {
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-weight: 700;
-          font-size: 18px;
-          margin-left: 12px;
+          font-size: 16px;
+          color: #FFFFFF;
+          line-height: 1.4;
           letter-spacing: -0.01em;
+          max-width: 440px;
         }
 
         /* Middle */
@@ -94,92 +81,31 @@ export default function Login() {
           flex-direction: column;
           justify-content: center;
           max-width: 440px;
-          padding: 24px 0;
-        }
-
-        .login-tag-pill {
-          display: inline-flex;
-          align-items: center;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 20px;
-          padding: 5px 14px;
-          color: #9CA3AF;
-          font-size: 12px;
-          font-weight: 500;
-          margin-bottom: 22px;
-          width: fit-content;
-          align-self: flex-start;
-          user-select: none;
-          letter-spacing: 0.01em;
+          padding: 32px 0;
         }
 
         .login-left-headline {
           font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-weight: 800;
-          font-size: clamp(32px, 3vw, 44px);
+          font-size: clamp(34px, 3.2vw, 48px);
           color: #FFFFFF;
-          line-height: 1.2;
+          line-height: 1.18;
           max-width: 420px;
-          margin: 0 0 16px 0;
+          margin: 0 0 18px 0;
           letter-spacing: -0.025em;
         }
 
         .login-left-body {
-          font-size: 15px;
+          font-size: 15.5px;
           color: #9CA3AF;
-          line-height: 1.6;
-          max-width: 360px;
-          margin: 0 0 36px 0;
+          line-height: 1.65;
+          max-width: 380px;
+          margin: 0;
           font-weight: 400;
         }
 
-        .login-stat-list {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-
-        .login-stat-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .login-stat-dot {
-          width: 8px;
-          height: 8px;
-          min-width: 8px;
-          border-radius: 50%;
-        }
-
-        .dot-green {
-          background: #10B981;
-          box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-        }
-
-        .dot-blue {
-          background: #3B82F6;
-          box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
-        }
-
-        .dot-purple {
-          background: #8B5CF6;
-          box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
-        }
-
-        .login-stat-text {
-          color: #CBD5E1;
-          font-size: 13.5px;
-          font-weight: 500;
-          letter-spacing: -0.01em;
-        }
-
-        /* Bottom */
-        .login-left-bottom {
-          color: #4B5563;
-          font-size: 12px;
-          user-select: none;
+        .login-left-spacer {
+          height: 24px;
         }
 
         /* ---------------- RIGHT PANEL ---------------- */
@@ -198,6 +124,20 @@ export default function Login() {
           width: 380px;
           max-width: 100%;
           box-sizing: border-box;
+        }
+
+        .login-mobile-header {
+          display: none;
+          margin-bottom: 28px;
+        }
+
+        .login-mobile-brand {
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-size: 15px;
+          font-weight: 700;
+          color: #111827;
+          line-height: 1.4;
+          display: block;
         }
 
         .login-heading {
@@ -338,47 +278,40 @@ export default function Login() {
             padding: 48px 24px;
             min-height: 100vh;
           }
+
+          .login-mobile-header {
+            display: block;
+          }
         }
       `}</style>
 
       {/* LEFT PANEL */}
       <div className="login-left-panel">
-        <div className="login-left-logo-row">
-          <div className="login-left-logo-sq">CM</div>
-          <span className="login-left-logo-text">CMMS</span>
+        <div className="login-left-header">
+          <span className="login-brand-title">
+            Computerized Maintenance Management System (CMMS)
+          </span>
         </div>
 
         <div className="login-left-middle">
-          <div className="login-tag-pill">Manufacturing Edition</div>
           <h1 className="login-left-headline">Keep every machine running.</h1>
           <p className="login-left-body">
             Track assets, schedule servicing, approve repairs and monitor downtime — all in one place.
           </p>
-
-          <div className="login-stat-list">
-            <div className="login-stat-item">
-              <span className="login-stat-dot dot-green"></span>
-              <span className="login-stat-text">ISO 55001 Certified</span>
-            </div>
-            <div className="login-stat-item">
-              <span className="login-stat-dot dot-blue"></span>
-              <span className="login-stat-text">DIN 31051 Compliant</span>
-            </div>
-            <div className="login-stat-item">
-              <span className="login-stat-dot dot-purple"></span>
-              <span className="login-stat-text">EN 13306 Standards</span>
-            </div>
-          </div>
         </div>
 
-        <div className="login-left-bottom">
-          © 2025 Sumant Cloud. All rights reserved.
-        </div>
+        <div className="login-left-spacer" aria-hidden="true" />
       </div>
 
       {/* RIGHT PANEL */}
       <div className="login-right-panel">
         <div className="login-form-wrapper">
+          <div className="login-mobile-header">
+            <span className="login-mobile-brand">
+              Computerized Maintenance Management System (CMMS)
+            </span>
+          </div>
+
           <h2 className="login-heading">Log in</h2>
           <p className="login-subtext">Sign in with your work email.</p>
 
