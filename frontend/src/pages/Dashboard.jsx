@@ -606,14 +606,49 @@ function EnterpriseDashboard({ d, user }) {
                   ✓ All assets operating normally. No active breakdowns.
                 </div>
               ) : (
-                <div className="table-wrap" style={{ overflowX: 'auto', border: '1px solid #f3f4f6', borderRadius: '8px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <div
+                  className="live-downtime-container"
+                  style={{
+                    width: '100%',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    overflowX: 'hidden',
+                    border: '1px solid #f3f4f6',
+                    borderRadius: '8px',
+                    background: '#ffffff',
+                  }}
+                >
+                  <table
+                    className="live-downtime-table"
+                    style={{
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      tableLayout: 'fixed',
+                      borderCollapse: 'collapse',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    <colgroup>
+                      <col style={{ width: '32%' }} />
+                      <col style={{ width: '18%' }} />
+                      <col style={{ width: '34%' }} />
+                      <col style={{ width: '16%' }} />
+                    </colgroup>
                     <thead>
                       <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                        <th style={{ padding: '8px 12px' }}>Asset</th>
-                        <th style={{ padding: '8px 12px' }}>Location</th>
-                        <th style={{ padding: '8px 12px' }}>Issue</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>Hours Down</th>
+                        <th style={{ padding: '8px 10px', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                          Asset
+                        </th>
+                        <th style={{ padding: '8px 10px', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                          Location
+                        </th>
+                        <th style={{ padding: '8px 10px', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                          Issue
+                        </th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#4b5563', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                          Hours Down
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -625,31 +660,75 @@ function EnterpriseDashboard({ d, user }) {
                             style={{
                               borderBottom: '1px solid #f3f4f6',
                               background: isSevere ? '#fef2f2' : 'transparent',
+                              transition: 'background 0.1s',
                             }}
                           >
-                            <td style={{ padding: '8px 12px', fontWeight: 600 }}>
-                              <Link to={`/assets/${item.asset_id}`} style={{ color: isSevere ? '#991b1b' : '#1f2937' }}>
-                                {item.asset_name}
-                              </Link>
-                              <span style={{ color: '#6b7280', fontSize: '0.75rem', marginLeft: '4px' }}>
-                                ({item.asset_code})
+                            <td style={{ padding: '8px 10px', verticalAlign: 'middle' }}>
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  lineHeight: 1.3,
+                                }}
+                                title={`${item.asset_name} (${item.asset_code})`}
+                              >
+                                <Link to={`/assets/${item.asset_id}`} style={{ color: isSevere ? '#991b1b' : '#111827', textDecoration: 'none' }}>
+                                  {item.asset_name}
+                                </Link>
+                              </div>
+                              <div style={{ color: '#6b7280', fontSize: '0.72rem', marginTop: '1px', fontWeight: 500 }}>
+                                {item.asset_code}
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px 10px', color: '#4b5563', verticalAlign: 'middle' }}>
+                              <div
+                                style={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={item.location}
+                              >
+                                {item.location || '—'}
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px 10px', verticalAlign: 'middle' }}>
+                              <div
+                                style={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={item.job_title}
+                              >
+                                <Link
+                                  to={`/jobs/${item.job_id || item.id}`}
+                                  style={{
+                                    textDecoration: 'none',
+                                    color: isSevere ? '#b91c1c' : '#374151',
+                                  }}
+                                >
+                                  {item.job_title}
+                                </Link>
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 7px',
+                                  borderRadius: '5px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  background: isSevere ? '#fee2e2' : '#fef3c7',
+                                  color: isSevere ? '#dc2626' : '#b45309',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {item.hours_down}h
                               </span>
-                            </td>
-                            <td style={{ padding: '8px 12px', color: '#4b5563' }}>{item.location}</td>
-                            <td style={{ padding: '8px 12px', color: isSevere ? '#b91c1c' : '#374151' }}>
-                              <Link to={`/jobs/${item.job_id || item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                {item.job_title}
-                              </Link>
-                            </td>
-                            <td
-                              style={{
-                                padding: '8px 12px',
-                                textAlign: 'right',
-                                fontWeight: 700,
-                                color: isSevere ? '#dc2626' : '#d97706',
-                              }}
-                            >
-                              {item.hours_down}h
                             </td>
                           </tr>
                         )

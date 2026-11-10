@@ -1629,10 +1629,32 @@ div[style*="overflowX:auto"] {
   display: block;
 }
 @media (max-width: 1023.98px) {
-  table, .table {
+  table:not(.live-downtime-table),
+  .table:not(.live-downtime-table) {
     min-width: 650px !important;
     width: 100% !important;
   }
+}
+
+/* ---------- Live Downtime Dashboard Card Table Rules ---------- */
+.live-downtime-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.live-downtime-container table,
+table.live-downtime-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  font-size: 0.82rem !important;
 }
 
 /* ---------- Sync Queue Banner Responsive Rules ---------- */
