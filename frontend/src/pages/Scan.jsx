@@ -219,201 +219,172 @@ export default function Scan() {
   return (
     <div style={{ maxWidth: 560, margin: '0 auto' }} className="stack">
       <style>{`
-        /* PhonePe-Inspired QR Scanner Styles */
-        .phonepe-scanner-wrapper {
+        /* Authentic PhonePe QR Scanner Styles */
+        .phonepe-scanner-card {
           position: relative;
           width: 100%;
-          background: #0d0c1d;
-          background: radial-gradient(circle at 50% 30%, #1c1836 0%, #0d0c1d 85%);
-          border-radius: 16px;
+          background: #000000;
+          border-radius: 24px;
           overflow: hidden;
-          box-shadow: 0 8px 32px rgba(13, 12, 29, 0.4), inset 0 0 0 1px rgba(124, 58, 237, 0.25);
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          min-height: 380px;
+          padding: 36px 16px 28px 16px;
           box-sizing: border-box;
+          box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
         }
 
-        .phonepe-video-container {
+        .phonepe-viewfinder-area {
           position: relative;
-          width: 100%;
-          height: 380px;
+          width: 270px;
+          height: 270px;
+          max-width: calc(100vw - 64px);
+          max-height: calc(100vw - 64px);
           display: flex;
           align-items: center;
           justify-content: center;
-          overflow: hidden;
+          background: #000000;
+          border-radius: 24px;
+          cursor: pointer;
         }
 
-        .phonepe-video {
+        .phonepe-video-feed {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          border-radius: 20px;
+          background: #000000;
+          transition: opacity 0.2s ease;
         }
 
-        .phonepe-overlay {
+        .phonepe-reticle-box {
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
           pointer-events: none;
-        }
-
-        .phonepe-reticle {
-          position: relative;
-          width: 230px;
-          height: 230px;
-          box-shadow: 0 0 0 9999px rgba(8, 7, 18, 0.65);
-          border-radius: 16px;
         }
 
         .phonepe-corner {
           position: absolute;
-          width: 32px;
-          height: 32px;
-          border-color: #8b5cf6;
+          width: 54px;
+          height: 54px;
+          border-color: #8417f7;
           border-style: solid;
           border-width: 0;
-          filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.8));
         }
 
         .phonepe-corner.tl {
-          top: -2px;
-          left: -2px;
-          border-top-width: 4px;
-          border-left-width: 4px;
-          border-top-left-radius: 14px;
+          top: 0;
+          left: 0;
+          border-top-width: 4.5px;
+          border-left-width: 4.5px;
+          border-top-left-radius: 22px;
         }
 
         .phonepe-corner.tr {
-          top: -2px;
-          right: -2px;
-          border-top-width: 4px;
-          border-right-width: 4px;
-          border-top-right-radius: 14px;
+          top: 0;
+          right: 0;
+          border-top-width: 4.5px;
+          border-right-width: 4.5px;
+          border-top-right-radius: 22px;
         }
 
         .phonepe-corner.bl {
-          bottom: -2px;
-          left: -2px;
-          border-bottom-width: 4px;
-          border-left-width: 4px;
-          border-bottom-left-radius: 14px;
+          bottom: 0;
+          left: 0;
+          border-bottom-width: 4.5px;
+          border-left-width: 4.5px;
+          border-bottom-left-radius: 22px;
         }
 
         .phonepe-corner.br {
-          bottom: -2px;
-          right: -2px;
-          border-bottom-width: 4px;
-          border-right-width: 4px;
-          border-bottom-right-radius: 14px;
+          bottom: 0;
+          right: 0;
+          border-bottom-width: 4.5px;
+          border-right-width: 4.5px;
+          border-bottom-right-radius: 22px;
         }
 
         .phonepe-laser-beam {
           position: absolute;
-          left: 8px;
-          right: 8px;
+          left: 14px;
+          right: 14px;
           height: 2.5px;
-          background: linear-gradient(90deg, transparent 0%, #8b5cf6 20%, #c084fc 50%, #8b5cf6 80%, transparent 100%);
-          box-shadow: 0 0 14px 3px rgba(168, 85, 247, 0.85), 0 0 28px 6px rgba(139, 92, 246, 0.45);
+          background: linear-gradient(90deg, transparent 0%, #8417f7 20%, #c084fc 50%, #8417f7 80%, transparent 100%);
+          box-shadow: 0 0 12px 2px rgba(132, 23, 247, 0.85);
           border-radius: 2px;
-          animation: phonepe-laser-sweep 2s ease-in-out infinite alternate;
+          animation: phonepe-laser-sweep 2.2s ease-in-out infinite alternate;
         }
 
         @keyframes phonepe-laser-sweep {
           0% {
-            top: 8px;
-            opacity: 0.85;
+            top: 12px;
+            opacity: 0.75;
           }
           50% {
             opacity: 1;
           }
           100% {
-            top: calc(100% - 11px);
-            opacity: 0.85;
+            top: calc(100% - 14px);
+            opacity: 0.75;
           }
         }
 
-        .phonepe-hint-pill {
-          margin-top: 24px;
-          background: rgba(15, 13, 30, 0.85);
-          border: 1px solid rgba(139, 92, 246, 0.25);
-          color: #f1f5f9;
-          font-size: 0.8rem;
-          font-weight: 500;
-          padding: 6px 18px;
-          border-radius: 20px;
-          backdrop-filter: blur(8px);
-          letter-spacing: 0.01em;
-          pointer-events: auto;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .phonepe-controls-bar {
-          position: absolute;
-          bottom: 14px;
-          left: 0;
-          right: 0;
+        .phonepe-actions-row {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
-          z-index: 5;
-          pointer-events: auto;
+          gap: 52px;
+          margin-top: 32px;
+          margin-bottom: 6px;
+          width: 100%;
         }
 
-        .phonepe-control-btn {
-          background: rgba(30, 27, 56, 0.85);
-          border: 1px solid rgba(139, 92, 246, 0.3);
-          color: #ffffff;
-          padding: 8px 14px;
-          border-radius: 24px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          display: inline-flex;
+        .phonepe-action-btn {
+          display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 6px;
-          cursor: pointer;
-          transition: all 0.15s;
-          backdrop-filter: blur(8px);
-        }
-
-        .phonepe-control-btn:hover {
-          background: rgba(59, 49, 108, 0.9);
-          border-color: #8b5cf6;
-          transform: translateY(-1px);
-        }
-
-        .phonepe-control-btn.active {
-          background: #7c3aed;
-          border-color: #a78bfa;
-          box-shadow: 0 0 12px rgba(124, 58, 237, 0.6);
-        }
-
-        .phonepe-primary-btn {
-          background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-          color: #ffffff;
+          background: none;
           border: none;
-          border-radius: 10px;
-          padding: 12px 28px;
-          font-size: 0.95rem;
-          font-weight: 700;
+          padding: 0;
           cursor: pointer;
-          box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
-          transition: all 0.15s;
-          letter-spacing: 0.01em;
+          outline: none;
+          user-select: none;
+          transition: transform 0.15s ease;
         }
 
-        .phonepe-primary-btn:hover {
-          background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-          box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
-          transform: translateY(-1px);
+        .phonepe-action-btn:hover {
+          transform: translateY(-2px);
+        }
+
+        .phonepe-action-icon {
+          width: 58px;
+          height: 58px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.14);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .phonepe-action-btn:hover .phonepe-action-icon {
+          background: rgba(255, 255, 255, 0.22);
+        }
+
+        .phonepe-action-icon.torch-active {
+          background: #8417f7;
+          box-shadow: 0 0 16px rgba(132, 23, 247, 0.65);
+        }
+
+        .phonepe-action-label {
+          color: #f3f4f6;
+          font-size: 13px;
+          font-weight: 500;
+          margin-top: 10px;
+          font-family: inherit;
         }
       `}</style>
 
@@ -426,8 +397,8 @@ export default function Scan() {
 
       <ErrorNote error={error} />
 
-      {/* PhonePe-Style QR Scanner Viewport */}
-      <div className="phonepe-scanner-wrapper">
+      {/* PhonePe-Style QR Scanner Viewport matching reference */}
+      <div className="phonepe-scanner-card">
         {/* Hidden File Input for Gallery Upload */}
         <input
           ref={fileInputRef}
@@ -437,87 +408,73 @@ export default function Scan() {
           onChange={handleFileUpload}
         />
 
-        <div className="phonepe-video-container">
+        {/* Viewfinder frame */}
+        <div
+          className="phonepe-viewfinder-area"
+          onClick={() => {
+            if (!cameraActive) startCamera(facingMode)
+          }}
+          title={cameraActive ? '' : 'Tap to open camera'}
+        >
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="phonepe-video"
-            style={{ display: cameraActive ? 'block' : 'none' }}
+            className="phonepe-video-feed"
+            style={{ opacity: cameraActive ? 1 : 0 }}
           />
 
-          {/* Viewfinder Overlay with 4 Corner Brackets & Animated Laser */}
-          <div className="phonepe-overlay">
-            <div className="phonepe-reticle">
-              <span className="phonepe-corner tl" />
-              <span className="phonepe-corner tr" />
-              <span className="phonepe-corner bl" />
-              <span className="phonepe-corner br" />
-              <span className="phonepe-laser-beam" />
-            </div>
-            <div className="phonepe-hint-pill">
-              Align QR code inside the frame to scan
-            </div>
+          {/* 4 Purple Corner Brackets exactly matching screenshot */}
+          <div className="phonepe-reticle-box">
+            <span className="phonepe-corner tl" />
+            <span className="phonepe-corner tr" />
+            <span className="phonepe-corner bl" />
+            <span className="phonepe-corner br" />
+            <span className="phonepe-laser-beam" />
           </div>
+        </div>
 
-          {/* Controls Bar */}
-          {cameraActive ? (
-            <div className="phonepe-controls-bar">
-              {hasTorch && (
-                <button
-                  type="button"
-                  className={`phonepe-control-btn ${torchOn ? 'active' : ''}`}
-                  onClick={toggleTorch}
-                  title="Toggle Flashlight"
-                >
-                  ⚡ {torchOn ? 'Torch On' : 'Torch Off'}
-                </button>
-              )}
-              <button
-                type="button"
-                className="phonepe-control-btn"
-                onClick={toggleCameraFacing}
-                title="Switch Camera"
-              >
-                🔄 Flip
-              </button>
-              <button
-                type="button"
-                className="phonepe-control-btn"
-                onClick={() => fileInputRef.current?.click()}
-                title="Upload QR Code Image"
-              >
-                🖼️ Gallery
-              </button>
-              <button
-                type="button"
-                className="phonepe-control-btn"
-                onClick={stopCamera}
-                title="Pause Camera"
-              >
-                ✕ Close
-              </button>
+        {/* Bottom Circular Action Buttons: Upload QR & Torch */}
+        <div className="phonepe-actions-row">
+          <button
+            type="button"
+            className="phonepe-action-btn"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="phonepe-action-icon">
+              {/* Photo/Gallery Icon matching PhonePe */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="5" ry="5" />
+                <circle cx="16" cy="8.5" r="1.5" fill="#ffffff" stroke="none" />
+                <path d="M4 17.5c2.5-3 5-4.5 7.5-2 2.5 2.5 5-0.5 8 2" />
+              </svg>
             </div>
-          ) : (
-            <div className="phonepe-controls-bar" style={{ bottom: '18px' }}>
-              <button
-                type="button"
-                className="phonepe-primary-btn"
-                onClick={() => startCamera(facingMode)}
-              >
-                Allow Camera Access
-              </button>
-              <button
-                type="button"
-                className="phonepe-control-btn"
-                style={{ padding: '12px 20px', borderRadius: '10px' }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                🖼️ Upload from Gallery
-              </button>
+            <span className="phonepe-action-label">Upload QR</span>
+          </button>
+
+          <button
+            type="button"
+            className="phonepe-action-btn"
+            onClick={() => {
+              if (!cameraActive) {
+                startCamera(facingMode).then(() => toggleTorch())
+              } else {
+                toggleTorch()
+              }
+            }}
+          >
+            <div className={`phonepe-action-icon ${torchOn ? 'torch-active' : ''}`}>
+              {/* Flashlight/Torch Icon matching PhonePe */}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 2h10l2 6H5l2-6z" />
+                <line x1="5" y1="8" x2="19" y2="8" />
+                <path d="M6.5 8l1.2 12a2 2 0 0 0 2 1.8h4.6a2 2 0 0 0 2-1.8L17.5 8" />
+                <line x1="12" y1="12" x2="12" y2="15" />
+              </svg>
             </div>
-          )}
+            <span className="phonepe-action-label">Torch</span>
+          </button>
         </div>
       </div>
 
