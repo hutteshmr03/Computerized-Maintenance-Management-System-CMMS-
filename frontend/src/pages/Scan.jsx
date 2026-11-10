@@ -12,7 +12,6 @@ export default function Scan() {
   const [loading, setLoading] = useState(false)
   const [assetContext, setAssetContext] = useState(null)
   const [cameraActive, setCameraActive] = useState(false)
-  const [permissionPrompt, setPermissionPrompt] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
   const [hasTorch, setHasTorch] = useState(false)
   const [facingMode, setFacingMode] = useState('environment')
@@ -89,7 +88,6 @@ export default function Scan() {
 
   const startCamera = async (mode = facingMode) => {
     setError('')
-    setPermissionPrompt(false)
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -97,8 +95,8 @@ export default function Scan() {
         })
         if (videoRef.current) {
           videoRef.current.srcObject = stream
+          try { await videoRef.current.play() } catch {}
           setCameraActive(true)
-          setPermissionPrompt(false)
 
           // Check if torch capability is available
           const track = stream.getVideoTracks()[0]
@@ -108,11 +106,10 @@ export default function Scan() {
           }
         }
       } else {
-        setPermissionPrompt(true)
         setError('Camera access not supported on this browser.')
       }
     } catch {
-      setPermissionPrompt(true)
+      setCameraActive(false)
     }
   }
 
@@ -399,41 +396,6 @@ export default function Scan() {
           box-shadow: 0 0 12px rgba(124, 58, 237, 0.6);
         }
 
-        .phonepe-perm-card {
-          padding: 40px 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          z-index: 2;
-        }
-
-        .phonepe-pulse-circle {
-          width: 72px;
-          height: 72px;
-          border-radius: 50%;
-          background: rgba(124, 58, 237, 0.15);
-          border: 2px solid rgba(139, 92, 246, 0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          margin-bottom: 20px;
-          animation: phonepe-pulse 2s infinite;
-        }
-
-        @keyframes phonepe-pulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5);
-          }
-          70% {
-            box-shadow: 0 0 0 16px rgba(139, 92, 246, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-          }
-        }
-
         .phonepe-primary-btn {
           background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
           color: #ffffff;
@@ -475,31 +437,32 @@ export default function Scan() {
           onChange={handleFileUpload}
         />
 
-        {cameraActive ? (
-          <div className="phonepe-video-container">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="phonepe-video"
-            />
+        <div className="phonepe-video-container">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="phonepe-video"
+            style={{ display: cameraActive ? 'block' : 'none' }}
+          />
 
-            {/* Viewfinder Overlay with 4 Corner Brackets & Animated Laser */}
-            <div className="phonepe-overlay">
-              <div className="phonepe-reticle">
-                <span className="phonepe-corner tl" />
-                <span className="phonepe-corner tr" />
-                <span className="phonepe-corner bl" />
-                <span className="phonepe-corner br" />
-                <span className="phonepe-laser-beam" />
-              </div>
-              <div className="phonepe-hint-pill">
-                Align QR code inside the frame to scan
-              </div>
+          {/* Viewfinder Overlay with 4 Corner Brackets & Animated Laser */}
+          <div className="phonepe-overlay">
+            <div className="phonepe-reticle">
+              <span className="phonepe-corner tl" />
+              <span className="phonepe-corner tr" />
+              <span className="phonepe-corner bl" />
+              <span className="phonepe-corner br" />
+              <span className="phonepe-laser-beam" />
             </div>
+            <div className="phonepe-hint-pill">
+              Align QR code inside the frame to scan
+            </div>
+          </div>
 
-            {/* Bottom Floating Control Bar */}
+          {/* Controls Bar */}
+          {cameraActive ? (
             <div className="phonepe-controls-bar">
               {hasTorch && (
                 <button
@@ -536,20 +499,8 @@ export default function Scan() {
                 ✕ Close
               </button>
             </div>
-          </div>
-        ) : (
-          /* PhonePe Style Camera Permission Prompt Card */
-          <div className="phonepe-perm-card">
-            <div className="phonepe-pulse-circle">
-              <span>📷</span>
-            </div>
-            <h3 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '1.2rem', fontWeight: 700 }}>
-              Allow Camera Access
-            </h3>
-            <p style={{ margin: '0 0 24px 0', color: '#94a3b8', fontSize: '0.88rem', maxWidth: '320px', lineHeight: 1.5 }}>
-              Camera permission is required to scan machine QR tags instantly.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          ) : (
+            <div className="phonepe-controls-bar" style={{ bottom: '18px' }}>
               <button
                 type="button"
                 className="phonepe-primary-btn"
@@ -566,8 +517,8 @@ export default function Scan() {
                 🖼️ Upload from Gallery
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Manual Code Entry Form */}
@@ -663,7 +614,7 @@ export default function Scan() {
             </div>
           ) : (
             <div className="small muted" style={{ fontStyle: 'italic', color: '#9ca3af' }}>
-              No recently searched equipment tags yet. Enter an equipment code above or scan a QR tag to begin.
+              No recently searched equipment tags yet.
             </div>
           )}
         </div>
