@@ -2,18 +2,6 @@ import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth.jsx'
 
-const DEMO_ROLES = [
-  { label: 'Super Admin', email: 'superadmin@cmms.test', password: 'SuperAdmin@123' },
-  { label: 'Plant Head', email: 'planthead@cmms.test', password: 'PlantHead@123' },
-  { label: 'Maint. Manager', email: 'manager@cmms.test', password: 'Manager@123' },
-  { label: 'Engineer', email: 'engineer@cmms.test', password: 'Engineer@123' },
-  { label: 'Technician', email: 'tech@cmms.test', password: 'Tech@123' },
-  { label: 'Store Manager', email: 'store@cmms.test', password: 'Store@123' },
-  { label: 'Production', email: 'production@cmms.test', password: 'Prod@123' },
-  { label: 'Purchase', email: 'purchase@cmms.test', password: 'Purchase@123' },
-  { label: 'Auditor', email: 'auditor@cmms.test', password: 'Audit@123' },
-]
-
 export default function Login() {
   const { user, login } = useAuth()
   const [email, setEmail] = useState('')
@@ -40,33 +28,28 @@ export default function Login() {
     }
   }
 
-  const handleDemoSelect = (demoEmail, demoPassword) => {
-    setEmail(demoEmail)
-    setPassword(demoPassword)
-    setError('')
-  }
-
   return (
     <div className="login-split-page">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
         .login-split-page {
           display: flex;
-          min-height: 100vh;
+          height: 100vh;
           width: 100%;
           margin: 0;
           padding: 0;
           box-sizing: border-box;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           background: #F9FAFB;
+          overflow: hidden;
         }
 
         /* ---------------- LEFT PANEL ---------------- */
         .login-left-panel {
           width: 45%;
           background: #111827;
-          padding: 48px;
+          padding: 56px 64px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -82,15 +65,15 @@ export default function Login() {
         }
 
         .login-left-logo-sq {
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
+          width: 36px;
+          height: 36px;
+          border-radius: 9px;
           background: #FFFFFF;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           color: #111827;
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 800;
           user-select: none;
           letter-spacing: -0.5px;
@@ -99,8 +82,8 @@ export default function Login() {
         .login-left-logo-text {
           color: #FFFFFF;
           font-weight: 700;
-          font-size: 17px;
-          margin-left: 10px;
+          font-size: 18px;
+          margin-left: 12px;
           letter-spacing: -0.01em;
         }
 
@@ -110,41 +93,45 @@ export default function Login() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 40px 0;
+          max-width: 440px;
+          padding: 24px 0;
         }
 
         .login-tag-pill {
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
           background: rgba(255, 255, 255, 0.08);
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 20px;
-          padding: 4px 14px;
+          padding: 5px 14px;
           color: #9CA3AF;
           font-size: 12px;
           font-weight: 500;
-          margin-bottom: 20px;
+          margin-bottom: 22px;
           width: fit-content;
           align-self: flex-start;
           user-select: none;
+          letter-spacing: 0.01em;
         }
 
         .login-left-headline {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-weight: 800;
-          font-size: clamp(30px, 2.8vw, 46px);
+          font-size: clamp(32px, 3vw, 44px);
           color: #FFFFFF;
-          line-height: 1.15;
-          max-width: 340px;
-          margin: 0 0 18px 0;
-          letter-spacing: -0.02em;
+          line-height: 1.2;
+          max-width: 420px;
+          margin: 0 0 16px 0;
+          letter-spacing: -0.025em;
         }
 
         .login-left-body {
           font-size: 15px;
-          color: #6B7280;
-          line-height: 1.65;
-          max-width: 300px;
-          margin: 0 0 40px 0;
+          color: #9CA3AF;
+          line-height: 1.6;
+          max-width: 360px;
+          margin: 0 0 36px 0;
+          font-weight: 400;
         }
 
         .login-stat-list {
@@ -156,31 +143,36 @@ export default function Login() {
         .login-stat-item {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
         }
 
         .login-stat-dot {
-          width: 6px;
-          height: 6px;
-          min-width: 6px;
+          width: 8px;
+          height: 8px;
+          min-width: 8px;
           border-radius: 50%;
         }
 
         .dot-green {
           background: #10B981;
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
         }
 
         .dot-blue {
           background: #3B82F6;
+          box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
         }
 
         .dot-purple {
           background: #8B5CF6;
+          box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
         }
 
         .login-stat-text {
-          color: #9CA3AF;
-          font-size: 13px;
+          color: #CBD5E1;
+          font-size: 13.5px;
+          font-weight: 500;
+          letter-spacing: -0.01em;
         }
 
         /* Bottom */
@@ -199,7 +191,7 @@ export default function Login() {
           justify-content: center;
           padding: 48px;
           box-sizing: border-box;
-          min-height: 100vh;
+          height: 100%;
         }
 
         .login-form-wrapper {
@@ -209,19 +201,19 @@ export default function Login() {
         }
 
         .login-heading {
-          font-family: 'Syne', sans-serif;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-size: 28px;
           font-weight: 800;
           color: #111827;
-          margin: 0 0 6px 0;
-          line-height: 1.2;
-          letter-spacing: -0.02em;
+          margin: 0 0 8px 0;
+          line-height: 1.25;
+          letter-spacing: -0.025em;
         }
 
         .login-subtext {
           font-size: 14px;
           color: #6B7280;
-          margin: 0 0 36px 0;
+          margin: 0 0 32px 0;
           line-height: 1.5;
         }
 
@@ -255,7 +247,7 @@ export default function Login() {
 
         .login-input:focus {
           border-color: #111827;
-          box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
+          box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
         }
 
         .login-input::placeholder {
@@ -293,12 +285,12 @@ export default function Login() {
         }
 
         .login-submit-btn {
-          margin-top: 8px;
+          margin-top: 10px;
           width: 100%;
           padding: 12px;
           background: #111827;
           color: #FFFFFF;
-          font-weight: 700;
+          font-weight: 600;
           font-size: 14px;
           border: none;
           border-radius: 8px;
@@ -319,94 +311,32 @@ export default function Login() {
 
         .login-error {
           font-size: 13px;
-          color: #EF4444;
-          margin-top: 10px;
+          color: #DC2626;
+          margin-top: 12px;
           text-align: left;
           line-height: 1.4;
-        }
-
-        /* Divider */
-        .login-divider {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin: 28px 0;
-        }
-
-        .login-divider-line {
-          flex: 1;
-          height: 1px;
-          background: #E5E7EB;
-        }
-
-        .login-divider-label {
-          color: #9CA3AF;
-          font-size: 12px;
-          white-space: nowrap;
-          user-select: none;
-        }
-
-        /* Demo Buttons Grid */
-        .login-demo-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
-          width: 100%;
-          box-sizing: border-box;
-        }
-
-        .login-demo-btn {
-          background: #FFFFFF;
-          border: 1.5px solid #E5E7EB;
-          border-radius: 8px;
-          padding: 10px 8px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.15s;
-          font-family: inherit;
-          width: 100%;
-          box-sizing: border-box;
-        }
-
-        .login-demo-btn:hover {
-          border-color: #111827;
-          background: #F9FAFB;
-        }
-
-        .login-demo-role {
-          color: #111827;
-          font-size: 12px;
-          font-weight: 600;
-          display: block;
-          line-height: 1.3;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .login-demo-hint {
-          color: #9CA3AF;
-          font-size: 10px;
-          display: block;
-          margin-top: 2px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          background: #FEF2F2;
+          border: 1px solid #FEE2E2;
+          border-radius: 6px;
+          padding: 10px 12px;
         }
 
         /* Mobile (< 768px) */
         @media (max-width: 768px) {
+          .login-split-page {
+            height: auto;
+            min-height: 100vh;
+            overflow-y: auto;
+          }
+
           .login-left-panel {
             display: none;
           }
 
           .login-right-panel {
             width: 100%;
-            padding: 40px 24px;
-          }
-
-          .login-demo-grid {
-            grid-template-columns: repeat(2, 1fr);
+            padding: 48px 24px;
+            min-height: 100vh;
           }
         }
       `}</style>
@@ -501,29 +431,6 @@ export default function Login() {
               </div>
             )}
           </form>
-
-          {/* Divider */}
-          <div className="login-divider">
-            <span className="login-divider-line"></span>
-            <span className="login-divider-label">Demo accounts</span>
-            <span className="login-divider-line"></span>
-          </div>
-
-          {/* Demo Buttons Grid */}
-          <div className="login-demo-grid">
-            {DEMO_ROLES.map(({ label, email: demoEmail, password: demoPassword }) => (
-              <button
-                key={label}
-                type="button"
-                className="login-demo-btn"
-                onClick={() => handleDemoSelect(demoEmail, demoPassword)}
-                title={`Click to fill ${label} credentials`}
-              >
-                <span className="login-demo-role">{label}</span>
-                <span className="login-demo-hint">{demoEmail.split('@')[0]}</span>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>
