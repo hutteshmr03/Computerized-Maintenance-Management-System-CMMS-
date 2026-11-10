@@ -1230,7 +1230,11 @@ tr.click:hover td { background: #fafbf9; }
     border-bottom-color: var(--yellow) !important;
   }
   .side .nav a .nav-label {
-    display: none;
+    display: inline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.78rem;
   }
   .shell.tablet-open .side .nav a {
     justify-content: flex-start !important;

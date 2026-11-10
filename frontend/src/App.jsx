@@ -262,7 +262,6 @@ function Shell() {
               title={i.label}
               className={({ isActive }) => (isActive ? 'active' : '')}
             >
-              <span className="nav-icon" aria-hidden="true">{i.icon}</span>
               <span className="nav-label">{i.label}</span>
             </NavLink>
           ))}
