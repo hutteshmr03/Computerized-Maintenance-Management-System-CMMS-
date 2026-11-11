@@ -1327,6 +1327,7 @@ ACTION_PERMS = {
     "plan": "job.plan",
     "approve": "job.decide",
     "reject": "job.decide",
+    "assign": "job.decide",
     "start": "job.work",
     "review": "job.work",
     "close": "job.work",
@@ -1380,6 +1381,21 @@ def perform_job_action(
         job.rejection_reason = reason
         notify(db, [job.created_by], f"Job #{job.id} was rejected: {reason}", f"/jobs/{job.id}")
 
+    elif action == "assign":
+        assigned_to = body.get("assigned_to")
+        contractor_id = body.get("contractor_id")
+        if assigned_to is not None:
+            job.assigned_to = int(assigned_to) if assigned_to else None
+        if contractor_id is not None:
+            job.contractor_id = int(contractor_id) if contractor_id else None
+
+        assignee_id = job.assigned_to or job.contractor_id
+        if assignee_id:
+            assignee = db.get(m.User, assignee_id)
+            assignee_name = assignee.name if assignee else "user"
+            notify(db, [assignee_id], f"Work order #{job.id} assigned to you: {job.title}", f"/jobs/{job.id}")
+            audit(db, user, "assign", "job", job.id, f"Assigned #{job.id} to {assignee_name}")
+
     elif action == "start":
         if job.loto_required and not job.loto_signed:
             raise HTTPException(400, "Safety violation: Cannot start work until Permit to Work / LOTO steps are signed off.")
@@ -1427,6 +1443,37 @@ def perform_job_action(
 
     audit(db, user, f"job_{action}", "job", job.id, f"Transitioned {job.wo_number} to {job.status}")
     db.commit()
+    return job_dict(db, job, user)
+
+
+@app.put("/api/jobs/{job_id}/assign")
+def assign_job_direct(
+    job_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    if user.role not in ("admin", "super_admin", "maintenance_manager", "plant_head", "maintenance_engineer"):
+        raise HTTPException(403, "Not authorized to assign work orders.")
+    job = db.get(m.Job, job_id)
+    if not job:
+        raise HTTPException(404, "Job not found.")
+
+    assigned_to = body.get("assigned_to")
+    contractor_id = body.get("contractor_id")
+    if assigned_to is not None:
+        job.assigned_to = int(assigned_to) if assigned_to else None
+    if contractor_id is not None:
+        job.contractor_id = int(contractor_id) if contractor_id else None
+
+    assignee_id = job.assigned_to or job.contractor_id
+    if assignee_id:
+        assignee = db.get(m.User, assignee_id)
+        assignee_name = assignee.name if assignee else "user"
+        notify(db, [assignee_id], f"Work order #{job.id} assigned to you: {job.title}", f"/jobs/{job.id}")
+        audit(db, user, "assign", "job", job.id, f"Assigned #{job.id} to {assignee_name}")
+    db.commit()
+    db.refresh(job)
     return job_dict(db, job, user)
 
 

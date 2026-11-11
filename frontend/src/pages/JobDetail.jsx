@@ -25,6 +25,7 @@ const ACTION_LABEL = {
   send: 'Send for approval',
   approve: 'Approve',
   reject: 'Reject',
+  assign: 'Assign',
   start: 'Start work',
   review: 'Submit for Review',
   close: 'Close job',
@@ -39,12 +40,17 @@ export default function JobDetail() {
   const parts = useLoad(() => api.get('/api/parts'), [], 'static:parts')
   const failureCodes = useLoad(() => api.get('/api/failure-codes'), [], 'static:failureCodes')
   const bomItems = useLoad(() => (job?.asset?.id ? api.get(`/api/assets/${job.asset.id}/bom`) : Promise.resolve([])), [job?.asset?.id], `asset_bom:${job?.asset?.id}`)
+  const usersList = useLoad(() => api.get('/api/users'), [], 'static:users')
 
   const [err, setErr] = useState('')
   const [rejecting, setRejecting] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
   const [signingLoto, setSigningLoto] = useState(false)
   const [showCloseModal, setShowCloseModal] = useState(false)
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [assigneeId, setAssigneeId] = useState('')
+  const [contractorId, setContractorId] = useState('')
+  const [assigning, setAssigning] = useState(false)
 
   // Work done inputs
   const [work, setWork] = useState({
@@ -100,6 +106,7 @@ export default function JobDetail() {
       send: 'Sent for approval.',
       approve: 'Approved.',
       reject: 'Job rejected.',
+      assign: 'Work order assigned successfully.',
       start: 'Work started.',
       review: 'Submitted for review.',
       close: 'Job closed & completed.',
@@ -271,6 +278,8 @@ export default function JobDetail() {
                       ? 'danger'
                       : a === 'approve' || a === 'start' || a === 'send' || a === 'close'
                       ? 'primary'
+                      : a === 'assign'
+                      ? 'btn'
                       : ''
                   }
                   disabled={isStartDisabled}
@@ -278,6 +287,11 @@ export default function JobDetail() {
                   onClick={() => {
                     if (a === 'reject') setRejecting(true)
                     else if (a === 'close') setShowCloseModal(true)
+                    else if (a === 'assign') {
+                      setAssigneeId(job.assigned_to ? String(job.assigned_to) : '')
+                      setContractorId(job.contractor_id ? String(job.contractor_id) : '')
+                      setShowAssignModal(true)
+                    }
                     else act(a)
                   }}
                 >
@@ -296,7 +310,27 @@ export default function JobDetail() {
             <dl className="facts">
               <div><dt>DIN 31051 Type</dt><dd><DinTypeBadge type={job.din_type} /></dd></div>
               <div><dt>Machine Location</dt><dd>{job.asset.location}</dd></div>
-              <div><dt>Assigned To</dt><dd>{job.assigned_to_name || 'Unassigned'}</dd></div>
+              <div>
+                <dt>Assigned To</dt>
+                <dd style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>{job.assigned_to_name || 'Unassigned'}</span>
+                  {job.actions.includes('assign') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssigneeId(job.assigned_to ? String(job.assigned_to) : '')
+                        setContractorId(job.contractor_id ? String(job.contractor_id) : '')
+                        setShowAssignModal(true)
+                      }}
+                      className="btn small"
+                      style={{ padding: '2px 8px', fontSize: '11px', height: 'auto', border: '1px solid var(--bd)' }}
+                      title="Assign or reassign technician"
+                    >
+                      ✏️ Change
+                    </button>
+                  )}
+                </dd>
+              </div>
               <div><dt>Contractor</dt><dd>{job.contractor_company ? `🏢 ${job.contractor_company}` : 'Internal'}</dd></div>
               <div><dt>Due Date</dt><dd className={job.overdue ? 'text-bad' : ''}>{job.due_date ? fmtDate(job.due_date) : 'Flexible'}{job.overdue ? ' (Overdue)' : ''}</dd></div>
               <div><dt>Warranty Status</dt><dd>{job.warranty ? 'Covered under warranty' : 'Out of warranty'}</dd></div>
@@ -743,6 +777,92 @@ export default function JobDetail() {
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button type="button" onClick={() => setShowCloseModal(false)}>Cancel</button>
               <button type="submit" className="primary">Confirm Job Closure</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Assign Work Order Modal */}
+      {showAssignModal && (
+        <Modal title="Assign Work Order" onClose={() => setShowAssignModal(false)}>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!assigneeId && !contractorId) {
+                toast('Please select a technician or contractor.', 'bad')
+                return
+              }
+              setAssigning(true)
+              try {
+                const updated = await api.post(`/api/jobs/${job.id}/action/assign`, {
+                  assigned_to: assigneeId ? Number(assigneeId) : null,
+                  contractor_id: contractorId ? Number(contractorId) : null,
+                })
+                setData(updated)
+                toast('Work order assigned successfully.', 'ok')
+                setShowAssignModal(false)
+              } catch (err) {
+                toast(err.message || 'Failed to assign work order.', 'bad')
+              } finally {
+                setAssigning(false)
+              }
+            }}
+            className="stack"
+            style={{ gap: '14px' }}
+          >
+            <div>
+              <p className="small muted" style={{ margin: '0 0 12px', fontSize: '13px' }}>
+                Assign technician or service contractor to execute <strong>{job.wo_number}</strong>: <em>{job.title}</em>.
+              </p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--mu)', marginBottom: '5px' }}>
+                Internal Assignee (Technician / Engineer)
+              </label>
+              <select
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="">-- Select Technician / Engineer --</option>
+                {usersList.data
+                  ?.filter((u) => ['technician', 'maintenance_engineer', 'maintenance_manager', 'admin'].includes(u.role))
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.role.replace(/_/g, ' ')})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--mu)', marginBottom: '5px' }}>
+                External Contractor (Optional)
+              </label>
+              <select
+                value={contractorId}
+                onChange={(e) => setContractorId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="">-- None (Internal Maintenance) --</option>
+                {usersList.data
+                  ?.filter((u) => u.contractor_company || u.role === 'contractor')
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.contractor_company || 'Contractor'})
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+              <button type="button" className="btn" onClick={() => setShowAssignModal(false)} disabled={assigning}>
+                Cancel
+              </button>
+              <button type="submit" className="btn primary" disabled={assigning}>
+                {assigning ? 'Assigning…' : 'Save Assignment'}
+              </button>
             </div>
           </form>
         </Modal>
