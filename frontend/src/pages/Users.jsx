@@ -9,15 +9,15 @@ import {
 } from '../ui.jsx'
 
 export const BUILTIN_ROLES = [
-  { id: 'admin', label: 'Admin', desc: 'Full enterprise access & user management' },
-  { id: 'plant_head', label: 'Plant Head', desc: 'Plant oversight, assets, downtime & calibrations' },
-  { id: 'maintenance_manager', label: 'Maintenance Manager', desc: 'Maintenance approvals, transfers, work orders, parts' },
-  { id: 'maintenance_engineer', label: 'Maintenance Engineer', desc: 'Engineering execution, jobs, parts, calibrations' },
-  { id: 'technician', label: 'Technician', desc: 'Execution, work orders, asset maintenance' },
-  { id: 'store_manager', label: 'Store Manager', desc: 'Spare parts inventory & procurement management' },
-  { id: 'production_manager', label: 'Production Manager', desc: 'Breakdown reporting & machine status tracking' },
-  { id: 'purchase_manager', label: 'Purchase Manager', desc: 'Purchase orders approval & procurement placement' },
-  { id: 'auditor', label: 'Auditor', desc: 'Read-only compliance audit & logs review' },
+  { id: 'admin', label: 'Admin', desc: 'Full enterprise access & user management', count: 'Full Access (*)' },
+  { id: 'plant_head', label: 'Plant Head', desc: 'Plant oversight, assets, downtime & calibrations', count: '8 privileges' },
+  { id: 'maintenance_manager', label: 'Maintenance Manager', desc: 'Maintenance approvals, transfers, work orders, parts', count: '11 privileges' },
+  { id: 'maintenance_engineer', label: 'Maintenance Engineer', desc: 'Engineering execution, jobs, parts, calibrations', count: '7 privileges' },
+  { id: 'technician', label: 'Technician', desc: 'Execution, work orders, asset maintenance', count: '4 privileges' },
+  { id: 'store_manager', label: 'Store Manager', desc: 'Spare parts inventory & procurement management', count: '3 privileges' },
+  { id: 'production_manager', label: 'Production Manager', desc: 'Breakdown reporting & machine status tracking', count: '4 privileges' },
+  { id: 'purchase_manager', label: 'Purchase Manager', desc: 'Purchase orders approval & procurement placement', count: '2 privileges' },
+  { id: 'auditor', label: 'Auditor', desc: 'Read-only compliance audit & logs review', count: '5 privileges' },
 ]
 
 export const PRIVILEGE_GROUPS_FALLBACK = {
@@ -271,7 +271,7 @@ export default function Users() {
               cursor: 'pointer',
             }}
           >
-            Roles ({customRoles.length})
+            Roles ({BUILTIN_ROLES.length + customRoles.length})
           </button>
         )}
       </div>
@@ -456,98 +456,130 @@ export default function Users() {
       {/* ROLES TAB CONTENT */}
       {activeTab === 'roles' && !loading && (
         <div className="stack" style={{ gap: '10px' }}>
-          <div className="card" style={{ padding: 0 }}>
+          <div className="card table-wrap" style={{ padding: 0 }}>
             <table>
               <thead>
                 <tr>
                   <th>Role Name</th>
                   <th>Display Name</th>
                   <th>Privileges Count</th>
-                  <th>Created By</th>
+                  <th>Type / Created By</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {customRoles.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--mu)' }}>
-                      <p style={{ margin: '0 0 10px 0', fontSize: '13px' }}>No custom roles created yet.</p>
-                      <button
-                        type="button"
-                        className="bt p"
-                        onClick={() => {
-                          setEditingRole(null)
-                          setShowRoleModal(true)
+                {/* 1. Standard Built-in Enterprise Roles (9) */}
+                {BUILTIN_ROLES.map((role) => (
+                  <tr key={role.id}>
+                    <td>
+                      <code
+                        style={{
+                          background: 'var(--bg)',
+                          color: 'var(--tx)',
+                          border: '1px solid var(--bd)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontFamily: 'monospace',
                         }}
                       >
-                        + Create Role
-                      </button>
+                        {role.id}
+                      </code>
+                    </td>
+
+                    <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
+                      {role.label}
+                      <div className="small muted" style={{ fontSize: '11px', marginTop: '2px', fontWeight: 400 }}>
+                        {role.desc}
+                      </div>
+                    </td>
+
+                    <td>
+                      <span className="b t">
+                        {role.count}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className="b g1" style={{ fontSize: '11px' }}>
+                        System Built-in
+                      </span>
+                    </td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="small muted" style={{ fontSize: '11px', fontStyle: 'italic' }}>
+                        Protected Built-in
+                      </span>
                     </td>
                   </tr>
-                ) : (
-                  customRoles.map((role) => (
-                    <tr key={role.id}>
-                      <td>
-                        <code
+                ))}
+
+                {/* 2. Custom Roles */}
+                {customRoles.map((role) => (
+                  <tr key={role.id}>
+                    <td>
+                      <code
+                        style={{
+                          background: 'var(--bg)',
+                          color: 'var(--tx)',
+                          border: '1px solid var(--bd)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontFamily: 'monospace',
+                        }}
+                      >
+                        {role.name}
+                      </code>
+                    </td>
+
+                    <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
+                      {role.display_name}
+                    </td>
+
+                    <td>
+                      <span className="b t">
+                        {(role.privileges || []).length} privileges
+                      </span>
+                    </td>
+
+                    <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                      <span className="b a" style={{ fontSize: '11px', marginRight: '6px' }}>
+                        Custom
+                      </span>
+                      {role.created_by || 'Admin'}
+                    </td>
+
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="bt"
+                          onClick={() => {
+                            setEditingRole(role)
+                            setShowRoleModal(true)
+                          }}
+                          style={{ padding: '4px 8px', fontSize: '11px' }}
+                        >
+                          Edit ✏️
+                        </button>
+                        <button
+                          type="button"
+                          className="bt"
+                          onClick={() => handleDeleteRole(role)}
                           style={{
-                            background: 'var(--bg)',
-                            color: 'var(--tx)',
-                            border: '1px solid var(--bd)',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontFamily: 'monospace',
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            color: 'var(--red)',
+                            borderColor: 'var(--red)',
                           }}
                         >
-                          {role.name}
-                        </code>
-                      </td>
-
-                      <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
-                        {role.display_name}
-                      </td>
-
-                      <td>
-                        <span className="b t">
-                          {(role.privileges || []).length} privileges
-                        </span>
-                      </td>
-
-                      <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
-                        {role.created_by || 'Admin'}
-                      </td>
-
-                      <td style={{ textAlign: 'right' }}>
-                        <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
-                          <button
-                            type="button"
-                            className="bt"
-                            onClick={() => {
-                              setEditingRole(role)
-                              setShowRoleModal(true)
-                            }}
-                            style={{ padding: '4px 8px', fontSize: '11px' }}
-                          >
-                            Edit ✏️
-                          </button>
-                          <button
-                            type="button"
-                            className="bt"
-                            onClick={() => handleDeleteRole(role)}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: '11px',
-                              color: 'var(--red)',
-                              borderColor: 'var(--red)',
-                            }}
-                          >
-                            Delete 🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                          Delete 🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
