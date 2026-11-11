@@ -166,8 +166,9 @@ a:hover {
 .top-header {
   background: var(--navy);
   color: white;
-  padding: 0 20px;
+  padding: 0 24px;
   height: 52px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -183,28 +184,13 @@ a:hover {
 .top-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
   text-decoration: none;
   color: white;
   flex-shrink: 0;
+  min-width: 0;
 }
 .top-header-left:hover {
   text-decoration: none;
-}
-
-.logo-mark {
-  width: 28px;
-  height: 28px;
-  background: var(--gold);
-  border-radius: 6px;
-  color: white;
-  font-weight: 700;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  letter-spacing: 0.5px;
 }
 
 .brand-text-wrap {
@@ -215,22 +201,26 @@ a:hover {
 }
 
 .brand-title {
-  color: white;
+  color: #ffffff;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .brand-subtitle {
   color: #9fb3d1;
   font-size: 11px;
+  font-weight: 400;
+  line-height: 1.25;
+  margin-top: 1px;
 }
 
 /* Top Header Right */
 .top-header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-shrink: 0;
 }
 
@@ -330,35 +320,22 @@ a:hover {
   background: #f0f7ff;
 }
 
-.user-avatar {
-  width: 28px;
-  height: 28px;
-  background: var(--gold);
-  color: white;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
 .header-logout-btn {
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   background: transparent;
-  color: white;
+  color: #ffffff;
   padding: 5px 12px;
   border-radius: 6px;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  font-weight: 500;
   transition: all 0.15s;
   line-height: 1.2;
 }
 .header-logout-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* SUB-NAV (below header, full width, sticky) */

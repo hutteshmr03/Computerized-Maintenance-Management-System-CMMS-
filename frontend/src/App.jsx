@@ -53,15 +53,6 @@ const ROLE_LABELS = {
   auditor: 'Auditor',
 }
 
-function getInitials(name) {
-  if (!name) return 'U'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
-  return parts[0].slice(0, 2).toUpperCase()
-}
-
 function Bell() {
   const [open, setOpen] = useState(false)
   const [data, setData] = useState({ unread: 0, items: [] })
@@ -152,14 +143,12 @@ function Shell() {
     .filter(Boolean)
 
   const roleDisplay = ROLE_LABELS[user.role] || user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  const initials = getInitials(user.name || user.email)
 
   return (
     <div className="cmms-layout">
       {/* TOP HEADER (fixed, full width) */}
       <header className="top-header">
         <Link to="/" className="top-header-left" title="Sumant Cloud CMMS">
-          <div className="logo-mark">CM</div>
           <div className="brand-text-wrap">
             <span className="brand-title">Sumant Cloud CMMS</span>
             <span className="brand-subtitle">Equipment Maintenance Management for Manufacturing</span>
@@ -173,10 +162,6 @@ function Shell() {
           </div>
 
           <Bell />
-
-          <div className="user-avatar" title={`${user.name || user.email} (${roleDisplay})`}>
-            {initials}
-          </div>
 
           <button type="button" className="header-logout-btn" onClick={logout}>
             Log out
