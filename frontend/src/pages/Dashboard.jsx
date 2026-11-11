@@ -421,51 +421,41 @@ function EnterpriseDashboard({ d, user }) {
               </div>
 
               {liveDowntime.length === 0 ? (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#059669', background: '#ecfdf5', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 500 }}>
+                <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--grn)', background: 'rgba(46, 158, 107, 0.1)', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 500 }}>
                   ✓ All assets operating normally. No active breakdowns.
                 </div>
               ) : (
                 <div
-                  className="live-downtime-container"
+                  className="table-wrap live-downtime-container"
                   style={{
                     width: '100%',
-                    maxWidth: '100%',
-                    overflow: 'hidden',
-                    overflowX: 'hidden',
-                    border: '1px solid #f3f4f6',
+                    overflowX: 'auto',
+                    border: '1px solid var(--bd)',
                     borderRadius: '8px',
-                    background: '#ffffff',
+                    background: 'var(--card)',
                   }}
                 >
                   <table
                     className="live-downtime-table"
                     style={{
                       width: '100%',
-                      minWidth: 0,
-                      maxWidth: '100%',
-                      tableLayout: 'fixed',
+                      minWidth: '580px',
                       borderCollapse: 'collapse',
-                      fontSize: '0.82rem',
+                      fontSize: '13px',
                     }}
                   >
-                    <colgroup>
-                      <col style={{ width: '28%' }} />
-                      <col style={{ width: '16%' }} />
-                      <col style={{ width: '36%' }} />
-                      <col style={{ width: '20%' }} />
-                    </colgroup>
                     <thead>
-                      <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                        <th style={{ padding: '9px 8px', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--bd)', textAlign: 'left' }}>
+                        <th style={{ width: '30%', padding: '9px 12px', fontWeight: 600, color: 'var(--mu)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Asset
                         </th>
-                        <th style={{ padding: '9px 8px', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        <th style={{ width: '20%', padding: '9px 12px', fontWeight: 600, color: 'var(--mu)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Location
                         </th>
-                        <th style={{ padding: '9px 8px', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        <th style={{ width: '35%', padding: '9px 12px', fontWeight: 600, color: 'var(--mu)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Issue
                         </th>
-                        <th style={{ padding: '9px 8px', textAlign: 'right', fontWeight: 700, color: '#4b5563', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
+                        <th style={{ width: '15%', padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--mu)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                           Hours Down
                         </th>
                       </tr>
@@ -477,74 +467,77 @@ function EnterpriseDashboard({ d, user }) {
                           <tr
                             key={item.id}
                             style={{
-                              borderBottom: '1px solid #f3f4f6',
-                              background: isSevere ? '#fef2f2' : 'transparent',
-                              transition: 'background 0.1s',
+                              borderBottom: '1px solid var(--bd)',
+                              background: isSevere ? 'rgba(214, 69, 69, 0.08)' : 'transparent',
+                              transition: 'background 0.15s',
                             }}
                           >
-                            <td style={{ padding: '10px 8px', verticalAlign: 'top' }}>
+                            <td style={{ padding: '10px 12px', verticalAlign: 'top', whiteSpace: 'normal', wordBreak: 'break-word' }}>
                               <Link
                                 to={`/assets/${item.asset_id}`}
                                 style={{
-                                  color: isSevere ? '#991b1b' : '#111827',
+                                  color: isSevere ? 'var(--red)' : 'var(--tx)',
                                   fontWeight: 600,
                                   textDecoration: 'none',
-                                  lineHeight: 1.35,
+                                  lineHeight: 1.4,
                                   display: 'block',
                                   overflowWrap: 'break-word',
                                   wordBreak: 'break-word',
+                                  whiteSpace: 'normal',
                                 }}
                               >
                                 {item.asset_name}
                               </Link>
                               <div
                                 style={{
-                                  color: '#6b7280',
-                                  fontSize: '0.72rem',
+                                  color: 'var(--mu)',
+                                  fontSize: '11px',
                                   marginTop: '3px',
                                   fontWeight: 500,
-                                  letterSpacing: '0.01em',
+                                  letterSpacing: '0.02em',
                                 }}
                               >
                                 {item.asset_code}
                               </div>
                             </td>
-                            <td style={{ padding: '10px 8px', color: '#4b5563', verticalAlign: 'top' }}>
+                            <td style={{ padding: '10px 12px', color: 'var(--mu)', verticalAlign: 'top', whiteSpace: 'normal', wordBreak: 'break-word' }}>
                               <div
                                 style={{
-                                  lineHeight: 1.35,
+                                  lineHeight: 1.4,
                                   overflowWrap: 'break-word',
                                   wordBreak: 'break-word',
+                                  whiteSpace: 'normal',
                                 }}
                               >
                                 {item.location || '—'}
                               </div>
                             </td>
-                            <td style={{ padding: '10px 8px', verticalAlign: 'top' }}>
+                            <td style={{ padding: '10px 12px', verticalAlign: 'top', whiteSpace: 'normal', wordBreak: 'break-word' }}>
                               <Link
                                 to={`/jobs/${item.job_id || item.id}`}
                                 style={{
                                   textDecoration: 'none',
-                                  color: isSevere ? '#b91c1c' : '#374151',
-                                  lineHeight: 1.35,
+                                  color: isSevere ? 'var(--red)' : 'var(--tx)',
+                                  lineHeight: 1.4,
                                   display: 'block',
                                   overflowWrap: 'break-word',
                                   wordBreak: 'break-word',
+                                  whiteSpace: 'normal',
                                 }}
                               >
                                 {item.job_title}
                               </Link>
                             </td>
-                            <td style={{ padding: '10px 8px', textAlign: 'right', verticalAlign: 'top' }}>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                               <span
                                 style={{
                                   display: 'inline-block',
-                                  padding: '3px 8px',
-                                  borderRadius: '6px',
-                                  fontSize: '0.8rem',
+                                  padding: '3px 9px',
+                                  borderRadius: '99px',
+                                  fontSize: '11px',
                                   fontWeight: 700,
-                                  background: isSevere ? '#fee2e2' : '#fef3c7',
-                                  color: isSevere ? '#dc2626' : '#b45309',
+                                  background: isSevere ? '#fadcdc' : '#fdebc8',
+                                  color: isSevere ? '#9c2323' : '#8a5600',
                                   whiteSpace: 'nowrap',
                                 }}
                               >
