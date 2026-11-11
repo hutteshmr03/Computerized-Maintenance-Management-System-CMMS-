@@ -83,7 +83,7 @@ function EnterpriseDashboard({ d, user }) {
   const [liveDowntime, setLiveDowntime] = useState([])
   const [mtbfData, setMtbfData] = useState(null)
 
-  const isManagerOrPlantHead = ['maintenance_manager', 'plant_head', 'super_admin'].includes(user.role)
+  const isManagerOrPlantHead = ['maintenance_manager', 'plant_head', 'admin', 'super_admin'].includes(user.role)
 
   // Fetch live downtime with 60-second polling
   useEffect(() => {
@@ -263,153 +263,46 @@ function EnterpriseDashboard({ d, user }) {
       <div className="ent-layout-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '1.25rem', alignItems: 'start' }}>
         {/* LEFT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
-          {/* 4 KPI TILES (2x2 Grid) */}
-          <div className="ent-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
+          {/* 4 KPI TILES */}
+          <div className="kpi-grid ent-kpi-grid">
             {/* Tile 1: OEE SCORE */}
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                borderTop: '4px solid #16a34a',
-                padding: '1.1rem 1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div className="kpi-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', letterSpacing: '0.05em' }}>
-                  OEE SCORE
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#16a34a',
-                    background: '#dcfce7',
-                    padding: '2px 7px',
-                    borderRadius: '999px',
-                  }}
-                >
-                  ↑ +1.4%
-                </span>
+                <span className="kpi-label">OEE SCORE</span>
+                <span className="badge green">↑ +1.4%</span>
               </div>
-              <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.1rem 0' }}>
-                {num(availability)}%
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>vs last month</div>
+              <span className="kpi-val value">{num(availability)}%</span>
+              <span className="kpi-sub subtitle">vs last month</span>
             </div>
 
             {/* Tile 2: MTBF */}
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                borderTop: '4px solid #2563eb',
-                padding: '1.1rem 1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div className="kpi-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', letterSpacing: '0.05em' }}>
-                  MTBF
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#16a34a',
-                    background: '#dcfce7',
-                    padding: '2px 7px',
-                    borderRadius: '999px',
-                  }}
-                >
-                  ↑ +4.2%
-                </span>
+                <span className="kpi-label">MTBF</span>
+                <span className="badge green">↑ +4.2%</span>
               </div>
-              <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.1rem 0' }}>
-                {mtbfHours} hrs
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Mean time between failures</div>
+              <span className="kpi-val value">{mtbfHours} hrs</span>
+              <span className="kpi-sub subtitle">Mean time between failures</span>
             </div>
 
             {/* Tile 3: MTTR */}
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                borderTop: '4px solid #d97706',
-                padding: '1.1rem 1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div className="kpi-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', letterSpacing: '0.05em' }}>
-                  MTTR
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#16a34a',
-                    background: '#dcfce7',
-                    padding: '2px 7px',
-                    borderRadius: '999px',
-                  }}
-                  title="Reduction in repair time is positive"
-                >
-                  ↓ -8.5%
-                </span>
+                <span className="kpi-label">MTTR</span>
+                <span className="badge green" title="Reduction in repair time is positive">↓ -8.5%</span>
               </div>
-              <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.1rem 0' }}>
-                {mttrHours} hrs
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Mean time to repair</div>
+              <span className="kpi-val value">{mttrHours} hrs</span>
+              <span className="kpi-sub subtitle">Mean time to repair</span>
             </div>
 
             {/* Tile 4: PM COMPLIANCE */}
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                borderTop: '4px solid #7c3aed',
-                padding: '1.1rem 1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            <div className="kpi-card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', letterSpacing: '0.05em' }}>
-                  PM COMPLIANCE
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#16a34a',
-                    background: '#dcfce7',
-                    padding: '2px 7px',
-                    borderRadius: '999px',
-                  }}
-                >
-                  ↑ +2.1%
-                </span>
+                <span className="kpi-label">PM COMPLIANCE</span>
+                <span className="badge green">↑ +2.1%</span>
               </div>
-              <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#111827', margin: '0.35rem 0 0.1rem 0' }}>
-                {num(pmPct)}%
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
-                {pmOnTime} of {pmTotal} tasks completed
-              </div>
+              <span className="kpi-val value">{num(pmPct)}%</span>
+              <span className="kpi-sub subtitle">{pmOnTime} of {pmTotal} tasks completed</span>
             </div>
           </div>
 

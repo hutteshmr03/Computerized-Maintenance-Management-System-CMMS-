@@ -3,15 +3,26 @@ import { Link } from 'react-router-dom'
 import { flushOfflineQueue, getOfflineQueue } from './api'
 
 export const STATUS = {
-  created: { label: 'Created', icon: '○', cls: 'grey' },
+  created: { label: 'Created', icon: '○', cls: 'blue' },
   planned: { label: 'Planned', icon: '📅', cls: 'blue' },
+  open: { label: 'Open', icon: '○', cls: 'blue' },
+  normal: { label: 'Normal', icon: '○', cls: 'blue' },
   sent_for_approval: { label: 'Waiting for approval', icon: '◔', cls: 'amber' },
+  assigned: { label: 'Assigned', icon: '👤', cls: 'amber' },
+  warning: { label: 'Warning', icon: '⚠', cls: 'amber' },
+  high: { label: 'High', icon: '▲', cls: 'amber' },
   approved: { label: 'Approved', icon: '✓', cls: 'green' },
-  rejected: { label: 'Rejected', icon: '✕', cls: 'red' },
-  in_progress: { label: 'In progress', icon: '▶', cls: 'blue' },
-  review: { label: 'In review', icon: '🔍', cls: 'purple' },
-  completed: { label: 'Closed', icon: '✓✓', cls: 'green' },
+  operational: { label: 'Operational', icon: '✓', cls: 'green' },
+  ok: { label: 'OK', icon: '✓', cls: 'green' },
   closed: { label: 'Closed', icon: '✓✓', cls: 'green' },
+  in_progress: { label: 'In progress', icon: '▶', cls: 'teal' },
+  completed: { label: 'Completed', icon: '✓✓', cls: 'teal' },
+  review: { label: 'In review', icon: '🔍', cls: 'teal' },
+  breakdown: { label: 'Breakdown', icon: '⚡', cls: 'red' },
+  critical: { label: 'Critical', icon: '🚨', cls: 'red' },
+  overdue: { label: 'Overdue', icon: '⌛', cls: 'red' },
+  rejected: { label: 'Rejected', icon: '✕', cls: 'red' },
+  low: { label: 'Low', icon: '▽', cls: 'red' },
 }
 
 export const PRIORITY = {
@@ -204,9 +215,9 @@ export function Modal({ title, onClose, children }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
   return (
-    <div className="scrim" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <h2>{title}</h2>
+    <div id="modal-overlay" className="modal-overlay scrim" onClick={onClose}>
+      <div className="modal modal-box" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <h3 className="modal-title">{title}</h3>
         {children}
       </div>
     </div>

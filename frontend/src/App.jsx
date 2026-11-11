@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate, Link } from 'react-router-dom'
 import { api } from './api'
 import { useAuth } from './auth.jsx'
@@ -26,37 +26,64 @@ import Scan from './pages/Scan.jsx'
 import Calibration from './pages/Calibration.jsx'
 import Security from './pages/Security.jsx'
 
-const MENU = {
-  dashboard: { to: '/', label: 'Home', end: true, icon: '🏠' },
-  hierarchy: { to: '/hierarchy', label: 'Hierarchy (ISO 55001)', icon: '🌳' },
-  assets: { to: '/assets', label: 'Assets', icon: '🛠️' },
-  jobs: { to: '/jobs', label: 'Work Orders', icon: '📋' },
-  kanban: { to: '/kanban', label: 'Kanban Board', icon: '🗂️' },
-  gantt: { to: '/gantt', label: 'Gantt Scheduler', icon: '📅' },
-  plans: { to: '/plans', label: 'PM Plans (DIN 31051)', icon: '⚡' },
-  parts: { to: '/parts', label: 'Spare Parts', icon: '🔩' },
-  procurement: { to: '/procurement', label: 'Procurement', icon: '📦' },
-  readings: { to: '/readings', label: 'Condition Telemetry', icon: '📡' },
-  contracts: { to: '/contracts', label: 'Contracts & SLAs', icon: '📜' },
-  transfers: { to: '/transfers', label: 'Transfers', icon: '🚚' },
-  reports: { to: '/reports', label: 'Reports & KPIs', icon: '📊' },
-  users: { to: '/users', label: 'Users & GDPR', icon: '👥' },
-  audit: { to: '/audit', label: 'Audit Log', icon: '🔍' },
-  scan: { to: '/scan', label: 'Scan Asset', icon: '📷' },
-  calibration: { to: '/calibration', label: 'Calibration', icon: '⚖️' },
-  security: { to: '/security', label: 'Security', icon: '🔒' },
+const TAB_MAP = {
+  dashboard: { to: '/', label: 'Dashboard', end: true },
+  assets: { to: '/assets', label: 'Assets' },
+  transfers: { to: '/transfers', label: 'Transfers' },
+  jobs: { to: '/jobs', label: 'Work Orders' },
+  parts: { to: '/parts', label: 'Spare Parts' },
+  procurement: { to: '/procurement', label: 'Procurement' },
+  reports: { to: '/reports', label: 'Reports & KPIs' },
+  audit: { to: '/audit', label: 'Audit Log' },
+  calibration: { to: '/calibration', label: 'Calibration' },
+  users: { to: '/users', label: 'Users & GDPR' },
+  security: { to: '/security', label: 'Security' },
+}
+
+const ROLE_LABELS = {
+  admin: 'Admin',
+  super_admin: 'Admin',
+  plant_head: 'Plant Head',
+  maintenance_manager: 'Maintenance Manager',
+  maintenance_engineer: 'Maintenance Engineer',
+  technician: 'Technician',
+  store_manager: 'Store Manager',
+  production_manager: 'Production Manager',
+  purchase_manager: 'Purchase Manager',
+  auditor: 'Auditor',
+}
+
+function getInitials(name) {
+  if (!name) return 'U'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return parts[0].slice(0, 2).toUpperCase()
 }
 
 function Bell() {
   const [open, setOpen] = useState(false)
   const [data, setData] = useState({ unread: 0, items: [] })
   const navigate = useNavigate()
+  const bellRef = useRef(null)
+
   const load = () => api.get('/api/notifications').then(setData).catch(() => {})
 
   useEffect(() => {
     load()
     const t = setInterval(load, 30000)
     return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (bellRef.current && !bellRef.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const toggle = async () => {
@@ -69,30 +96,44 @@ function Bell() {
   }
 
   return (
-    <div className="bell" style={{ position: 'relative' }}>
-      <button onClick={toggle} aria-label={`Notifications, ${data.unread} unread`} aria-expanded={open}>
-        Alerts
-        {data.unread > 0 && <span className="count">{data.unread}</span>}
+    <div className="bell-container" ref={bellRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        className="bell-icon-btn"
+        onClick={toggle}
+        aria-label={`Notifications, ${data.unread} unread`}
+        aria-expanded={open}
+        title="Notifications"
+      >
+        <span style={{ fontSize: '15px', color: '#9fb3d1', lineHeight: 1 }}>🔔</span>
+        {data.unread > 0 && <span className="bell-badge-count">{data.unread}</span>}
       </button>
+
       {open && (
-        <div className="dropdown" style={{ minWidth: '280px', zIndex: 100 }}>
-          {data.items.length === 0 && <div className="item muted">No alerts yet.</div>}
-          {data.items.map((n) => (
-            <a
-              key={n.id}
-              href={n.link || '#'}
-              className={n.read ? '' : 'unread'}
-              onClick={(e) => {
-                e.preventDefault()
-                setOpen(false)
-                load()
-                if (n.link) navigate(n.link)
-              }}
-            >
-              {n.message}
-              <div className="small muted">{fmtDateTime(n.at)}</div>
-            </a>
-          ))}
+        <div className="bell-popover">
+          <div className="bell-popover-head">
+            <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--tx)' }}>Notifications</span>
+            {data.unread > 0 && <span className="small muted">{data.unread} unread</span>}
+          </div>
+          <div className="bell-popover-list">
+            {data.items.length === 0 && <div className="bell-popover-item muted">No alerts yet.</div>}
+            {data.items.map((n) => (
+              <a
+                key={n.id}
+                href={n.link || '#'}
+                className={`bell-popover-item ${n.read ? '' : 'unread'}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  setOpen(false)
+                  load()
+                  if (n.link) navigate(n.link)
+                }}
+              >
+                <div style={{ color: 'var(--tx)', fontSize: '12px' }}>{n.message}</div>
+                <div className="small muted" style={{ marginTop: '2px', fontSize: '11px' }}>{fmtDateTime(n.at)}</div>
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -102,365 +143,66 @@ function Bell() {
 function Shell() {
   const { user, ready, logout } = useAuth()
   const loc = useLocation()
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
-  const [mobileOverflowOpen, setMobileOverflowOpen] = useState(false)
-  const [tabletSidebarOpen, setTabletSidebarOpen] = useState(false)
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cmms_sidebar_width')
-      if (saved) {
-        const parsed = parseInt(saved, 10)
-        if (!isNaN(parsed) && parsed >= 180 && parsed <= 600) return parsed
-      }
-    } catch { /* ignore */ }
-    return 250
-  })
-  const [isResizing, setIsResizing] = useState(false)
-  const isResizingRef = useRef(false)
-  const latestWidthRef = useRef(sidebarWidth)
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`)
-  }, [sidebarWidth])
-
-  const startResizing = useCallback((e) => {
-    e.preventDefault()
-    isResizingRef.current = true
-    setIsResizing(true)
-    document.body.classList.add('is-resizing')
-  }, [])
-
-  const resetSidebarWidth = useCallback(() => {
-    const defaultWidth = 250
-    setSidebarWidth(defaultWidth)
-    latestWidthRef.current = defaultWidth
-    document.documentElement.style.setProperty('--sidebar-width', `${defaultWidth}px`)
-    try {
-      localStorage.setItem('cmms_sidebar_width', String(defaultWidth))
-    } catch { /* ignore */ }
-  }, [])
-
-  const handleResizerKeyDown = useCallback((e) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSidebarWidth((prev) => {
-        const next = Math.max(180, prev - 10)
-        latestWidthRef.current = next
-        try { localStorage.setItem('cmms_sidebar_width', String(next)) } catch { /* ignore */ }
-        return next
-      })
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSidebarWidth((prev) => {
-        const maxWidth = Math.min(520, Math.floor(window.innerWidth * 0.45))
-        const next = Math.min(maxWidth, prev + 10)
-        latestWidthRef.current = next
-        try { localStorage.setItem('cmms_sidebar_width', String(next)) } catch { /* ignore */ }
-        return next
-      })
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      resetSidebarWidth()
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      setSidebarWidth(180)
-      latestWidthRef.current = 180
-      try { localStorage.setItem('cmms_sidebar_width', '180') } catch { /* ignore */ }
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      const maxWidth = Math.min(520, Math.floor(window.innerWidth * 0.45))
-      setSidebarWidth(maxWidth)
-      latestWidthRef.current = maxWidth
-      try { localStorage.setItem('cmms_sidebar_width', String(maxWidth)) } catch { /* ignore */ }
-    }
-  }, [resetSidebarWidth])
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isResizingRef.current) return
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX
-      const maxWidth = Math.min(520, Math.floor(window.innerWidth * 0.45))
-      const newWidth = Math.max(180, Math.min(maxWidth, clientX))
-      latestWidthRef.current = newWidth
-      setSidebarWidth(newWidth)
-      document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`)
-    }
-
-    const handleMouseUp = () => {
-      if (isResizingRef.current) {
-        isResizingRef.current = false
-        setIsResizing(false)
-        document.body.classList.remove('is-resizing')
-        try {
-          localStorage.setItem('cmms_sidebar_width', String(latestWidthRef.current))
-        } catch { /* ignore */ }
-      }
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-    window.addEventListener('touchmove', handleMouseMove, { passive: false })
-    window.addEventListener('touchend', handleMouseUp)
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-      window.removeEventListener('touchmove', handleMouseMove)
-      window.removeEventListener('touchend', handleMouseUp)
-      document.body.classList.remove('is-resizing')
-    }
-  }, [])
-
-  useEffect(() => {
-    delete document.documentElement.dataset.contrast
-    document.documentElement.dataset.theme = 'light'
-    try {
-      localStorage.removeItem('cmms_contrast')
-      localStorage.removeItem('cmms_theme')
-    } catch { /* ignore */ }
-  }, [])
-
-  // Close menus on route navigation
-  useEffect(() => {
-    setMobileDrawerOpen(false)
-    setMobileOverflowOpen(false)
-  }, [loc.pathname])
 
   if (!ready) return <div className="page"><Loading /></div>
   if (!user) return <Navigate to="/login" state={{ from: loc.pathname }} replace />
 
-  const userMenuItems = (user.menu || [])
-    .map((k) => MENU[k])
+  const allowedTabs = (user.menu || [])
+    .map((k) => TAB_MAP[k])
     .filter(Boolean)
 
-  // Mobile bottom navigation bar items (top 5 role-relevant shortcuts for the 9 HR roles)
-  let mobileItems = userMenuItems.slice(0, 5)
-  if (user.role === 'technician') {
-    mobileItems = [MENU.dashboard, MENU.assets, MENU.jobs].filter(Boolean)
-  }
-
-  const roleName = user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const roleDisplay = ROLE_LABELS[user.role] || user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const initials = getInitials(user.name || user.email)
 
   return (
-    <div
-      className={`shell ${tabletSidebarOpen ? 'tablet-open' : ''}`}
-      style={{ '--sidebar-width': `${sidebarWidth}px` }}
-    >
-      {/* Desktop & Tablet Sidebar */}
-      <aside className={`side ${tabletSidebarOpen ? 'tablet-expanded' : ''}`}>
-        <Link to="/" className="brand" title="Computerized Maintenance Management System (CMMS)">
-          <span className="mark">CM</span> <span className="brand-text">CMMS</span>
-        </Link>
-        <nav className="nav" aria-label="Main Navigation">
-          {userMenuItems.map((i) => (
-            <NavLink
-              key={i.to}
-              to={i.to}
-              end={i.end}
-              title={i.label}
-              className={({ isActive }) => (isActive ? 'active' : '')}
-            >
-              <span className="nav-label">{i.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-        <div className="side-foot">
-          <div className="user-name-text" style={{ fontWeight: 600 }}>{user.name}</div>
-          <div className="user-role-text small muted">
-            {roleName} {user.contractor_company ? `(${user.contractor_company})` : ''}
+    <div className="cmms-layout">
+      {/* TOP HEADER (fixed, full width) */}
+      <header className="top-header">
+        <Link to="/" className="top-header-left" title="Sumant Cloud CMMS">
+          <div className="logo-mark">CM</div>
+          <div className="brand-text-wrap">
+            <span className="brand-title">Sumant Cloud CMMS</span>
+            <span className="brand-subtitle">Equipment Maintenance Management</span>
           </div>
-          <button className="dark" onClick={logout} style={{ marginTop: '8px' }}>
+        </Link>
+
+        <div className="top-header-right">
+          <div className="role-badge">
+            <span className="role-label">Role: </span>
+            <span className="role-name">{roleDisplay}</span>
+          </div>
+
+          <Bell />
+
+          <div className="user-avatar" title={`${user.name || user.email} (${roleDisplay})`}>
+            {initials}
+          </div>
+
+          <button type="button" className="header-logout-btn" onClick={logout}>
             Log out
           </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Horizontally Draggable Sidebar Resizer Handle */}
-      <div
-        className={`sidebar-resizer ${isResizing ? 'is-resizing' : ''}`}
-        onMouseDown={startResizing}
-        onTouchStart={startResizing}
-        onDoubleClick={resetSidebarWidth}
-        onKeyDown={handleResizerKeyDown}
-        role="separator"
-        tabIndex={0}
-        aria-orientation="vertical"
-        aria-valuenow={sidebarWidth}
-        aria-valuemin={180}
-        aria-valuemax={500}
-        aria-label="Sidebar width resize handle"
-        title="Drag to resize sidebar width (Double-click to reset to 250px)"
-      />
-
-      {/* Main View Area */}
-      <div className="main">
-        {/* Offline sync persistent banner */}
-        <OfflineBanner />
-
-        <header className="topbar">
-          {/* Topbar Left Controls */}
-          <div className="topbar-left">
-            {/* Tablet hamburger toggle button */}
-            <button
-              type="button"
-              className="tablet-sidebar-toggle"
-              onClick={() => setTabletSidebarOpen(!tabletSidebarOpen)}
-              aria-label="Toggle navigation sidebar"
-              title="Toggle sidebar"
-            >
-              ☰
-            </button>
-
-            {/* Mobile hamburger button */}
-            <button
-              type="button"
-              className="mobile-hamburger-btn"
-              onClick={() => setMobileDrawerOpen(true)}
-              aria-label="Open full menu"
-            >
-              ☰
-            </button>
-
-            {/* Mobile topbar brand logo */}
-            <Link to="/" className="mobile-topbar-brand">
-              <span className="mark">CM</span> <strong>CMMS</strong>
-            </Link>
-
-            {/* Desktop / Tablet: Find / Scan Asset */}
-            <Link to="/scan" className="btn desktop-only-btn" style={{ fontWeight: 600 }}>
-              🔍 Find / Scan Asset
-            </Link>
-
-          </div>
-
-          {/* Desktop & Tablet Topbar Right Controls: single row, no wrapping */}
-          <div className="topbar-right desktop-topbar-controls">
-            <span className="who" style={{ fontWeight: 500 }} title={user.name}>
-              {user.name}
-            </span>
-
-            <Bell />
-
-            <button className="dark" onClick={logout}>
-              Log out
-            </button>
-          </div>
-
-          {/* Mobile Topbar Right Controls: Alerts + Overflow Menu (⋮) */}
-          <div className="topbar-right mobile-topbar-controls">
-            <Bell />
-
-            <div className="mobile-overflow-container" style={{ position: 'relative' }}>
-              <button
-                type="button"
-                className="mobile-overflow-btn"
-                onClick={() => setMobileOverflowOpen(!mobileOverflowOpen)}
-                aria-label="More options"
-                aria-expanded={mobileOverflowOpen}
-              >
-                ⋮
-              </button>
-
-              {mobileOverflowOpen && (
-                <div className="dropdown mobile-overflow-dropdown">
-                  <div className="item muted" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{user.name}</div>
-                    <div className="small">{roleName}</div>
-                  </div>
-                  <Link
-                    to="/scan"
-                    className="item"
-                    onClick={() => setMobileOverflowOpen(false)}
-                    style={{ textDecoration: 'none', color: 'inherit', display: 'block', padding: '8px 12px' }}
-                  >
-                    🔍 Find / Scan Asset
-                  </Link>
-                  <button
-                    type="button"
-                    className="item text-bad"
-                    onClick={() => {
-                      setMobileOverflowOpen(false)
-                      logout()
-                    }}
-                    style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', padding: '8px 12px', borderTop: '1px solid var(--line)' }}
-                  >
-                    🚪 Log out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* Mobile Full-Screen Navigation Drawer */}
-        {mobileDrawerOpen && (
-          <div className="mobile-drawer-overlay" onClick={() => setMobileDrawerOpen(false)}>
-            <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()}>
-              <div className="mobile-drawer-header">
-                <div className="brand">
-                  <span className="mark">CM</span> <strong style={{ color: '#fff' }}>CMMS Menu</strong>
-                </div>
-                <button
-                  type="button"
-                  className="mobile-drawer-close-btn"
-                  onClick={() => setMobileDrawerOpen(false)}
-                  aria-label="Close menu"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <nav className="nav mobile-drawer-nav" aria-label="Mobile Drawer Navigation">
-                {userMenuItems.map((i) => (
-                  <NavLink
-                    key={i.to}
-                    to={i.to}
-                    end={i.end}
-                    onClick={() => setMobileDrawerOpen(false)}
-                    className={({ isActive }) => (isActive ? 'active' : '')}
-                  >
-                    <span style={{ fontSize: '1.25rem' }}>{i.icon}</span>
-                    <span>{i.label}</span>
-                  </NavLink>
-                ))}
-              </nav>
-
-              <div className="mobile-drawer-footer">
-                <div style={{ fontWeight: 600, color: '#fff' }}>{user.name}</div>
-                <div className="small muted">{roleName}</div>
-                <button
-                  className="dark"
-                  onClick={() => {
-                    setMobileDrawerOpen(false)
-                    logout()
-                  }}
-                  style={{ marginTop: '10px', width: '100%', minHeight: '48px' }}
-                >
-                  Log out
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <main className="page">
-          <Outlet />
-        </main>
-      </div>
-
-      {/* Mobile Glove-Friendly Bottom Navigation Bar */}
-      <nav className="bottom-nav" aria-label="Mobile Navigation">
-        {mobileItems.map((i) => (
+      {/* SUB-NAV (below header, full width, sticky) */}
+      <nav className="sub-nav" aria-label="Main navigation">
+        {allowedTabs.map((tab) => (
           <NavLink
-            key={i.to}
-            to={i.to}
-            end={i.end}
+            key={tab.to}
+            to={tab.to}
+            end={tab.end}
+            className={({ isActive }) => `nav-tab ${isActive ? 'on active' : ''}`}
           >
-            <span style={{ fontSize: '1.2rem' }}>{i.icon}</span>
-            <span style={{ fontSize: '0.72rem', marginTop: '2px' }}>{i.label.split(' ')[0]}</span>
+            {tab.label}
           </NavLink>
         ))}
       </nav>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="main-content">
+        <OfflineBanner />
+        <Outlet />
+      </main>
     </div>
   )
 }
@@ -495,9 +237,10 @@ export default function App() {
         <Route
           path="*"
           element={
-            <div>
-              <h1>Page not found</h1>
-              <Link to="/">Go to home</Link>
+            <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
+              <h2 style={{ margin: '0 0 8px 0' }}>Page not found</h2>
+              <p className="muted" style={{ margin: '0 0 16px 0' }}>The requested page could not be located.</p>
+              <Link to="/" className="btn primary">Return to Dashboard</Link>
             </div>
           }
         />
