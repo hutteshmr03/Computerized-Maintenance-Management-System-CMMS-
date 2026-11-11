@@ -44,42 +44,91 @@ MENUS = {
 }
 
 PRIVILEGE_GROUPS = {
-    "Master Data": [
-        "asset.view", "asset.create", 
-        "asset.edit", "asset.delete"
+    "Master Data & Assets": [
+        "asset.view",
+        "asset.create",
+        "asset.edit",
+        "asset.delete",
+        "asset.transfer",
+        "transfer.decide",
+        "bom.manage",
     ],
-    "Work Orders": [
-        "wo.view", "wo.create", 
-        "wo.assign", "wo.close"
+    "Work Orders & Repairs": [
+        "job.view",
+        "job.create",
+        "job.plan",
+        "job.send",
+        "job.approve",
+        "job.start",
+        "job.work",
+        "job.loto_sign",
+        "job.review",
+        "job.close",
     ],
-    "Preventive Maintenance": [
-        "pm.view", "pm.create", "pm.generate"
-    ],
-    "Breakdown Management": [
-        "bd.view", "bd.report", "bd.close"
+    "Preventive Maintenance (PM)": [
+        "plan.view",
+        "plan.manage",
     ],
     "Spare Parts & Inventory": [
-        "part.view", "part.manage", 
-        "part.transfer", "part.adjust"
+        "part.view",
+        "part.manage",
     ],
     "Purchase & Procurement": [
-        "pr.view", "pr.create", 
-        "pr.approve", "pr.order"
+        "procurement.view",
+        "procurement.manage",
+        "procurement.approve",
+        "procurement.order",
     ],
-    "Reports & Analytics": [
-        "report.view", "report.export", 
-        "kpi.view", "audit.view"
+    "Condition Monitoring & Readings": [
+        "reading.view",
+        "reading.log",
     ],
-    "Calibration": [
-        "calibration.view", "calibration.log"
+    "Calibration (ISO 9001)": [
+        "calibration.view",
+        "calibration.manage",
     ],
-    "Downtime Monitoring": [
-        "downtime.view", "downtime.manage"
+    "Service Contracts & SLAs": [
+        "contract.view",
+        "contract.manage",
     ],
-    "User Management": [
-        "user.view", "user.create", 
-        "user.edit", "user.deactivate"
+    "Reports, KPIs & Analytics": [
+        "report.view",
+        "report.export",
+        "kpi.view",
+        "oee.view",
+        "downtime.view",
+        "downtime.manage",
+        "audit.view",
     ],
+    "User Management & Security": [
+        "user.view",
+        "user.manage",
+    ],
+}
+
+# Compatibility aliases mapping legacy/shorthand permissions to actual system capabilities
+PRIVILEGE_ALIASES = {
+    "wo.view": "job.view",
+    "wo.create": "job.create",
+    "wo.assign": "job.plan",
+    "wo.close": "job.close",
+    "pm.view": "plan.view",
+    "pm.create": "plan.manage",
+    "pm.generate": "plan.manage",
+    "bd.view": "job.view",
+    "bd.report": "job.create",
+    "bd.close": "job.close",
+    "part.transfer": "part.manage",
+    "part.adjust": "part.manage",
+    "pr.view": "procurement.view",
+    "pr.create": "procurement.manage",
+    "pr.approve": "procurement.approve",
+    "pr.order": "procurement.order",
+    "calibration.log": "calibration.manage",
+    "user.create": "user.manage",
+    "user.edit": "user.manage",
+    "user.deactivate": "user.manage",
+    "job.decide": "job.approve",
 }
 
 
@@ -131,7 +180,13 @@ def require(permission: str):
             cr = db.query(CustomRole).filter_by(name=user.role).first()
             user_perms = set(cr.privileges) if cr and cr.privileges else set()
         if permission not in user_perms and "*" not in user_perms and user.role not in ("admin", "super_admin"):
-            raise HTTPException(403, f"Your role ({user.role}) is not allowed to perform action: {permission}.")
+            has_alias = any(
+                alias in user_perms
+                for alias, target in PRIVILEGE_ALIASES.items()
+                if target == permission
+            )
+            if not has_alias:
+                raise HTTPException(403, f"Your role ({user.role}) is not allowed to perform action: {permission}.")
         return user
     return checker
 

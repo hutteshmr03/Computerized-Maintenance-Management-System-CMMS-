@@ -21,42 +21,109 @@ export const BUILTIN_ROLES = [
 ]
 
 export const PRIVILEGE_GROUPS_FALLBACK = {
-  "Master Data": [
-    "asset.view", "asset.create", 
-    "asset.edit", "asset.delete"
+  "Master Data & Assets": [
+    "asset.view",
+    "asset.create",
+    "asset.edit",
+    "asset.delete",
+    "asset.transfer",
+    "transfer.decide",
+    "bom.manage",
   ],
-  "Work Orders": [
-    "wo.view", "wo.create", 
-    "wo.assign", "wo.close"
+  "Work Orders & Repairs": [
+    "job.view",
+    "job.create",
+    "job.plan",
+    "job.send",
+    "job.approve",
+    "job.start",
+    "job.work",
+    "job.loto_sign",
+    "job.review",
+    "job.close",
   ],
-  "Preventive Maintenance": [
-    "pm.view", "pm.create", "pm.generate"
-  ],
-  "Breakdown Management": [
-    "bd.view", "bd.report", "bd.close"
+  "Preventive Maintenance (PM)": [
+    "plan.view",
+    "plan.manage",
   ],
   "Spare Parts & Inventory": [
-    "part.view", "part.manage", 
-    "part.transfer", "part.adjust"
+    "part.view",
+    "part.manage",
   ],
   "Purchase & Procurement": [
-    "pr.view", "pr.create", 
-    "pr.approve", "pr.order"
+    "procurement.view",
+    "procurement.manage",
+    "procurement.approve",
+    "procurement.order",
   ],
-  "Reports & Analytics": [
-    "report.view", "report.export", 
-    "kpi.view", "audit.view"
+  "Condition Monitoring & Readings": [
+    "reading.view",
+    "reading.log",
   ],
-  "Calibration": [
-    "calibration.view", "calibration.log"
+  "Calibration (ISO 9001)": [
+    "calibration.view",
+    "calibration.manage",
   ],
-  "Downtime Monitoring": [
-    "downtime.view", "downtime.manage"
+  "Service Contracts & SLAs": [
+    "contract.view",
+    "contract.manage",
   ],
-  "User Management": [
-    "user.view", "user.create", 
-    "user.edit", "user.deactivate"
+  "Reports, KPIs & Analytics": [
+    "report.view",
+    "report.export",
+    "kpi.view",
+    "oee.view",
+    "downtime.view",
+    "downtime.manage",
+    "audit.view",
   ],
+  "User Management & Security": [
+    "user.view",
+    "user.manage",
+  ],
+}
+
+export const PRIVILEGE_DESCRIPTIONS = {
+  "asset.view": "View equipment specs & hierarchy tree",
+  "asset.create": "Add new assets & upload manuals/documents",
+  "asset.edit": "Edit equipment specs & replacement value",
+  "asset.delete": "Decommission / delete assets",
+  "asset.transfer": "Request equipment relocation transfer",
+  "transfer.decide": "Approve / reject transfer requests",
+  "bom.manage": "Manage Bill of Materials (BOM) parts",
+  "job.view": "View work orders, Kanban & Gantt",
+  "job.create": "Raise work orders & breakdown tickets",
+  "job.plan": "Schedule & assign technicians",
+  "job.send": "Send work orders for manager approval",
+  "job.approve": "Approve work orders & repair requests",
+  "job.start": "Start approved work orders",
+  "job.work": "Execute checklists, log hours & ISO failure codes",
+  "job.loto_sign": "Sign Lockout/Tagout (LOTO) safety permits",
+  "job.review": "Review completed maintenance work",
+  "job.close": "Sign off and close work orders",
+  "plan.view": "View preventive maintenance plans",
+  "plan.manage": "Create & configure PM trigger rules",
+  "part.view": "View spare parts stock & bin locations",
+  "part.manage": "Manage inventory stock & replenish",
+  "procurement.view": "View purchase requests",
+  "procurement.manage": "Create purchase requests & manage PRs",
+  "procurement.approve": "Approve purchase requests",
+  "procurement.order": "Place purchase orders with vendors",
+  "reading.view": "View sensor telemetry & readings",
+  "reading.log": "Log manual gauge & sensor measurements",
+  "calibration.view": "View calibration status & certificates",
+  "calibration.manage": "Log ISO 9001 calibration certificates",
+  "contract.view": "View service contracts & warranties",
+  "contract.manage": "Manage vendor service agreements",
+  "report.view": "View EN 13306 reports & KPI dashboards",
+  "report.export": "Export reports & maintenance summaries",
+  "kpi.view": "View executive KPI tiles (OEE, MTBF, MTTR)",
+  "oee.view": "View OEE availability & performance",
+  "downtime.view": "Monitor live plant downtime breakdown",
+  "downtime.manage": "Acknowledge & manage downtime stoppages",
+  "audit.view": "View immutable system audit logs",
+  "user.view": "View user accounts directory",
+  "user.manage": "Create users, manage roles & unlock",
 }
 
 const UNIT_OPTIONS = [
@@ -1223,33 +1290,45 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-                        gap: '6px 10px',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                        gap: '8px 12px',
                         paddingLeft: '22px',
                       }}
                     >
                       {privs.map((priv) => {
                         const isChecked = selectedPrivileges.includes(priv)
+                        const desc = PRIVILEGE_DESCRIPTIONS[priv]
                         return (
                           <label
                             key={priv}
+                            title={desc || priv}
                             style={{
                               display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
+                              alignItems: 'flex-start',
+                              gap: '8px',
                               cursor: 'pointer',
                               fontSize: '12px',
                               color: isChecked ? 'var(--tx)' : 'var(--mu)',
                               margin: 0,
+                              lineHeight: 1.3,
                             }}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleTogglePrivilege(priv)}
-                              style={{ accentColor: 'var(--teal)', cursor: 'pointer', width: 'auto' }}
+                              style={{ accentColor: 'var(--teal)', cursor: 'pointer', width: 'auto', marginTop: '2px', flexShrink: 0 }}
                             />
-                            <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>{priv}</span>
+                            <div>
+                              <code style={{ fontSize: '11px', fontWeight: 600, color: isChecked ? 'var(--tx)' : 'var(--mu)', display: 'block' }}>
+                                {priv}
+                              </code>
+                              {desc && (
+                                <span style={{ fontSize: '10.5px', color: 'var(--mu)', display: 'block', marginTop: '1px' }}>
+                                  {desc}
+                                </span>
+                              )}
+                            </div>
                           </label>
                         )
                       })}

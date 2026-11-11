@@ -20,6 +20,7 @@ from .db import Base, SessionLocal, engine, get_db, utcnow
 from .security import (
     MENUS,
     PERMISSIONS,
+    PRIVILEGE_ALIASES,
     PRIVILEGE_GROUPS,
     current_user,
     hash_password,
@@ -158,7 +159,11 @@ def get_user_permissions(u: m.User, db: Session | None = None) -> list[str]:
     if db:
         cr = db.scalar(select(m.CustomRole).where(m.CustomRole.name == u.role))
         if cr and cr.privileges:
-            return sorted(cr.privileges)
+            perms = set(cr.privileges)
+            for p in list(perms):
+                if p in PRIVILEGE_ALIASES:
+                    perms.add(PRIVILEGE_ALIASES[p])
+            return sorted(perms)
     return []
 
 
@@ -167,15 +172,17 @@ def get_user_menu(u: m.User, db: Session | None = None) -> list[str]:
         return MENUS[u.role]
     menu = ["dashboard"]
     perms = get_user_permissions(u, db)
-    if any(p.startswith("asset.") for p in perms):
+    if any(p.startswith("asset.") or p.startswith("transfer.") or p.startswith("bom.") for p in perms):
         menu.append("assets")
-    if any(p.startswith("wo.") or p.startswith("pm.") or p.startswith("bd.") for p in perms):
+    if any(p.startswith("transfer.") for p in perms):
+        menu.append("transfers")
+    if any(p.startswith("job.") or p.startswith("wo.") or p.startswith("pm.") or p.startswith("bd.") or p.startswith("plan.") for p in perms):
         menu.append("jobs")
     if any(p.startswith("part.") for p in perms):
         menu.append("parts")
-    if any(p.startswith("pr.") for p in perms):
+    if any(p.startswith("procurement.") or p.startswith("pr.") for p in perms):
         menu.append("procurement")
-    if any(p.startswith("report.") or p.startswith("kpi.") for p in perms):
+    if any(p.startswith("report.") or p.startswith("kpi.") or p.startswith("oee.") or p.startswith("downtime.") for p in perms):
         menu.append("reports")
     if any(p.startswith("audit.") for p in perms):
         menu.append("audit")
@@ -183,6 +190,9 @@ def get_user_menu(u: m.User, db: Session | None = None) -> list[str]:
         menu.append("calibration")
     if any(p.startswith("user.") for p in perms):
         menu.append("users")
+    if u.role in ("admin", "super_admin"):
+        menu.append("security")
+    return menu
     return menu
 
 
@@ -259,6 +269,42 @@ def job_actions(job: m.Job, user: m.User) -> list[str]:
     elif role == "production_manager":
         if job.status == "created":
             acts += ["send", "edit"]
+
+    # Dynamic custom roles with assigned work order privileges
+    if not acts:
+        perms_set = set(get_user_permissions(user))
+        if "*" in perms_set or "job.work" in perms_set or "job.create" in perms_set or "job.plan" in perms_set or "job.approve" in perms_set:
+            if job.status == "created":
+                if "job.plan" in perms_set or "*" in perms_set:
+                    acts.append("plan")
+                if "job.send" in perms_set or "job.create" in perms_set or "*" in perms_set:
+                    acts.append("send")
+                acts.append("edit")
+            elif job.status == "planned":
+                if "job.approve" in perms_set or "job.decide" in perms_set or "*" in perms_set:
+                    acts += ["approve", "reject"]
+                if "job.send" in perms_set or "*" in perms_set:
+                    acts.append("send")
+                acts.append("edit")
+            elif job.status == "sent_for_approval":
+                if "job.approve" in perms_set or "job.decide" in perms_set or "*" in perms_set:
+                    acts += ["approve", "reject"]
+            elif job.status == "approved":
+                if "job.start" in perms_set or "job.work" in perms_set or "*" in perms_set:
+                    acts.append("start")
+                if "job.plan" in perms_set or "*" in perms_set:
+                    acts.append("assign")
+            elif job.status == "in_progress":
+                if "job.work" in perms_set or "*" in perms_set:
+                    acts.append("review")
+                if "job.close" in perms_set or "*" in perms_set:
+                    acts.append("close")
+            elif job.status == "review":
+                if "job.close" in perms_set or "*" in perms_set:
+                    acts.append("close")
+                acts.append("revise")
+            elif job.status == "rejected":
+                acts.append("revise")
 
     return acts
 
