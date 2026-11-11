@@ -61,6 +61,20 @@ def seed(db: Session):
     now = utcnow()
     year = now.year
 
+    # 0. Seed Built-in Roles into CustomRole
+    from .security import DEFAULT_BUILTIN_ROLES
+    for r in DEFAULT_BUILTIN_ROLES:
+        existing = db.query(m.CustomRole).filter_by(name=r["name"]).first()
+        if not existing:
+            db.add(m.CustomRole(
+                name=r["name"],
+                display_name=r["display_name"],
+                privileges=r["privileges"],
+                created_by="System Built-in",
+                created_at=now,
+            ))
+    db.flush()
+
     # 1. Seed Users
     users = {}
     for name, email, pw, role, company, phone in DEMO_USERS:

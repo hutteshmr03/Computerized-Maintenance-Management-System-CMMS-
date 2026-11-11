@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from . import models as m
 from .db import Base, SessionLocal, engine, get_db, utcnow
 from .security import (
+    DEFAULT_BUILTIN_ROLES,
     MENUS,
     PERMISSIONS,
     PRIVILEGE_ALIASES,
@@ -154,8 +155,8 @@ def user_name(db: Session, uid: int | None) -> str:
 
 
 def get_user_permissions(u: m.User, db: Session | None = None) -> list[str]:
-    if u.role in PERMISSIONS:
-        return sorted(PERMISSIONS[u.role])
+    if u.role in ("admin", "super_admin"):
+        return ["*"]
     if db:
         cr = db.scalar(select(m.CustomRole).where(m.CustomRole.name == u.role))
         if cr and cr.privileges:
@@ -164,6 +165,8 @@ def get_user_permissions(u: m.User, db: Session | None = None) -> list[str]:
                 if p in PRIVILEGE_ALIASES:
                     perms.add(PRIVILEGE_ALIASES[p])
             return sorted(perms)
+    if u.role in PERMISSIONS:
+        return sorted(PERMISSIONS[u.role])
     return []
 
 
@@ -1921,21 +1924,90 @@ def admin_unlock_user(user_id: int, db: Session = Depends(get_db), user: m.User 
 
 
 # ---------------------------------------------------------------- CUSTOM ROLES MANAGEMENT (Admin)
+DEFAULT_BUILTIN_ROLES = [
+    {
+        "name": "admin",
+        "display_name": "Admin",
+        "privileges": ["*"],
+    },
+    {
+        "name": "plant_head",
+        "display_name": "Plant Head",
+        "privileges": ["report.view", "kpi.view", "oee.view", "asset.view", "job.view", "audit.view", "calibration.view", "downtime.view"],
+    },
+    {
+        "name": "maintenance_manager",
+        "display_name": "Maintenance Manager",
+        "privileges": ["asset.create", "asset.view", "asset.transfer", "transfer.decide", "job.create", "job.send", "job.approve", "job.work", "job.view", "part.manage", "part.view", "report.view", "audit.view", "user.view", "calibration.view"],
+    },
+    {
+        "name": "maintenance_engineer",
+        "display_name": "Maintenance Engineer",
+        "privileges": ["asset.transfer", "asset.view", "job.create", "job.send", "job.approve", "job.work", "job.view", "part.manage", "part.view", "calibration.view"],
+    },
+    {
+        "name": "technician",
+        "display_name": "Technician",
+        "privileges": ["job.create", "job.send", "job.work", "job.view", "asset.view"],
+    },
+    {
+        "name": "store_manager",
+        "display_name": "Store Manager",
+        "privileges": ["part.manage", "part.view", "procurement.manage", "procurement.view"],
+    },
+    {
+        "name": "production_manager",
+        "display_name": "Production Manager",
+        "privileges": ["job.create", "job.send", "job.view", "asset.view", "downtime.view"],
+    },
+    {
+        "name": "purchase_manager",
+        "display_name": "Purchase Manager",
+        "privileges": ["procurement.view", "procurement.approve", "procurement.order"],
+    },
+    {
+        "name": "auditor",
+        "display_name": "Auditor",
+        "privileges": ["report.view", "report.export", "audit.view", "asset.view", "job.view", "part.view"],
+    },
+]
+
+
+def ensure_builtin_roles(db: Session):
+    for r in DEFAULT_BUILTIN_ROLES:
+        existing = db.scalar(select(m.CustomRole).where(m.CustomRole.name == r["name"]))
+        if not existing:
+            cr = m.CustomRole(
+                name=r["name"],
+                display_name=r["display_name"],
+                privileges=r["privileges"],
+                created_by="System Built-in",
+                created_at=utcnow(),
+            )
+            db.add(cr)
+    db.commit()
+
+
 @app.get("/api/roles")
 def list_custom_roles(db: Session = Depends(get_db), user: m.User = Depends(current_user)):
     if user.role not in ("admin", "super_admin"):
         raise HTTPException(403, "Admin access required.")
-    roles = db.scalars(select(m.CustomRole).order_by(m.CustomRole.name)).all()
+    ensure_builtin_roles(db)
+    roles = db.scalars(select(m.CustomRole)).all()
+    canonical = [r["name"] for r in DEFAULT_BUILTIN_ROLES]
+    order_map = {name: i for i, name in enumerate(canonical)}
+    sorted_roles = sorted(roles, key=lambda r: (0 if r.name in order_map else 1, order_map.get(r.name, 999), r.name))
     return [
         {
             "id": r.id,
             "name": r.name,
             "display_name": r.display_name,
             "privileges": r.privileges or [],
+            "is_builtin": r.name in m.VALID_ROLES or r.name in ("admin", "super_admin"),
             "created_by": r.created_by,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
-        for r in roles
+        for r in sorted_roles
     ]
 
 
@@ -1954,7 +2026,7 @@ def create_custom_role(body: RoleCreateIn, db: Session = Depends(get_db), user: 
     if not clean_name:
         raise HTTPException(400, "Role name cannot be empty.")
     if clean_name in m.VALID_ROLES or clean_name == "super_admin":
-        raise HTTPException(400, "Cannot use a built-in role name.")
+        raise HTTPException(400, "Cannot use a built-in role name. Edit the built-in role instead.")
 
     existing = db.scalar(select(m.CustomRole).where(m.CustomRole.name == clean_name))
     if existing:
@@ -1976,6 +2048,7 @@ def create_custom_role(body: RoleCreateIn, db: Session = Depends(get_db), user: 
         "name": new_role.name,
         "display_name": new_role.display_name,
         "privileges": new_role.privileges,
+        "is_builtin": False,
         "created_by": new_role.created_by,
         "created_at": new_role.created_at.isoformat() if new_role.created_at else None,
     }
@@ -1987,13 +2060,19 @@ class RoleUpdateIn(BaseModel):
 
 
 @app.put("/api/roles/{role_id}")
-def update_custom_role(role_id: int, body: RoleUpdateIn, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+def update_custom_role(role_id: str, body: RoleUpdateIn, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
     if user.role not in ("admin", "super_admin"):
         raise HTTPException(403, "Admin access required.")
 
-    role = db.get(m.CustomRole, role_id)
+    ensure_builtin_roles(db)
+    role = None
+    if role_id.isdigit():
+        role = db.get(m.CustomRole, int(role_id))
     if not role:
-        raise HTTPException(404, "Custom role not found.")
+        role = db.scalar(select(m.CustomRole).where(m.CustomRole.name == role_id))
+
+    if not role:
+        raise HTTPException(404, "Role not found.")
 
     if body.display_name:
         role.display_name = body.display_name.strip()
@@ -2001,27 +2080,33 @@ def update_custom_role(role_id: int, body: RoleUpdateIn, db: Session = Depends(g
     audit(db, user, "update_role", "custom_role", role.id, f"Updated privileges for {role.name}")
     db.commit()
     db.refresh(role)
+    is_builtin = role.name in m.VALID_ROLES or role.name in ("admin", "super_admin")
     return {
         "id": role.id,
         "name": role.name,
         "display_name": role.display_name,
         "privileges": role.privileges,
+        "is_builtin": is_builtin,
         "created_by": role.created_by,
         "created_at": role.created_at.isoformat() if role.created_at else None,
     }
 
 
 @app.delete("/api/roles/{role_id}")
-def delete_custom_role(role_id: int, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+def delete_custom_role(role_id: str, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
     if user.role not in ("admin", "super_admin"):
         raise HTTPException(403, "Admin access required.")
 
-    role = db.get(m.CustomRole, role_id)
+    if role_id.isdigit():
+        role = db.get(m.CustomRole, int(role_id))
+    else:
+        role = db.scalar(select(m.CustomRole).where(m.CustomRole.name == role_id))
+
     if not role:
-        raise HTTPException(404, "Custom role not found.")
+        raise HTTPException(404, "Role not found.")
 
     if role.name in m.VALID_ROLES or role.name in ("admin", "super_admin"):
-        raise HTTPException(400, "Cannot delete built-in roles.")
+        raise HTTPException(400, "Cannot delete built-in system roles.")
 
     user_count = db.scalar(select(func.count(m.User.id)).where(m.User.role == role.name))
     if user_count and user_count > 0:
@@ -2029,7 +2114,7 @@ def delete_custom_role(role_id: int, db: Session = Depends(get_db), user: m.User
 
     role_name = role.name
     db.delete(role)
-    audit(db, user, "delete_role", "custom_role", role_id, f"Deleted custom role {role_name}")
+    audit(db, user, "delete_role", "custom_role", role.id, f"Deleted custom role {role_name}")
     db.commit()
     return {"ok": True, "message": f"Role '{role_name}' deleted."}
 

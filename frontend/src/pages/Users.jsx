@@ -244,10 +244,35 @@ export default function Users() {
     }
   }
 
-  const allRolesList = [
-    ...BUILTIN_ROLES,
-    ...customRoles.map((cr) => ({ id: cr.name, label: cr.display_name, desc: 'Custom configured role' })),
-  ]
+  const BUILTIN_DESC_MAP = {
+    admin: 'Full enterprise access & user management',
+    plant_head: 'Plant oversight, assets, downtime & calibrations',
+    maintenance_manager: 'Maintenance approvals, transfers, work orders, parts',
+    maintenance_engineer: 'Engineering execution, jobs, parts, calibrations',
+    technician: 'Floor execution, digital work checklists, LOTO',
+    store_manager: 'Spares inventory, stock adjustments, PR requisitions',
+    production_manager: 'Breakdown reporting & machine status tracking',
+    purchase_manager: 'PR approval & vendor purchase order issue',
+    auditor: 'Compliance audits, calibration protocols, read-only logs',
+  }
+
+  const displayRolesList = (customRoles && customRoles.length > 0)
+    ? customRoles
+    : BUILTIN_ROLES.map((r) => ({
+        id: r.id,
+        name: r.id,
+        display_name: r.label,
+        desc: r.desc,
+        privileges: r.privileges,
+        is_builtin: true,
+        created_by: 'System Built-in',
+      }))
+
+  const allRolesList = displayRolesList.map((cr) => ({
+    id: cr.name || cr.id,
+    label: cr.display_name || cr.name,
+    desc: cr.desc || BUILTIN_DESC_MAP[cr.name] || 'Custom configured role',
+  }))
 
   const filteredUsers = (users || []).filter((u) => {
     const matchesRole = !filterRole || u.role === filterRole
@@ -338,7 +363,7 @@ export default function Users() {
               cursor: 'pointer',
             }}
           >
-            Roles ({BUILTIN_ROLES.length + customRoles.length})
+            Roles ({displayRolesList.length})
           </button>
         )}
       </div>
@@ -546,118 +571,107 @@ export default function Users() {
                 </tr>
               </thead>
               <tbody>
-                {/* 1. Standard Built-in Enterprise Roles (9) */}
-                {BUILTIN_ROLES.map((role) => (
-                  <tr key={role.id}>
-                    <td>
-                      <code
-                        style={{
-                          background: 'var(--bg)',
-                          color: 'var(--tx)',
-                          border: '1px solid var(--bd)',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontFamily: 'monospace',
-                        }}
-                      >
-                        {role.id}
-                      </code>
-                    </td>
+                {/* All Roles (Built-in + Custom Roles) */}
+                {displayRolesList.map((role) => {
+                  const roleName = role.name || role.id
+                  const displayName = role.display_name || role.label
+                  const desc = role.desc || BUILTIN_DESC_MAP[roleName] || 'Enterprise configured role'
+                  const isBuiltin = role.is_builtin || Boolean(BUILTIN_DESC_MAP[roleName])
+                  const isFullAccess = roleName === 'admin' || (role.privileges && role.privileges.includes('*'))
+                  const privCount = isFullAccess
+                    ? 'Full Access (*)'
+                    : `${(role.privileges || []).length} privileges`
 
-                    <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
-                      {role.label}
-                      <div className="small muted" style={{ fontSize: '11px', marginTop: '2px', fontWeight: 400 }}>
-                        {role.desc}
-                      </div>
-                    </td>
-
-                    <td>
-                      <span className="b t">
-                        {role.count}
-                      </span>
-                    </td>
-
-                    <td>
-                      <span className="b g1" style={{ fontSize: '11px' }}>
-                        System Built-in
-                      </span>
-                    </td>
-
-                    <td style={{ textAlign: 'right' }}>
-                      <span className="small muted" style={{ fontSize: '11px', fontStyle: 'italic' }}>
-                        Protected Built-in
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-
-                {/* 2. Custom Roles */}
-                {customRoles.map((role) => (
-                  <tr key={role.id}>
-                    <td>
-                      <code
-                        style={{
-                          background: 'var(--bg)',
-                          color: 'var(--tx)',
-                          border: '1px solid var(--bd)',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontFamily: 'monospace',
-                        }}
-                      >
-                        {role.name}
-                      </code>
-                    </td>
-
-                    <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
-                      {role.display_name}
-                    </td>
-
-                    <td>
-                      <span className="b t">
-                        {(role.privileges || []).length} privileges
-                      </span>
-                    </td>
-
-                    <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
-                      <span className="b a" style={{ fontSize: '11px', marginRight: '6px' }}>
-                        Custom
-                      </span>
-                      {role.created_by || 'Admin'}
-                    </td>
-
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="bt"
-                          onClick={() => {
-                            setEditingRole(role)
-                            setShowRoleModal(true)
-                          }}
-                          style={{ padding: '4px 8px', fontSize: '11px' }}
-                        >
-                          Edit ✏️
-                        </button>
-                        <button
-                          type="button"
-                          className="bt"
-                          onClick={() => handleDeleteRole(role)}
+                  return (
+                    <tr key={role.id || roleName}>
+                      <td>
+                        <code
                           style={{
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            color: 'var(--red)',
-                            borderColor: 'var(--red)',
+                            background: 'var(--bg)',
+                            color: 'var(--tx)',
+                            border: '1px solid var(--bd)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontFamily: 'monospace',
                           }}
                         >
-                          Delete 🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {roleName}
+                        </code>
+                      </td>
+
+                      <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
+                        {displayName}
+                        {desc && (
+                          <div className="small muted" style={{ fontSize: '11px', marginTop: '2px', fontWeight: 400 }}>
+                            {desc}
+                          </div>
+                        )}
+                      </td>
+
+                      <td>
+                        <span className="b t">
+                          {privCount}
+                        </span>
+                      </td>
+
+                      <td>
+                        {isBuiltin ? (
+                          <span className="b g1" style={{ fontSize: '11px' }}>
+                            System Built-in
+                          </span>
+                        ) : (
+                          <div style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                            <span className="b a" style={{ fontSize: '11px', marginRight: '6px' }}>
+                              Custom
+                            </span>
+                            {role.created_by || 'Admin'}
+                          </div>
+                        )}
+                      </td>
+
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="bt"
+                            onClick={() => {
+                              setEditingRole({
+                                ...role,
+                                id: role.id || roleName,
+                                name: roleName,
+                                display_name: displayName,
+                                privileges: role.privileges || (roleName === 'admin' ? ['*'] : []),
+                                is_builtin: isBuiltin,
+                              })
+                              setShowRoleModal(true)
+                            }}
+                            title={`Edit privileges and display name for ${displayName}`}
+                            style={{ padding: '4px 8px', fontSize: '11px' }}
+                          >
+                            Edit ✏️
+                          </button>
+
+                          {!isBuiltin && (
+                            <button
+                              type="button"
+                              className="bt"
+                              onClick={() => handleDeleteRole(role)}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '11px',
+                                color: 'var(--red)',
+                                borderColor: 'var(--red)',
+                              }}
+                            >
+                              Delete 🗑️
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -1175,7 +1189,7 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <h3 style={{ margin: 0, fontSize: '15px' }}>
-            {isEdit ? 'Edit Custom Role' : 'Create Custom Role'}
+            {isEdit ? `Edit Role: ${role?.display_name || displayName || name}` : 'Create Custom Role'}
           </h3>
           <button
             type="button"
@@ -1192,7 +1206,7 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
           {/* Role Name * (slug, lowercase, no spaces) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label htmlFor="role-name" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
-              Role Name *
+              Role Name * {isEdit && role?.is_builtin && <span style={{ fontWeight: 400, color: 'var(--mu)' }}>(Built-in System Role)</span>}
             </label>
             <input
               id="role-name"
@@ -1204,10 +1218,11 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
               onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
               style={{
                 backgroundColor: isEdit ? 'var(--bg)' : 'var(--card)',
+                cursor: isEdit ? 'not-allowed' : 'text',
               }}
             />
             <span className="muted small" style={{ fontSize: '11px', color: 'var(--mu)' }}>
-              Slug identifier: lowercase, no spaces, e.g. "shift_supervisor"
+              {isEdit ? 'Slug identifier cannot be changed once created.' : 'Slug identifier: lowercase, no spaces, e.g. "shift_supervisor"'}
             </span>
           </div>
 
@@ -1225,6 +1240,12 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
               onChange={(e) => setDisplayName(e.target.value)}
             />
           </div>
+
+          {name === 'admin' && (
+            <div style={{ padding: '8px 12px', background: '#f0faff', border: '1px solid #b9e5ec', borderRadius: '6px', fontSize: '12px', color: '#0b5561' }}>
+              ℹ️ <strong>Administrator Role:</strong> Automatically retains full enterprise wildcard access (<code>*</code>). Module privileges below are displayed for capability reference.
+            </div>
+          )}
 
           {/* Privileges Grouped Checklist */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>

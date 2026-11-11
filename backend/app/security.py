@@ -131,6 +131,54 @@ PRIVILEGE_ALIASES = {
     "job.decide": "job.approve",
 }
 
+DEFAULT_BUILTIN_ROLES = [
+    {
+        "name": "admin",
+        "display_name": "Admin",
+        "privileges": ["*"],
+    },
+    {
+        "name": "plant_head",
+        "display_name": "Plant Head",
+        "privileges": ["report.view", "kpi.view", "oee.view", "asset.view", "job.view", "audit.view", "calibration.view", "downtime.view"],
+    },
+    {
+        "name": "maintenance_manager",
+        "display_name": "Maintenance Manager",
+        "privileges": ["asset.create", "asset.view", "asset.transfer", "transfer.decide", "job.create", "job.send", "job.approve", "job.work", "job.view", "part.manage", "part.view", "report.view", "audit.view", "user.view", "calibration.view"],
+    },
+    {
+        "name": "maintenance_engineer",
+        "display_name": "Maintenance Engineer",
+        "privileges": ["asset.transfer", "asset.view", "job.create", "job.send", "job.approve", "job.work", "job.view", "part.manage", "part.view", "calibration.view"],
+    },
+    {
+        "name": "technician",
+        "display_name": "Technician",
+        "privileges": ["job.create", "job.send", "job.work", "job.view", "asset.view"],
+    },
+    {
+        "name": "store_manager",
+        "display_name": "Store Manager",
+        "privileges": ["part.manage", "part.view", "procurement.manage", "procurement.view"],
+    },
+    {
+        "name": "production_manager",
+        "display_name": "Production Manager",
+        "privileges": ["job.create", "job.send", "job.view", "asset.view", "downtime.view"],
+    },
+    {
+        "name": "purchase_manager",
+        "display_name": "Purchase Manager",
+        "privileges": ["procurement.view", "procurement.approve", "procurement.order"],
+    },
+    {
+        "name": "auditor",
+        "display_name": "Auditor",
+        "privileges": ["report.view", "report.export", "audit.view", "asset.view", "job.view", "part.view"],
+    },
+]
+
 
 def hash_password(password: str, salt: str | None = None) -> str:
     salt = salt or secrets.token_hex(8)
@@ -174,12 +222,16 @@ def current_user(
 
 def require(permission: str):
     def checker(user: User = Depends(current_user), db: Session = Depends(get_db)) -> User:
-        user_perms = PERMISSIONS.get(user.role)
+        if user.role in ("admin", "super_admin"):
+            return user
+        user_perms = None
+        from .models import CustomRole
+        cr = db.query(CustomRole).filter_by(name=user.role).first()
+        if cr and cr.privileges:
+            user_perms = set(cr.privileges)
         if user_perms is None:
-            from .models import CustomRole
-            cr = db.query(CustomRole).filter_by(name=user.role).first()
-            user_perms = set(cr.privileges) if cr and cr.privileges else set()
-        if permission not in user_perms and "*" not in user_perms and user.role not in ("admin", "super_admin"):
+            user_perms = PERMISSIONS.get(user.role, set())
+        if permission not in user_perms and "*" not in user_perms:
             has_alias = any(
                 alias in user_perms
                 for alias, target in PRIVILEGE_ALIASES.items()
