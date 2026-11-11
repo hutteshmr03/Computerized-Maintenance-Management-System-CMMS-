@@ -86,8 +86,8 @@ export default function AssetDetail() {
       )}
 
       {/* Main Details and QR Card */}
-      <div className="cols" style={{ gridTemplateColumns: '1.4fr 1fr', gap: '1.5rem' }}>
-        <section className="panel">
+      <div className="cols">
+        <section className="card">
           <h2>Equipment Specification (ISO 55001)</h2>
           <dl className="facts">
             <div><dt>Physical Location</dt><dd>{a.location}</dd></div>
@@ -132,7 +132,7 @@ export default function AssetDetail() {
           )}
         </section>
 
-        <section className="panel">
+        <section className="card">
           <h2>Equipment QR Code</h2>
           <div className="qr-box" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <QRCodeSVG value={scanUrl} size={112} />
@@ -192,7 +192,7 @@ export default function AssetDetail() {
 
         {/* Tab 2: Documents */}
         {tab === 'documents' && (
-          <div className="panel stack" style={{ padding: '16px' }}>
+          <div className="card stack" style={{ padding: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Attached Manuals, CE Certificates & Schematics</h3>
               {can('asset.create') && (
@@ -205,49 +205,51 @@ export default function AssetDetail() {
             {!a.documents || a.documents.length === 0 ? (
               <p className="muted">No technical manuals or calibration certificates attached yet.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                    <th style={{ padding: '8px' }}>Title & File</th>
-                    <th style={{ padding: '8px' }}>Document Type</th>
-                    <th style={{ padding: '8px' }}>Version</th>
-                    <th style={{ padding: '8px' }}>Uploaded By</th>
-                    <th style={{ padding: '8px', textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {a.documents.map((d) => (
-                    <tr key={d.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '8px' }}>
-                        <strong>📄 {d.title}</strong>
-                        <div className="small muted">{d.filename}</div>
-                      </td>
-                      <td style={{ padding: '8px' }}>
-                        <span className="badge blue small" style={{ textTransform: 'uppercase' }}>
-                          {d.doc_type}
-                        </span>
-                      </td>
-                      <td style={{ padding: '8px', fontWeight: 600 }}>v{d.version}</td>
-                      <td style={{ padding: '8px', fontSize: '0.85rem' }}>
-                        {d.uploaded_by}
-                        <div className="small muted">{fmtDate(d.uploaded_at)}</div>
-                      </td>
-                      <td style={{ padding: '8px', textAlign: 'right' }}>
-                        <a href={d.url} target="_blank" rel="noreferrer" className="btn small">
-                          Download 📥
-                        </a>
-                      </td>
+              <div className="table-wrap">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
+                      <th style={{ padding: '8px' }}>Title & File</th>
+                      <th style={{ padding: '8px' }}>Document Type</th>
+                      <th style={{ padding: '8px' }}>Version</th>
+                      <th style={{ padding: '8px' }}>Uploaded By</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {a.documents.map((d) => (
+                      <tr key={d.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                        <td style={{ padding: '8px' }}>
+                          <strong>📄 {d.title}</strong>
+                          <div className="small muted">{d.filename}</div>
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <span className="badge blue small" style={{ textTransform: 'uppercase' }}>
+                            {d.doc_type}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>v{d.version}</td>
+                        <td style={{ padding: '8px', fontSize: '0.85rem' }}>
+                          {d.uploaded_by}
+                          <div className="small muted">{fmtDate(d.uploaded_at)}</div>
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right' }}>
+                          <a href={d.url} target="_blank" rel="noreferrer" className="btn small">
+                            Download 📥
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
 
         {/* Tab 3: Bill of Materials (BOM) */}
         {tab === 'bom' && (
-          <div className="panel stack" style={{ padding: '16px' }}>
+          <div className="card stack" style={{ padding: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Asset Bill of Materials (BOM)</h3>
               {can('bom.manage') && (
@@ -263,41 +265,43 @@ export default function AssetDetail() {
             {!a.bom || a.bom.length === 0 ? (
               <p className="muted">No spare parts linked to this asset's BOM.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                    <th style={{ padding: '8px' }}>Component Name</th>
-                    <th style={{ padding: '8px' }}>SKU</th>
-                    <th style={{ padding: '8px' }}>Recommended Qty</th>
-                    <th style={{ padding: '8px' }}>Warehouse Stock</th>
-                    <th style={{ padding: '8px' }}>Unit Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {a.bom.map((b) => (
-                    <tr key={b.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '8px', fontWeight: 600 }}>{b.name}</td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace' }}>{b.sku}</td>
-                      <td style={{ padding: '8px', fontWeight: 600 }}>
-                        {b.qty_recommended} {b.unit}
-                      </td>
-                      <td style={{ padding: '8px' }}>
-                        <span className={`badge ${b.stock <= 4 ? 'amber' : 'green'} small`}>
-                          {b.stock} {b.unit} available
-                        </span>
-                      </td>
-                      <td style={{ padding: '8px' }}>{money(b.unit_cost)}</td>
+              <div className="table-wrap">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
+                      <th style={{ padding: '8px' }}>Component Name</th>
+                      <th style={{ padding: '8px' }}>SKU</th>
+                      <th style={{ padding: '8px' }}>Recommended Qty</th>
+                      <th style={{ padding: '8px' }}>Warehouse Stock</th>
+                      <th style={{ padding: '8px' }}>Unit Cost</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {a.bom.map((b) => (
+                      <tr key={b.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>{b.name}</td>
+                        <td style={{ padding: '8px', fontFamily: 'monospace' }}>{b.sku}</td>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>
+                          {b.qty_recommended} {b.unit}
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <span className={`badge ${b.stock <= 4 ? 'amber' : 'green'} small`}>
+                            {b.stock} {b.unit} available
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px' }}>{money(b.unit_cost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
 
         {/* Tab 4: Condition Telemetry */}
         {tab === 'readings' && (
-          <div className="panel stack" style={{ padding: '16px' }}>
+          <div className="card stack" style={{ padding: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>Recent Condition Monitoring Telemetry</h3>
               <Link to="/readings" className="btn small">
@@ -308,43 +312,45 @@ export default function AssetDetail() {
             {!a.readings || a.readings.length === 0 ? (
               <p className="muted">No manual sensor measurements recorded for this machine.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                    <th style={{ padding: '8px' }}>Time</th>
-                    <th style={{ padding: '8px' }}>Metric</th>
-                    <th style={{ padding: '8px' }}>Value</th>
-                    <th style={{ padding: '8px' }}>Condition</th>
-                    <th style={{ padding: '8px' }}>Technician</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {a.readings.map((r) => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '8px' }}>{fmtDateTime(r.recorded_at)}</td>
-                      <td style={{ padding: '8px', textTransform: 'capitalize' }}>
-                        {r.metric.replace('_', ' ')}
-                      </td>
-                      <td style={{ padding: '8px', fontWeight: 600 }}>
-                        {r.value} {r.unit}
-                      </td>
-                      <td style={{ padding: '8px' }}>
-                        <span className={`badge ${r.status === 'critical' ? 'red' : r.status === 'warning' ? 'amber' : 'green'} small`}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '8px' }}>{r.recorded_by}</td>
+              <div className="table-wrap">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
+                      <th style={{ padding: '8px' }}>Time</th>
+                      <th style={{ padding: '8px' }}>Metric</th>
+                      <th style={{ padding: '8px' }}>Value</th>
+                      <th style={{ padding: '8px' }}>Condition</th>
+                      <th style={{ padding: '8px' }}>Technician</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {a.readings.map((r) => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                        <td style={{ padding: '8px' }}>{fmtDateTime(r.recorded_at)}</td>
+                        <td style={{ padding: '8px', textTransform: 'capitalize' }}>
+                          {r.metric.replace('_', ' ')}
+                        </td>
+                        <td style={{ padding: '8px', fontWeight: 600 }}>
+                          {r.value} {r.unit}
+                        </td>
+                        <td style={{ padding: '8px' }}>
+                          <span className={`badge ${r.status === 'critical' ? 'red' : r.status === 'warning' ? 'amber' : 'green'} small`}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px' }}>{r.recorded_by}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
 
         {/* Tab 5: Location History */}
         {tab === 'history' && (
-          <div className="panel table-wrap" style={{ padding: 0 }}>
+          <div className="card table-wrap" style={{ padding: 0 }}>
             <table>
               <thead>
                 <tr>

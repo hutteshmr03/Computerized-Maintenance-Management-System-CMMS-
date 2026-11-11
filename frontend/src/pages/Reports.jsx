@@ -128,10 +128,10 @@ export default function Reports() {
       </div>
 
       {/* Filter toolbar */}
-      <div className="panel row" style={{ alignItems: 'flex-end', gap: '12px', padding: '12px' }}>
+      <div className="card tb" style={{ alignItems: 'flex-end', gap: '12px', marginBottom: '14px' }}>
         {(tab === 'downtime' || tab === 'mtbf') && (
           <div style={{ minWidth: 240, flex: 1 }}>
-            <label htmlFor="ra">Target Asset</label>
+            <label htmlFor="ra" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', display: 'block', marginBottom: '4px' }}>Target Asset</label>
             <select id="ra" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
               {assets.data?.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -143,7 +143,7 @@ export default function Reports() {
         )}
 
         <div style={{ width: 120 }}>
-          <label htmlFor="ry">Calendar Year</label>
+          <label htmlFor="ry" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', display: 'block', marginBottom: '4px' }}>Calendar Year</label>
           <select id="ry" value={year} onChange={(e) => setYear(+e.target.value)}>
             {years.map((y) => (
               <option key={y}>{y}</option>
@@ -151,7 +151,7 @@ export default function Reports() {
           </select>
         </div>
 
-        <button className="primary" onClick={run} disabled={busy}>
+        <button className="bt p" onClick={run} disabled={busy} style={{ height: '36px' }}>
           {busy ? 'Computing…' : 'Refresh Data'}
         </button>
       </div>
@@ -161,8 +161,8 @@ export default function Reports() {
 
       {/* TAB 1: EN 13306 KPIS */}
       {tab === 'kpis' && report && (
-        <div className="stack" style={{ gap: '1.25rem' }}>
-          <div className="figures" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <div className="stack" style={{ gap: '1rem' }}>
+          <div className="figures" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
             <div className="figure">
               <div className="v" style={{ color: 'var(--ok)' }}>
                 {pct(report.pm_compliance_pct ?? report.pm_compliance)}
@@ -212,24 +212,28 @@ export default function Reports() {
             </div>
           </div>
 
-          <div className="panel" style={{ backgroundColor: 'var(--paper)', padding: '16px' }}>
-            <h3 style={{ margin: '0 0 8px' }}>EN 13306 Maintenance Strategy Breakdown</h3>
+          <div className="card" style={{ padding: '16px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '15px' }}>EN 13306 Maintenance Strategy Breakdown</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-              <div>
-                <strong>Availability:</strong> {pct(report.availability)}
-                <div className="small muted">Total operational uptime ratio across plant.</div>
+              <div className="card" style={{ background: 'var(--bg)', padding: '12px', border: '1px solid var(--bd)' }}>
+                <span className="small muted" style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>Availability</span>
+                <b style={{ fontSize: '18px', color: 'var(--tx)', display: 'block', margin: '4px 0' }}>{pct(report.availability)}</b>
+                <div className="small muted" style={{ fontSize: '11px' }}>Total operational uptime ratio across plant.</div>
               </div>
-              <div>
-                <strong>Planned Maintenance Share:</strong> {pct(report.planned_pct)}
-                <div className="small muted">Preventive vs total maintenance hours.</div>
+              <div className="card" style={{ background: 'var(--bg)', padding: '12px', border: '1px solid var(--bd)' }}>
+                <span className="small muted" style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>Planned Maintenance Share</span>
+                <b style={{ fontSize: '18px', color: 'var(--tx)', display: 'block', margin: '4px 0' }}>{pct(report.planned_pct)}</b>
+                <div className="small muted" style={{ fontSize: '11px' }}>Preventive vs total maintenance hours.</div>
               </div>
-              <div>
-                <strong>Reactive Repairs:</strong> {pct(report.reactive_pct)}
-                <div className="small muted">Breakdown repairs share.</div>
+              <div className="card" style={{ background: 'var(--bg)', padding: '12px', border: '1px solid var(--bd)' }}>
+                <span className="small muted" style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>Reactive Repairs</span>
+                <b style={{ fontSize: '18px', color: 'var(--tx)', display: 'block', margin: '4px 0' }}>{pct(report.reactive_pct)}</b>
+                <div className="small muted" style={{ fontSize: '11px' }}>Breakdown repairs share.</div>
               </div>
-              <div>
-                <strong>Total Maintenance Hours:</strong> {num(report.maintenance_hours || 142, 1)} h
-                <div className="small muted">Dedicated labour hours this year.</div>
+              <div className="card" style={{ background: 'var(--bg)', padding: '12px', border: '1px solid var(--bd)' }}>
+                <span className="small muted" style={{ display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>Total Maintenance Hours</span>
+                <b style={{ fontSize: '18px', color: 'var(--tx)', display: 'block', margin: '4px 0' }}>{num(report.maintenance_hours || 142, 1)} h</b>
+                <div className="small muted" style={{ fontSize: '11px' }}>Dedicated labour hours this year.</div>
               </div>
             </div>
           </div>
@@ -238,28 +242,28 @@ export default function Reports() {
 
       {/* TAB 2: OEE TRACKING */}
       {tab === 'oee' && (
-        <div className="panel stack" style={{ padding: 0, overflowX: 'auto' }}>
-          <div style={{ padding: '14px', borderBottom: '1px solid var(--line)' }}>
-            <h3 style={{ margin: 0 }}>Overall Equipment Effectiveness (OEE = A × P × Q)</h3>
+        <div className="card stack" style={{ padding: 0, overflowX: 'auto' }}>
+          <div style={{ padding: '14px', borderBottom: '1px solid var(--bd)' }}>
+            <h3 style={{ margin: 0, fontSize: '15px' }}>Overall Equipment Effectiveness (OEE = A × P × Q)</h3>
             <div className="small muted">Calculated from downtime logs, running hours, and operational yield.</div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+          <table>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                <th style={{ padding: '12px' }}>Asset Code</th>
-                <th style={{ padding: '12px' }}>Machine Name</th>
-                <th style={{ padding: '12px' }}>Criticality</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Availability (A)</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Performance (P)</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Quality (Q)</th>
-                <th style={{ padding: '12px', textAlign: 'right' }}>Calculated OEE</th>
+              <tr>
+                <th>Asset Code</th>
+                <th>Machine Name</th>
+                <th>Criticality</th>
+                <th style={{ textAlign: 'right' }}>Availability (A)</th>
+                <th style={{ textAlign: 'right' }}>Performance (P)</th>
+                <th style={{ textAlign: 'right' }}>Quality (Q)</th>
+                <th style={{ textAlign: 'right' }}>Calculated OEE</th>
               </tr>
             </thead>
             <tbody>
               {!oeeData || oeeData.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--ink-3)' }}>
+                  <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--mu)' }}>
                     No OEE data logged yet.
                   </td>
                 </tr>
@@ -267,30 +271,30 @@ export default function Reports() {
                 oeeData.map((item) => {
                   const isWorldClass = item.oee >= 85
                   return (
-                    <tr key={item.asset_id} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '12px', fontWeight: 600, fontFamily: 'monospace' }}>
+                    <tr key={item.asset_id}>
+                      <td style={{ fontWeight: 600, fontFamily: 'monospace' }}>
                         {item.code}
                       </td>
-                      <td style={{ padding: '12px', fontWeight: 600 }}>
+                      <td style={{ fontWeight: 600 }}>
                         {item.asset_name}
                       </td>
-                      <td style={{ padding: '12px' }}>
+                      <td>
                         <CriticalityBadge grade={item.criticality} />
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right' }}>
                         {pct(item.availability)}
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right' }}>
                         {pct(item.performance)}
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right' }}>
                         {pct(item.quality)}
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <strong style={{ fontSize: '1.05rem', color: isWorldClass ? 'var(--ok)' : 'var(--warn)' }}>
+                      <td style={{ textAlign: 'right' }}>
+                        <strong style={{ fontSize: '1.05rem', color: isWorldClass ? 'var(--grn)' : 'var(--amb)' }}>
                           {pct(item.oee)}
                         </strong>
-                        {isWorldClass && <span className="small text-ok" style={{ marginLeft: '4px' }}>★ World Class</span>}
+                        {isWorldClass && <span className="small text-ok" style={{ marginLeft: '4px', color: 'var(--grn)' }}>★ World Class</span>}
                       </td>
                     </tr>
                   )
@@ -303,8 +307,8 @@ export default function Reports() {
 
       {/* TAB 3: FAILURE HEATMAP (ISO 14224) */}
       {tab === 'heatmap' && (
-        <div className="panel stack" style={{ padding: '16px' }}>
-          <h3 style={{ margin: 0 }}>ISO 14224 Failure Mode Frequency Heatmap</h3>
+        <div className="card stack" style={{ padding: '16px' }}>
+          <h3 style={{ margin: 0, fontSize: '15px' }}>ISO 14224 Failure Mode Frequency Heatmap</h3>
           <p className="small muted" style={{ margin: 0 }}>
             Breakdown frequency correlation across asset categories and standard failure mechanisms.
           </p>
@@ -315,35 +319,35 @@ export default function Reports() {
             </p>
           ) : (
             <div style={{ overflowX: 'auto', marginTop: '12px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <table>
                 <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                    <th style={{ padding: '10px' }}>Asset Category</th>
-                    <th style={{ padding: '10px' }}>ISO 14224 Failure Mode</th>
-                    <th style={{ padding: '10px' }}>Typical Cause</th>
-                    <th style={{ padding: '10px', textAlign: 'center' }}>Incident Count</th>
-                    <th style={{ padding: '10px' }}>Risk Heat Level</th>
+                  <tr>
+                    <th>Asset Category</th>
+                    <th>ISO 14224 Failure Mode</th>
+                    <th>Typical Cause</th>
+                    <th style={{ textAlign: 'center' }}>Incident Count</th>
+                    <th>Risk Heat Level</th>
                   </tr>
                 </thead>
                 <tbody>
                   {heatmapData.map((h, i) => {
                     const count = h.count || 1
-                    const heatColor = count >= 4 ? '#b42318' : count >= 2 ? '#f2b705' : '#2f7d4f'
+                    const heatColor = count >= 4 ? 'var(--red)' : count >= 2 ? 'var(--amb)' : 'var(--grn)'
                     return (
-                      <tr key={i} style={{ borderBottom: '1px solid var(--line)' }}>
-                        <td style={{ padding: '10px', fontWeight: 600 }}>{h.category}</td>
-                        <td style={{ padding: '10px' }}>{h.failure_mode}</td>
-                        <td style={{ padding: '10px', color: 'var(--ink-2)' }}>{h.typical_cause || 'Lubrication starvation'}</td>
-                        <td style={{ padding: '10px', textAlign: 'center', fontWeight: 700 }}>
+                      <tr key={i}>
+                        <td style={{ fontWeight: 600 }}>{h.category}</td>
+                        <td>{h.failure_mode}</td>
+                        <td style={{ color: 'var(--mu)' }}>{h.typical_cause || 'Lubrication starvation'}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 700 }}>
                           {count}
                         </td>
-                        <td style={{ padding: '10px' }}>
+                        <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div
                               style={{
                                 width: '60px',
                                 height: '10px',
-                                backgroundColor: 'var(--line)',
+                                backgroundColor: 'var(--bd)',
                                 borderRadius: '4px',
                                 overflow: 'hidden',
                               }}
@@ -371,12 +375,12 @@ export default function Reports() {
 
       {/* TAB 4: DOWNTIME TRENDS */}
       {tab === 'downtime' && report && (
-        <section className="panel">
-          <h2>Downtime Trend in Hours, by Month</h2>
-          <div className="legend" style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '0.9rem' }}>
-            <span><i style={{ display: 'inline-block', width: '12px', height: '12px', background: '#b42318', marginRight: '6px' }} />Repair Downtime</span>
-            <span><i style={{ display: 'inline-block', width: '12px', height: '12px', background: '#1f5fa8', marginRight: '6px' }} />Scheduled Servicing</span>
-            <span><i style={{ display: 'inline-block', width: '12px', height: '12px', background: '#23282b', marginRight: '6px' }} />Total Downtime</span>
+        <section className="card">
+          <h2 style={{ fontSize: '15px', margin: '0 0 10px' }}>Downtime Trend in Hours, by Month</h2>
+          <div className="legend" style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '0.85rem' }}>
+            <span><i style={{ display: 'inline-block', width: '12px', height: '12px', background: 'var(--red)', marginRight: '6px' }} />Repair Downtime</span>
+            <span><i style={{ display: 'inline-block', width: '12px', height: '12px', background: 'var(--teal)', marginRight: '6px' }} />Scheduled Servicing</span>
+            <span><i style={{ display: 'inline-block', width: '12px', height: '12px', background: 'var(--navy)', marginRight: '6px' }} />Total Downtime</span>
           </div>
           <div style={{ height: 320 }}>
             <ResponsiveContainer>

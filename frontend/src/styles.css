@@ -411,12 +411,24 @@ nav button.on {
 
 /* MAIN CONTENT AREA */
 main, .main-content {
-  padding: 16px;
-  max-width: 1250px;
+  padding: 16px 20px;
+  max-width: 1400px;
   margin: 0 auto;
   margin-top: 0;
   box-sizing: border-box;
   width: 100%;
+}
+
+@media (max-width: 1024px) {
+  main, .main-content {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  main, .main-content {
+    padding: 12px 10px;
+  }
 }
 
 .page {
@@ -426,11 +438,174 @@ main, .main-content {
 }
 
 /* ==========================================================================
+   PAGE HEADER & SUB-TABS
+   ========================================================================== */
+
+.page-head, .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.page-head h1, .page-header h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--tx);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.page-head .lead, .page-header .lead, .page-head p.muted {
+  font-size: 13px;
+  color: var(--mu);
+  margin: 3px 0 0;
+  font-weight: 400;
+}
+
+/* Page Sub-Tabs (Reports, Details, etc.) */
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--bd);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabs button, .tabs [role="tab"] {
+  border: 1px solid var(--bd);
+  background: var(--card);
+  color: var(--mu);
+  padding: 7px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.tabs button:hover, .tabs [role="tab"]:hover {
+  background: var(--bg);
+  color: var(--tx);
+}
+
+.tabs button[aria-selected="true"],
+.tabs button.active,
+.tabs button.on,
+.tabs [role="tab"][aria-selected="true"] {
+  background: var(--navy);
+  color: #ffffff !important;
+  border-color: var(--navy);
+}
+
+/* ==========================================================================
+   FIGURE TILES (Reports & KPIs + Technician Dashboard)
+   ========================================================================== */
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.figure {
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-top: 3px solid var(--teal);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  box-sizing: border-box;
+  min-width: 0;
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+
+.figure:hover {
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.figure .v {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tx);
+  line-height: 1.2;
+}
+
+.figure .l {
+  color: var(--mu);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+  margin-bottom: 3px;
+}
+
+.figure .small.muted, .figure .small {
+  font-size: 11px;
+  color: var(--mu);
+  line-height: 1.3;
+}
+
+.figure.attn {
+  border-top-color: var(--red);
+}
+.figure.attn .v {
+  color: var(--red);
+}
+
+@media (max-width: 600px) {
+  .figures {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
    GRID HELPERS (HR Template)
    ========================================================================== */
 .g { display: grid; gap: 12px; }
 .k { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .c2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* Responsive 2-column layout for dashboard */
+.ent-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .ent-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive 2-column layout for details pages (AssetDetail, JobDetail) */
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .cols {
+    grid-template-columns: 1fr !important;
+  }
+}
 
 /* ==========================================================================
    CARD COMPONENTS & KPI TILES
@@ -1211,7 +1386,7 @@ textarea {
   .role-badge {
     display: none;
   }
-  .kpi-grid, .ent-kpi-grid {
+  .kpi-grid, .ent-kpi-grid, .figures {
     grid-template-columns: 1fr !important;
   }
   #modal-overlay, .modal-overlay, .scrim {

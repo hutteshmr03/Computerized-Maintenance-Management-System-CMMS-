@@ -357,6 +357,9 @@ export function OfflineBanner() {
         color: '#ffffff',
         fontWeight: 500,
         fontSize: '0.9rem',
+        borderRadius: 'var(--radius)',
+        marginBottom: '14px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

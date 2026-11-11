@@ -200,7 +200,7 @@ export default function Calibration() {
         </div>
         {canManage && (
           <button
-            className="primary right"
+            className="bt p right"
             onClick={() => setModalOpen(true)}
             disabled={!assets || assets.length === 0}
           >
@@ -210,43 +210,42 @@ export default function Calibration() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="panel" style={{ marginBottom: '1.25rem', padding: '1rem 1.25rem' }}>
-        <div className="row" style={{ alignItems: 'flex-end', gap: '1.25rem', flexWrap: 'wrap' }}>
-          <div className="field" style={{ minWidth: 260, marginBottom: 0 }}>
-            <label htmlFor="filter-asset">Filter by Asset</label>
-            <select
-              id="filter-asset"
-              value={selectedAsset}
-              onChange={(e) => setSelectedAsset(e.target.value)}
-            >
-              <option value="">All Assets ({assets?.length || 0})</option>
-              {(assets || []).map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.code} — {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '0.5rem' }}>
-              <input
-                type="checkbox"
-                checked={filterDueSoon}
-                onChange={(e) => setFilterDueSoon(e.target.checked)}
-                style={{ width: 'auto', minHeight: 0 }}
-              />
-              <span>
-                Show only due within 30 days
-                {dueSoonCount > 0 && (
-                  <span className="badge amber small" style={{ marginLeft: 6 }}>
-                    {dueSoonCount}
-                  </span>
-                )}
-              </span>
-            </label>
-          </div>
+      <div className="card tb" style={{ marginBottom: '14px', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <label htmlFor="filter-asset" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', whiteSpace: 'nowrap' }}>
+            Filter by Asset:
+          </label>
+          <select
+            id="filter-asset"
+            value={selectedAsset}
+            onChange={(e) => setSelectedAsset(e.target.value)}
+            style={{ width: 'auto', minWidth: '220px' }}
+          >
+            <option value="">All Assets ({assets?.length || 0})</option>
+            {(assets || []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.code} — {a.name}
+              </option>
+            ))}
+          </select>
         </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '6px', fontSize: '13px', margin: 0 }}>
+          <input
+            type="checkbox"
+            checked={filterDueSoon}
+            onChange={(e) => setFilterDueSoon(e.target.checked)}
+            style={{ width: 'auto', minHeight: 0, margin: 0 }}
+          />
+          <span>
+            Show only due within 30 days
+            {dueSoonCount > 0 && (
+              <span className="badge amber small" style={{ marginLeft: 6 }}>
+                {dueSoonCount}
+              </span>
+            )}
+          </span>
+        </label>
       </div>
 
       <ErrorNote error={error} />
@@ -261,7 +260,7 @@ export default function Calibration() {
       )}
 
       {filtered.length > 0 && (
-        <div className="panel table-wrap" style={{ padding: 0 }}>
+        <div className="card table-wrap" style={{ padding: 0 }}>
           <table>
             <thead>
               <tr>

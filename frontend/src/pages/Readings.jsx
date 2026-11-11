@@ -63,7 +63,7 @@ export default function Readings() {
       </div>
 
       {/* Filter toolbar */}
-      <div className="panel row" style={{ padding: '12px', gap: '12px' }}>
+      <div className="card tb" style={{ gap: '12px', marginBottom: '14px', alignItems: 'center' }}>
         <select value={filterAsset} onChange={(e) => setFilterAsset(e.target.value)} style={{ width: '250px' }}>
           <option value="">All Monitored Assets</option>
           {assets?.map((a) => (
@@ -72,14 +72,14 @@ export default function Readings() {
             </option>
           ))}
         </select>
-        <div className="small muted right">
+        <div className="small muted right" style={{ marginLeft: 'auto' }}>
           Showing {filtered.length} recent telemetry readings
         </div>
       </div>
 
       {loading && <Loading />}
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto' }}>
+      <div className="card table-wrap" style={{ padding: 0 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>

@@ -32,7 +32,7 @@ export default function Transfers() {
       {loading && !data && <Loading />}
       {data && data.length === 0 && <Empty title="No transfers yet">Open a movable asset and choose Request transfer.</Empty>}
       {data && data.length > 0 && (
-        <div className="panel table-wrap" style={{ padding: 0 }}>
+        <div className="card table-wrap" style={{ padding: 0 }}>
           <table>
             <thead><tr><th>Asset</th><th>Move</th><th>Requested by</th><th>Status</th><th /></tr></thead>
             <tbody>

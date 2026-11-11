@@ -45,21 +45,21 @@ export default function Contracts() {
       <ErrorNote error={error} />
 
       {/* Filter toolbar */}
-      <div className="panel row" style={{ padding: '12px', gap: '12px' }}>
+      <div className="card tb" style={{ gap: '12px', marginBottom: '14px', alignItems: 'center' }}>
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ width: '220px' }}>
           <option value="">All Contract Types</option>
           <option value="warranty">Manufacturer Warranty</option>
           <option value="service_sla">24/7 Service SLA</option>
           <option value="preventive_sla">Preventive Maintenance SLA</option>
         </select>
-        <div className="small muted right">
+        <div className="small muted right" style={{ marginLeft: 'auto' }}>
           Tracking {filtered.length} active service agreements
         </div>
       </div>
 
       {loading && <Loading />}
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto' }}>
+      <div className="card table-wrap" style={{ padding: 0 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>

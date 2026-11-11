@@ -44,20 +44,20 @@ export default function Procurement() {
 
   return (
     <div className="stack" style={{ maxWidth: '100%' }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-head">
         <div>
           <h1>Spare Parts Procurement Workflow</h1>
-          <p className="muted" style={{ margin: 0 }}>
+          <p className="lead">
             Automated stock monitoring: Reorder → Purchase Request → Approval → Order → Warehouse Receipt.
           </p>
         </div>
-        <div className="row">
+        <div className="row" style={{ gap: '8px' }}>
           {can('procurement.manage') && (
-            <button className="primary" onClick={() => { setPreselectedPartId(''); setShowAddModal(true) }}>
+            <button className="bt p" onClick={() => { setPreselectedPartId(''); setShowAddModal(true) }}>
               + Create Purchase Request
             </button>
           )}
-          <Link to="/parts" className="btn">
+          <Link to="/parts" className="bt">
             Parts Inventory
           </Link>
         </div>
@@ -68,25 +68,26 @@ export default function Procurement() {
       {/* Low stock reorder alert banner */}
       {lowStockParts.length > 0 && (
         <div
-          className="panel"
+          className="card"
           style={{
             backgroundColor: 'var(--warn-bg)',
-            borderLeft: '4px solid var(--warn)',
+            borderLeft: '4px solid var(--amb)',
             padding: '12px 16px',
+            marginBottom: '14px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <div>
-              <strong style={{ color: 'var(--warn)' }}>⚠️ {lowStockParts.length} Parts Below Reorder Level</strong>
+              <strong style={{ color: 'var(--amb)' }}>⚠️ {lowStockParts.length} Parts Below Reorder Level</strong>
               <div className="small muted">Stock levels have dropped below safe minimum thresholds.</div>
             </div>
             <div className="row" style={{ gap: '8px' }}>
               {lowStockParts.slice(0, 3).map((p) => (
                 <button
                   key={p.id}
-                  className="small"
+                  className="bt small"
                   onClick={() => openNewPrForPart(p.id)}
-                  style={{ backgroundColor: '#ffffff', borderColor: 'var(--warn)' }}
+                  style={{ backgroundColor: 'var(--card)', borderColor: 'var(--amb)' }}
                 >
                   Order {p.name} ({p.order_qty} {p.unit})
                 </button>
@@ -97,7 +98,7 @@ export default function Procurement() {
       )}
 
       {/* Filter Toolbar */}
-      <div className="panel row" style={{ padding: '12px', gap: '12px' }}>
+      <div className="card tb" style={{ alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ width: '200px' }}>
           <option value="">All PR Statuses</option>
           <option value="requested">Requested (Pending Approval)</option>
@@ -105,14 +106,14 @@ export default function Procurement() {
           <option value="ordered">Ordered from Vendor</option>
           <option value="received">Received in Warehouse</option>
         </select>
-        <div className="small muted right">
+        <div className="small muted right" style={{ marginLeft: 'auto' }}>
           Showing {filteredRequests.length} purchase requests
         </div>
       </div>
 
       {loading && <Loading />}
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto' }}>
+      <div className="card table-wrap" style={{ padding: 0 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>

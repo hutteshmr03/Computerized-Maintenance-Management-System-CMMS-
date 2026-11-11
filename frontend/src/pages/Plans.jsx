@@ -66,7 +66,7 @@ export default function Plans() {
       <ErrorNote error={error} />
 
       {/* Filter toolbar */}
-      <div className="panel row" style={{ padding: '12px', gap: '12px' }}>
+      <div className="card tb" style={{ gap: '12px', marginBottom: '14px' }}>
         <input
           type="search"
           placeholder="Filter plans by code, title, machine..."
@@ -85,7 +85,7 @@ export default function Plans() {
 
       {loading && <Loading />}
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto' }}>
+      <div className="card table-wrap" style={{ padding: 0 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>

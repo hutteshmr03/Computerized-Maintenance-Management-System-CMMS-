@@ -165,14 +165,14 @@ function EnterpriseDashboard({ d, user }) {
   }
 
   return (
-    <div className="ent-dashboard" style={{ background: '#F4F5F7', padding: '1.25rem', minHeight: '100%', margin: '-1.5rem', borderRadius: '4px' }}>
+    <div className="ent-dashboard" style={{ width: '100%' }}>
       {/* Topbar inside dashboard page */}
-      <div className="ent-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="ent-topbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: 700, color: '#111827' }}>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--tx)' }}>
             Maintenance Dashboard
           </h1>
-          <div style={{ color: '#6b7280', fontSize: '0.85rem', marginTop: '2px' }}>
+          <div style={{ color: 'var(--mu)', fontSize: '0.85rem', marginTop: '2px' }}>
             Welcome back, {user.name} · <span style={{ fontWeight: 500 }}>Plant 1</span>
           </div>
         </div>
@@ -187,82 +187,22 @@ function EnterpriseDashboard({ d, user }) {
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 width: '260px',
-                padding: '0.55rem 0.85rem',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                background: '#ffffff',
+                padding: '7px 11px',
+                borderRadius: '7px',
+                border: '1px solid var(--bd)',
+                background: 'var(--card)',
+                color: 'var(--tx)',
                 fontSize: '0.875rem',
               }}
             />
           </form>
-
-          {/* Notification Bell */}
-          <Link
-            to="/jobs?filter=approval"
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              borderRadius: '8px',
-              background: '#ffffff',
-              border: '1px solid #d1d5db',
-              textDecoration: 'none',
-              color: '#374151',
-              fontSize: '1.1rem',
-            }}
-            title="Notifications"
-          >
-            🔔
-            {notifications?.unread > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  borderRadius: '999px',
-                  padding: '1px 5px',
-                  minWidth: '16px',
-                  textAlign: 'center',
-                }}
-              >
-                {notifications.unread}
-              </span>
-            )}
-          </Link>
-
-          {/* User Avatar Circle showing initials */}
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: '#1f2937',
-              color: '#f9fafb',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-            title={user.name}
-          >
-            {getInitials(user.name)}
-          </div>
         </div>
       </div>
 
-      {/* Main 2-Column Responsive Layout (60% left, 40% right) */}
-      <div className="ent-layout-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '1.25rem', alignItems: 'start' }}>
+      {/* Main 2-Column Responsive Layout (60% left, 40% right on desktop, 1-col on mobile) */}
+      <div className="ent-layout-grid">
         {/* LEFT COLUMN */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
           {/* 4 KPI TILES */}
           <div className="kpi-grid ent-kpi-grid">
             {/* Tile 1: OEE SCORE */}
@@ -307,14 +247,7 @@ function EnterpriseDashboard({ d, user }) {
           </div>
 
           {/* MIDDLE: Maintenance Activity vs Downtime chart */}
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: '12px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-              padding: '1.25rem',
-            }}
-          >
+          <div className="card" style={{ padding: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#111827' }}>
@@ -468,14 +401,7 @@ function EnterpriseDashboard({ d, user }) {
 
           {/* BELOW LEFT COLUMN: Live Downtime Panel (Manager & Plant Head only) */}
           {isManagerOrPlantHead && (
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: '12px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                padding: '1.25rem',
-              }}
-            >
+            <div className="card" style={{ padding: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span
@@ -638,11 +564,9 @@ function EnterpriseDashboard({ d, user }) {
 
         {/* RIGHT COLUMN (Full Height): Recent Work Orders */}
         <div
+          className="card"
           style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-            padding: '1.25rem',
+            padding: '14px',
             display: 'flex',
             flexDirection: 'column',
             minHeight: '100%',

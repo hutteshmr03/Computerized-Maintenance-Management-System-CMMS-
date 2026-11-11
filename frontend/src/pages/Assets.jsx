@@ -81,16 +81,16 @@ export default function Assets() {
     <div>
       <div className="page-head">
         <div><h1>Assets</h1><p className="lead">Every machine and vehicle you maintain.</p></div>
-        {can('asset.create') && <button className="primary right" onClick={() => setAdding(true)} disabled={!locs.data}>Add asset</button>}
+        {can('asset.create') && <button className="bt p right" onClick={() => setAdding(true)} disabled={!locs.data}>+ Add asset</button>}
       </div>
 
-      <div className="row" style={{ gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem', alignItems: 'flex-end' }}>
+      <div className="card tb" style={{ gap: '1rem', flexWrap: 'wrap', marginBottom: '14px', alignItems: 'flex-end' }}>
         <div className="field" style={{ maxWidth: 360, marginBottom: 0, flex: 1 }}>
-          <label htmlFor="q">Search by name or code</label>
+          <label htmlFor="q" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', display: 'block', marginBottom: '4px' }}>Search by name or code</label>
           <input id="q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="For example press or AST-0003" />
         </div>
         <div className="field" style={{ minWidth: 220, marginBottom: 0 }}>
-          <label htmlFor="util-filter">Filter by Utility Type</label>
+          <label htmlFor="util-filter" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', display: 'block', marginBottom: '4px' }}>Filter by Utility Type</label>
           <select id="util-filter" value={utilityType} onChange={(e) => setUtilityType(e.target.value)}>
             <option value="">All Utility Types</option>
             <option value="compressor">Compressor</option>
@@ -106,7 +106,7 @@ export default function Assets() {
       {loading && !data && <Loading />}
       {data && data.length === 0 && <Empty title="No assets match your search">Try a different filter or search term.</Empty>}
       {data && data.length > 0 && (
-        <div className="panel table-wrap" style={{ padding: 0 }}>
+        <div className="card table-wrap" style={{ padding: 0 }}>
           <table>
             <thead><tr><th>Code</th><th>Asset</th><th>Category</th><th>Utility Type</th><th>Location</th><th>Status</th></tr></thead>
             <tbody>

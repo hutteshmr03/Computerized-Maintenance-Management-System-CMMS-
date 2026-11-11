@@ -49,18 +49,18 @@ export default function Parts() {
     <div>
       <div className="page-head">
         <div><h1>Spare parts</h1><p className="lead">Stock on hand, with a marker at the minimum level.</p></div>
-        {manage && <button className="primary right" onClick={() => { setErr(''); setAdding(true) }}>Add part</button>}
+        {manage && <button className="bt p right" onClick={() => { setErr(''); setAdding(true) }}>+ Add part</button>}
       </div>
       <ErrorNote error={error} />
       {loading && !data && <Loading />}
 
       {low.length > 0 && (
-        <section className="panel" style={{ marginBottom: '1.25rem', borderLeft: '5px solid var(--bad)' }}>
-          <h2>Suggested purchase request</h2>
-          <p className="muted">These parts are at or below their minimum. Quantities bring each one back up to its maximum.</p>
+        <section className="card" style={{ marginBottom: '14px', borderLeft: '4px solid var(--red)' }}>
+          <h2 style={{ fontSize: '15px', margin: '0 0 6px' }}>Suggested purchase request</h2>
+          <p className="muted" style={{ margin: '0 0 10px' }}>These parts are at or below their minimum. Quantities bring each one back up to its maximum.</p>
           {Object.entries(byVendor).map(([vendor, items]) => (
             <div key={vendor} style={{ marginBottom: '.75rem' }}>
-              <h3>{vendor}</h3>
+              <h3 style={{ fontSize: '13px', margin: '0 0 4px' }}>{vendor}</h3>
               <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
                 {items.map((p) => <li key={p.id}>{p.order_qty} x {p.name} ({p.sku}), about {money(p.order_qty * p.unit_cost)}</li>)}
               </ul>
@@ -71,7 +71,7 @@ export default function Parts() {
 
       {data && data.length === 0 && <Empty title="No spare parts yet">{manage ? 'Add your first part to start tracking stock.' : 'A manager can add parts.'}</Empty>}
       {data && data.length > 0 && (
-        <div className="panel table-wrap" style={{ padding: 0 }}>
+        <div className="card table-wrap" style={{ padding: 0 }}>
           <table>
             <thead><tr><th>Part</th><th>Vendor</th><th className="n">In stock</th><th>Level</th><th className="n">Min / max</th><th className="n">Unit cost</th><th /></tr></thead>
             <tbody>

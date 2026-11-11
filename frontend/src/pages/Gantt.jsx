@@ -75,7 +75,7 @@ export default function Gantt() {
       <ErrorNote error={error} />
 
       {/* Filter toolbar */}
-      <div className="panel row" style={{ padding: '12px', gap: '12px' }}>
+      <div className="card tb" style={{ gap: '12px', marginBottom: '14px' }}>
         <input
           type="search"
           placeholder="Filter scheduled jobs..."

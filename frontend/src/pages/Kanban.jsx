@@ -87,7 +87,7 @@ export default function Kanban() {
       <ErrorNote error={error} />
 
       {/* Filter toolbar */}
-      <div className="panel row" style={{ padding: '12px', gap: '12px' }}>
+      <div className="card tb" style={{ gap: '12px', marginBottom: '14px' }}>
         <input
           type="search"
           placeholder="Filter by WO#, title, or asset..."

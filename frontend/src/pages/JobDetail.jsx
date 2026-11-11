@@ -288,10 +288,10 @@ export default function JobDetail() {
         </div>
       )}
 
-      <div className="cols" style={{ gridTemplateColumns: '1.3fr 1fr', gap: '1.5rem' }}>
+      <div className="cols">
         <div className="stack">
           {/* Details Panel */}
-          <section className="panel">
+          <section className="card">
             <h2>Work Order Specifications</h2>
             <dl className="facts">
               <div><dt>DIN 31051 Type</dt><dd><DinTypeBadge type={job.din_type} /></dd></div>
@@ -312,7 +312,7 @@ export default function JobDetail() {
           </section>
 
           {/* DIGITAL STEP-BY-STEP CHECKLIST */}
-          <section className="panel">
+          <section className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h2 style={{ margin: 0 }}>Digital Step-by-Step Checklist</h2>
               <span className="small muted">
@@ -364,7 +364,7 @@ export default function JobDetail() {
 
           {/* WORK DONE & ISO 14224 FAILURE CODES */}
           {(working || job.breakdown_reason || job.action_taken) && (
-            <section className="panel">
+            <section className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <h2 style={{ margin: 0 }}>Work Execution & Failure Analysis (ISO 14224)</h2>
                 {working && (
@@ -509,7 +509,7 @@ export default function JobDetail() {
           )}
 
           {/* Photos */}
-          <section className="panel">
+          <section className="card">
             <h2>Work Photos & Visual Records</h2>
             {job.photos.length === 0 && <p className="muted">No photos attached yet.</p>}
             <div className="photos" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
@@ -544,7 +544,7 @@ export default function JobDetail() {
         {/* Right column: Spare parts & Cost Centre Budgeting */}
         <div className="stack">
           {/* Spare Parts Section */}
-          <section className="panel">
+          <section className="card">
             <h2>Spare Parts & Bill of Materials (BOM)</h2>
 
             {/* BOM Quick-add recommendation */}
@@ -573,37 +573,39 @@ export default function JobDetail() {
             {job.parts.length === 0 ? (
               <p className="muted">No spare parts issued to this work order.</p>
             ) : (
-              <table style={{ width: '100%', fontSize: '0.9rem' }}>
-                <thead>
-                  <tr>
-                    <th>Part</th>
-                    <th style={{ textAlign: 'right' }}>Qty</th>
-                    <th style={{ textAlign: 'right' }}>Cost</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {job.parts.map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.name}</td>
-                      <td style={{ textAlign: 'right' }}>{p.qty}</td>
-                      <td style={{ textAlign: 'right' }}>{money(p.qty * p.unit_cost)}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        {working && (
-                          <button
-                            type="button"
-                            className="danger small"
-                            onClick={() => removePart(p)}
-                            style={{ padding: '2px 6px' }}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </td>
+              <div className="table-wrap">
+                <table style={{ width: '100%', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Part</th>
+                      <th style={{ textAlign: 'right' }}>Qty</th>
+                      <th style={{ textAlign: 'right' }}>Cost</th>
+                      <th />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {job.parts.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.name}</td>
+                        <td style={{ textAlign: 'right' }}>{p.qty}</td>
+                        <td style={{ textAlign: 'right' }}>{money(p.qty * p.unit_cost)}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          {working && (
+                            <button
+                              type="button"
+                              className="danger small"
+                              onClick={() => removePart(p)}
+                              style={{ padding: '2px 6px' }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             {working && (
@@ -649,7 +651,7 @@ export default function JobDetail() {
           </section>
 
           {/* Cost Centre & Budget Tracking */}
-          <section className="panel">
+          <section className="card">
             <h2>Cost Accounting</h2>
             <dl className="facts" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div><dt>Cost Centre</dt><dd>{job.cost_centre_name || 'Standard Plant'}</dd></div>

@@ -38,7 +38,7 @@ export default function ContractorPortal() {
 
       {loading && <Loading />}
 
-      <div className="panel" style={{ padding: 0, overflowX: 'auto' }}>
+      <div className="card table-wrap" style={{ padding: 0 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
