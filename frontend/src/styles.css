@@ -596,14 +596,189 @@ main, .main-content {
 /* Responsive 2-column layout for details pages (AssetDetail, JobDetail) */
 .cols {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 960px) {
   .cols {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ==========================================================================
+   FACTS & SPECIFICATION LISTS (Equipment Specification, Job Details)
+   ========================================================================== */
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .facts {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+}
+
+.facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bd);
+  min-width: 0;
+}
+
+.facts > div.full,
+.facts > div.span-2 {
+  grid-column: 1 / -1;
+}
+
+.facts dt {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mu);
+  margin: 0;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tx);
+  word-break: break-word;
+}
+
+/* ==========================================================================
+   ALERTS, NOTES & SYSTEM MESSAGES
+   ========================================================================== */
+
+.note, .al {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  border: 1px solid var(--bd);
+  background: var(--card);
+  font-size: 13px;
+  line-height: 1.45;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.note.warn, .al.w {
+  background: #fffaf0;
+  border-left: 4px solid var(--amb);
+  border-color: #f6d89b;
+  color: #805100;
+}
+
+.note.bad, .al.r {
+  background: #fff5f5;
+  border-left: 4px solid var(--red);
+  border-color: #f7c3c3;
+  color: #931b1b;
+}
+
+.note.info, .al.i {
+  background: #f0faff;
+  border-left: 4px solid var(--teal);
+  border-color: #b9e5ec;
+  color: #0b5561;
+}
+
+.note a {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* Empty state */
+.empty {
+  border: 1px dashed var(--bd);
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  text-align: center;
+  background: var(--card);
+  color: var(--mu);
+  margin: 12px 0;
+}
+
+.empty strong {
+  display: block;
+  font-size: 14px;
+  color: var(--tx);
+  margin-bottom: 4px;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+/* ==========================================================================
+   QR CODE TAG & PRINT STYLING
+   ========================================================================== */
+
+.qr-box {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--bg);
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--bd);
+}
+
+.qr-frame {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--bd);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Strictly hide print label on screen */
+.label-print {
+  display: none !important;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .label-print,
+  .label-print * {
+    visibility: visible !important;
+  }
+  .label-print {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 35% !important;
+    transform: translate(-50%, -50%) !important;
+    padding: 28px !important;
+    border: 2px dashed #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    text-align: center !important;
+    border-radius: 12px !important;
   }
 }
 

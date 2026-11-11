@@ -87,24 +87,53 @@ export default function AssetDetail() {
 
       {/* Main Details and QR Card */}
       <div className="cols">
-        <section className="card">
-          <h2>Equipment Specification (ISO 55001)</h2>
-          <dl className="facts">
-            <div><dt>Physical Location</dt><dd>{a.location}</dd></div>
-            <div><dt>Cost Centre</dt><dd>{a.cost_centre || 'Standard Plant'}</dd></div>
-            <div><dt>Mobility</dt><dd>{a.is_movable ? 'Movable Equipment' : 'Fixed Installation'}</dd></div>
-            <div><dt>Running Hours</dt><dd>{a.running_hours != null ? `${a.running_hours} h` : '—'}</dd></div>
-            <div><dt>Replacement Value</dt><dd>{money(a.replacement_value)}</dd></div>
-            <div><dt>Installation Date</dt><dd>{a.install_date ? fmtDate(a.install_date) : '—'}</dd></div>
-            <div><dt>Expected Life</dt><dd>{a.expected_life_years ? `${a.expected_life_years} years` : '—'}</dd></div>
-            <div><dt>Hierarchy Parent</dt><dd>{a.parent ? `${a.parent.name} (${a.parent.code})` : 'Top Node'}</dd></div>
-          </dl>
+        <section className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h2 style={{ margin: 0 }}>Equipment Specification (ISO 55001)</h2>
+              <span className="badge grey small">Technical Specs</span>
+            </div>
+            <dl className="facts">
+              <div>
+                <dt>Physical Location</dt>
+                <dd>{a.location}</dd>
+              </div>
+              <div>
+                <dt>Cost Centre</dt>
+                <dd>{a.cost_centre || 'Standard Plant'}</dd>
+              </div>
+              <div>
+                <dt>Mobility</dt>
+                <dd>{a.is_movable ? 'Movable Equipment' : 'Fixed Installation'}</dd>
+              </div>
+              <div>
+                <dt>Running Hours</dt>
+                <dd>{a.running_hours != null ? `${a.running_hours} h` : '—'}</dd>
+              </div>
+              <div>
+                <dt>Replacement Value</dt>
+                <dd>{money(a.replacement_value)}</dd>
+              </div>
+              <div>
+                <dt>Installation Date</dt>
+                <dd>{a.install_date ? fmtDate(a.install_date) : '—'}</dd>
+              </div>
+              <div>
+                <dt>Expected Life</dt>
+                <dd>{a.expected_life_years ? `${a.expected_life_years} years` : '—'}</dd>
+              </div>
+              <div>
+                <dt>Hierarchy Parent</dt>
+                <dd>{a.parent ? `${a.parent.name} (${a.parent.code})` : 'Top Node'}</dd>
+              </div>
+            </dl>
+          </div>
 
           {a.is_movable && can('asset.transfer') && (
-            <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--line)', paddingTop: '12px' }}>
-              <h3>Relocate Asset (Location Transfer)</h3>
+            <div style={{ marginTop: '16px', borderTop: '1px solid var(--bd)', paddingTop: '12px' }}>
+              <h3 style={{ fontSize: '13px', marginBottom: '8px' }}>Relocate Asset (Location Transfer)</h3>
               {a.pending_transfer ? (
-                <p className="muted">A transfer request for this equipment is currently pending manager approval.</p>
+                <p className="muted small">A transfer request for this equipment is currently pending manager approval.</p>
               ) : (
                 <>
                   <ErrorNote error={err} />
@@ -122,7 +151,7 @@ export default function AssetDetail() {
                         </option>
                       ))}
                     </select>
-                    <button onClick={transfer} disabled={!target}>
+                    <button onClick={transfer} disabled={!target} className="primary small">
                       Request Transfer
                     </button>
                   </div>
@@ -132,23 +161,61 @@ export default function AssetDetail() {
           )}
         </section>
 
-        <section className="card">
-          <h2>Equipment QR Code</h2>
-          <div className="qr-box" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <QRCodeSVG value={scanUrl} size={112} />
-            <div>
-              <p className="small muted" style={{ margin: '0 0 8px' }}>
-                Industrial identification tag. Scanning directly opens equipment context and telemetry in under 2 seconds.
-              </p>
-              <button onClick={() => window.print()} className="small">
-                Print QR Tag
-              </button>
+        <section className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h2 style={{ margin: 0 }}>Equipment QR Tag</h2>
+              <span className="badge blue small" style={{ fontFamily: 'monospace', fontWeight: 700 }}>{a.code}</span>
+            </div>
+
+            <div className="qr-box">
+              <div className="qr-frame">
+                <QRCodeSVG value={scanUrl} size={112} level="M" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--tx)', wordBreak: 'break-word' }}>
+                  {a.name}
+                </div>
+                <p className="small muted" style={{ margin: 0, lineHeight: 1.4 }}>
+                  Industrial identification tag. Scanning directly opens equipment context and telemetry in under 2 seconds.
+                </p>
+                <div className="row" style={{ gap: '8px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="small bt primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <span>🖨️</span> Print QR Tag
+                  </button>
+                  <a
+                    href={scanUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="small bt"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    Test Scan ↗
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="label-print">
-            <QRCodeSVG value={scanUrl} size={160} />
-            <div style={{ fontWeight: 700, fontSize: 18, marginTop: '8px' }}>{a.code}</div>
-            <div>{a.name}</div>
+
+          <div style={{ marginTop: '14px', padding: '10px 12px', background: 'var(--card)', borderRadius: '6px', border: '1px solid var(--bd)', fontSize: '12px', color: 'var(--mu)' }}>
+            💡 <strong>Industrial Compliance:</strong> Compatible with ISO 55001 asset registers and 2D industrial handheld barcode scanners.
+          </div>
+
+          {/* Hidden print label: strictly for window.print() output */}
+          <div className="label-print" style={{ display: 'none' }} aria-hidden="true">
+            <QRCodeSVG value={scanUrl} size={180} level="H" />
+            <div style={{ fontWeight: 800, fontSize: 20, marginTop: '12px', letterSpacing: '0.05em' }}>
+              {a.code}
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginTop: '4px' }}>{a.name}</div>
+            <div style={{ fontSize: 12, color: '#555', marginTop: '4px' }}>
+              {a.category || 'Equipment'} • {a.location}
+            </div>
           </div>
         </section>
       </div>
@@ -206,34 +273,34 @@ export default function AssetDetail() {
               <p className="muted">No technical manuals or calibration certificates attached yet.</p>
             ) : (
               <div className="table-wrap">
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <table>
                   <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                      <th style={{ padding: '8px' }}>Title & File</th>
-                      <th style={{ padding: '8px' }}>Document Type</th>
-                      <th style={{ padding: '8px' }}>Version</th>
-                      <th style={{ padding: '8px' }}>Uploaded By</th>
-                      <th style={{ padding: '8px', textAlign: 'right' }}>Action</th>
+                    <tr>
+                      <th>Title & File</th>
+                      <th>Document Type</th>
+                      <th>Version</th>
+                      <th>Uploaded By</th>
+                      <th style={{ textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {a.documents.map((d) => (
-                      <tr key={d.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                        <td style={{ padding: '8px' }}>
+                      <tr key={d.id}>
+                        <td>
                           <strong>📄 {d.title}</strong>
                           <div className="small muted">{d.filename}</div>
                         </td>
-                        <td style={{ padding: '8px' }}>
+                        <td>
                           <span className="badge blue small" style={{ textTransform: 'uppercase' }}>
                             {d.doc_type}
                           </span>
                         </td>
-                        <td style={{ padding: '8px', fontWeight: 600 }}>v{d.version}</td>
-                        <td style={{ padding: '8px', fontSize: '0.85rem' }}>
+                        <td style={{ fontWeight: 600 }}>v{d.version}</td>
+                        <td style={{ fontSize: '0.85rem' }}>
                           {d.uploaded_by}
                           <div className="small muted">{fmtDate(d.uploaded_at)}</div>
                         </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right' }}>
                           <a href={d.url} target="_blank" rel="noreferrer" className="btn small">
                             Download 📥
                           </a>
@@ -266,30 +333,30 @@ export default function AssetDetail() {
               <p className="muted">No spare parts linked to this asset's BOM.</p>
             ) : (
               <div className="table-wrap">
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <table>
                   <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                      <th style={{ padding: '8px' }}>Component Name</th>
-                      <th style={{ padding: '8px' }}>SKU</th>
-                      <th style={{ padding: '8px' }}>Recommended Qty</th>
-                      <th style={{ padding: '8px' }}>Warehouse Stock</th>
-                      <th style={{ padding: '8px' }}>Unit Cost</th>
+                    <tr>
+                      <th>Component Name</th>
+                      <th>SKU</th>
+                      <th>Recommended Qty</th>
+                      <th>Warehouse Stock</th>
+                      <th>Unit Cost</th>
                     </tr>
                   </thead>
                   <tbody>
                     {a.bom.map((b) => (
-                      <tr key={b.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                        <td style={{ padding: '8px', fontWeight: 600 }}>{b.name}</td>
-                        <td style={{ padding: '8px', fontFamily: 'monospace' }}>{b.sku}</td>
-                        <td style={{ padding: '8px', fontWeight: 600 }}>
+                      <tr key={b.id}>
+                        <td style={{ fontWeight: 600 }}>{b.name}</td>
+                        <td style={{ fontFamily: 'monospace' }}>{b.sku}</td>
+                        <td style={{ fontWeight: 600 }}>
                           {b.qty_recommended} {b.unit}
                         </td>
-                        <td style={{ padding: '8px' }}>
+                        <td>
                           <span className={`badge ${b.stock <= 4 ? 'amber' : 'green'} small`}>
                             {b.stock} {b.unit} available
                           </span>
                         </td>
-                        <td style={{ padding: '8px' }}>{money(b.unit_cost)}</td>
+                        <td>{money(b.unit_cost)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -313,32 +380,32 @@ export default function AssetDetail() {
               <p className="muted">No manual sensor measurements recorded for this machine.</p>
             ) : (
               <div className="table-wrap">
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <table>
                   <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line)' }}>
-                      <th style={{ padding: '8px' }}>Time</th>
-                      <th style={{ padding: '8px' }}>Metric</th>
-                      <th style={{ padding: '8px' }}>Value</th>
-                      <th style={{ padding: '8px' }}>Condition</th>
-                      <th style={{ padding: '8px' }}>Technician</th>
+                    <tr>
+                      <th>Time</th>
+                      <th>Metric</th>
+                      <th>Value</th>
+                      <th>Condition</th>
+                      <th>Technician</th>
                     </tr>
                   </thead>
                   <tbody>
                     {a.readings.map((r) => (
-                      <tr key={r.id} style={{ borderBottom: '1px solid var(--line)' }}>
-                        <td style={{ padding: '8px' }}>{fmtDateTime(r.recorded_at)}</td>
-                        <td style={{ padding: '8px', textTransform: 'capitalize' }}>
+                      <tr key={r.id}>
+                        <td>{fmtDateTime(r.recorded_at)}</td>
+                        <td style={{ textTransform: 'capitalize' }}>
                           {r.metric.replace('_', ' ')}
                         </td>
-                        <td style={{ padding: '8px', fontWeight: 600 }}>
+                        <td style={{ fontWeight: 600 }}>
                           {r.value} {r.unit}
                         </td>
-                        <td style={{ padding: '8px' }}>
+                        <td>
                           <span className={`badge ${r.status === 'critical' ? 'red' : r.status === 'warning' ? 'amber' : 'green'} small`}>
                             {r.status}
                           </span>
                         </td>
-                        <td style={{ padding: '8px' }}>{r.recorded_by}</td>
+                        <td>{r.recorded_by}</td>
                       </tr>
                     ))}
                   </tbody>
