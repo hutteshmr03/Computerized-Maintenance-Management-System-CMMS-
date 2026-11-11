@@ -178,7 +178,57 @@ export function Empty({ title, children }) {
   )
 }
 
-export function Loading() { return <p className="muted" role="status">Loading…</p> }
+export function Loading({ label = 'Loading…' }) {
+  return (
+    <div
+      role="status"
+      style={{
+        padding: '24px 16px',
+        width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--mu)', fontSize: '13px', fontWeight: 500 }}>
+        <span
+          style={{
+            width: '16px',
+            height: '16px',
+            border: '2px solid var(--bd)',
+            borderTopColor: 'var(--teal)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+            display: 'inline-block',
+          }}
+        />
+        <span>{label}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', width: '100%' }}>
+        <div
+          style={{
+            height: '120px',
+            borderRadius: 'var(--radius)',
+            background: 'var(--card)',
+            border: '1px solid var(--bd)',
+            opacity: 0.6,
+          }}
+        />
+        <div
+          style={{
+            height: '120px',
+            borderRadius: 'var(--radius)',
+            background: 'var(--card)',
+            border: '1px solid var(--bd)',
+            opacity: 0.6,
+          }}
+        />
+      </div>
+    </div>
+  )
+}
 
 export function ErrorNote({ error }) {
   if (!error) return null
@@ -224,17 +274,37 @@ export function Modal({ title, onClose, children }) {
   )
 }
 
-/* ---------- data hook ---------- */
-export function useLoad(fn, deps = []) {
-  const [data, setData] = useState(null)
+/* ---------- in-memory SWR cache & data hook ---------- */
+const memoryCache = new Map()
+
+export function useLoad(fn, deps = [], cacheKey = '') {
+  const key = cacheKey || (deps.length > 0 ? deps.map(String).join(':') : '')
+  const [data, setData] = useState(() => (key && memoryCache.has(key) ? memoryCache.get(key) : null))
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !(key && memoryCache.has(key)))
+
   const reload = useCallback(() => {
-    setLoading(true)
-    return fn().then((d) => { setData(d); setError('') }).catch((e) => setError(e.message)).finally(() => setLoading(false))
+    if (!(key && memoryCache.has(key))) {
+      setLoading(true)
+    }
+    return fn()
+      .then((d) => {
+        setData(d)
+        setError('')
+        if (key && d != null) {
+          memoryCache.set(key, d)
+        }
+        return d
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
-  useEffect(() => { reload() }, [reload])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
+
   return { data, error, loading, reload, setData }
 }
 

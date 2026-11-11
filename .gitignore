@@ -2,7 +2,10 @@ __pycache__/
 *.pyc
 *.pyo
 .env
-cmms.db
+cmms.db*
+*.db
+*.db-wal
+*.db-shm
 uploads/
 frontend/node_modules/
 frontend/dist/

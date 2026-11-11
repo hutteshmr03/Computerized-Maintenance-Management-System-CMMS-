@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from . import models as m
 from .db import Base, SessionLocal, engine, get_db, utcnow
@@ -40,10 +40,47 @@ MAX_FAILED_LOGINS = 5
 LOCK_MINUTES = 5
 
 
+INDEXES_SQL = [
+    "CREATE INDEX IF NOT EXISTS idx_jobs_asset_id ON jobs (asset_id)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs (status)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_assigned_to ON jobs (assigned_to)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_contractor_id ON jobs (contractor_id)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs (created_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_due_date ON jobs (due_date)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_din_type ON jobs (din_type)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_priority ON jobs (priority)",
+    "CREATE INDEX IF NOT EXISTS idx_jobs_asset_status ON jobs (asset_id, status)",
+    "CREATE INDEX IF NOT EXISTS idx_job_parts_job_id ON job_parts (job_id)",
+    "CREATE INDEX IF NOT EXISTS idx_job_parts_part_id ON job_parts (part_id)",
+    "CREATE INDEX IF NOT EXISTS idx_job_checklists_job_id ON work_order_checklists (job_id)",
+    "CREATE INDEX IF NOT EXISTS idx_job_loto_job_id ON work_order_loto (job_id)",
+    "CREATE INDEX IF NOT EXISTS idx_job_photos_job_id ON job_photos (job_id)",
+    "CREATE INDEX IF NOT EXISTS idx_assets_parent_id ON assets (parent_id)",
+    "CREATE INDEX IF NOT EXISTS idx_assets_location_id ON assets (location_id)",
+    "CREATE INDEX IF NOT EXISTS idx_assets_cost_centre_id ON assets (cost_centre_id)",
+    "CREATE INDEX IF NOT EXISTS idx_assets_status ON assets (status)",
+    "CREATE INDEX IF NOT EXISTS idx_assets_criticality ON assets (criticality)",
+    "CREATE INDEX IF NOT EXISTS idx_assets_tier ON assets (tier)",
+    "CREATE INDEX IF NOT EXISTS idx_calibrations_asset_id ON calibrations (asset_id)",
+    "CREATE INDEX IF NOT EXISTS idx_calibrations_next_date ON calibrations (next_due_date)",
+    "CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id, read)",
+    "CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log (entity, entity_id)",
+    "CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log (at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_bom_asset_id ON bom_items (asset_id)",
+    "CREATE INDEX IF NOT EXISTS idx_bom_part_id ON bom_items (part_id)",
+    "CREATE INDEX IF NOT EXISTS idx_purchase_part_id ON purchase_requests (part_id)",
+    "CREATE INDEX IF NOT EXISTS idx_purchase_status ON purchase_requests (status)",
+    "CREATE INDEX IF NOT EXISTS idx_condition_readings_asset ON condition_readings (asset_id)",
+    "CREATE INDEX IF NOT EXISTS idx_condition_readings_recorded ON condition_readings (recorded_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_transfers_asset ON transfers (asset_id)",
+    "CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers (status)",
+]
+
+
 @asynccontextmanager
 async def lifespan(_app):
     Base.metadata.create_all(engine)
-    # Check if utility_type column exists in assets table
+    # Ensure performance indexes and schema migrations
     with engine.connect() as conn:
         try:
             res = conn.exec_driver_sql("PRAGMA table_info(assets)").fetchall()
@@ -52,6 +89,13 @@ async def lifespan(_app):
                 conn.exec_driver_sql("ALTER TABLE assets ADD COLUMN utility_type VARCHAR(30)")
         except Exception:
             pass
+
+        for idx in INDEXES_SQL:
+            try:
+                conn.exec_driver_sql(idx)
+            except Exception:
+                pass
+        conn.commit()
 
     with SessionLocal() as db:
         if not db.scalar(select(func.count()).select_from(m.User)):
@@ -147,11 +191,19 @@ def open_job_for(db: Session, asset_id: int, exclude_id: int | None = None):
     return db.scalar(q)
 
 
+_user_name_cache: dict[int, str] = {}
+
+
 def user_name(db: Session, uid: int | None) -> str:
     if not uid:
         return ""
+    if uid in _user_name_cache:
+        return _user_name_cache[uid]
     u = db.get(m.User, uid)
-    return u.name if u else ""
+    name = u.name if u else ""
+    if u:
+        _user_name_cache[uid] = name
+    return name
 
 
 def get_user_permissions(u: m.User, db: Session | None = None) -> list[str]:
@@ -362,8 +414,8 @@ def job_dict(db: Session, job: m.Job, user: m.User) -> dict:
             "name": job.asset.name,
             "tier": job.asset.tier,
             "criticality": job.asset.criticality,
-            "location": job.asset.location.name,
-        },
+            "location": job.asset.location.name if job.asset.location else "Plant Area",
+        } if job.asset else None,
         "cost_centre": {
             "id": job.cost_centre.id,
             "code": job.cost_centre.code,
@@ -650,7 +702,11 @@ def list_locations(db: Session = Depends(get_db), user: m.User = Depends(current
 
 @app.get("/api/assets")
 def list_assets(q: str = "", tier: str = "", utility_type: str = "", db: Session = Depends(get_db), user: m.User = Depends(current_user)):
-    stmt = select(m.Asset).order_by(m.Asset.code)
+    stmt = (
+        select(m.Asset)
+        .options(joinedload(m.Asset.location), joinedload(m.Asset.cost_centre))
+        .order_by(m.Asset.code)
+    )
     if tier:
         stmt = stmt.where(m.Asset.tier == tier)
     if utility_type:
@@ -664,7 +720,7 @@ def list_assets(q: str = "", tier: str = "", utility_type: str = "", db: Session
                 func.lower(m.Asset.category).like(like),
             )
         )
-    return [asset_dict(db, a) for a in db.scalars(stmt)]
+    return [asset_dict(db, a) for a in db.scalars(stmt).unique()]
 
 
 class AssetIn(BaseModel):
@@ -997,7 +1053,17 @@ def list_jobs(
     db: Session = Depends(get_db),
     user: m.User = Depends(current_user),
 ):
-    stmt = select(m.Job).order_by(m.Job.created_at.desc())
+    stmt = (
+        select(m.Job)
+        .options(
+            joinedload(m.Job.asset).joinedload(m.Asset.location),
+            joinedload(m.Job.cost_centre),
+            selectinload(m.Job.parts),
+            selectinload(m.Job.checklists),
+            selectinload(m.Job.loto_steps),
+        )
+        .order_by(m.Job.created_at.desc())
+    )
     # Contractors only see their assigned work orders
     if user.role == "contractor":
         stmt = stmt.where(m.Job.contractor_id == user.id)
@@ -1014,7 +1080,7 @@ def list_jobs(
         like = f"%{q.lower()}%"
         stmt = stmt.where(or_(func.lower(m.Job.title).like(like), func.lower(m.Job.wo_number).like(like)))
 
-    return [job_dict(db, j, user) for j in db.scalars(stmt)]
+    return [job_dict(db, j, user) for j in db.scalars(stmt).unique()]
 
 
 @app.get("/api/jobs/kanban")
@@ -1023,11 +1089,21 @@ def get_kanban_board(db: Session = Depends(get_db), user: m.User = Depends(curre
     columns = ["created", "planned", "approved", "in_progress", "review", "closed"]
     board = {col: [] for col in columns}
 
-    stmt = select(m.Job).order_by(m.Job.created_at.desc())
+    stmt = (
+        select(m.Job)
+        .options(
+            joinedload(m.Job.asset).joinedload(m.Asset.location),
+            joinedload(m.Job.cost_centre),
+            selectinload(m.Job.parts),
+            selectinload(m.Job.checklists),
+            selectinload(m.Job.loto_steps),
+        )
+        .order_by(m.Job.created_at.desc())
+    )
     if user.role == "contractor":
         stmt = stmt.where(m.Job.contractor_id == user.id)
 
-    for j in db.scalars(stmt):
+    for j in db.scalars(stmt).unique():
         col = j.status if j.status in board else "created"
         board[col].append(job_dict(db, j, user))
     return board
@@ -1152,7 +1228,18 @@ def create_job(body: JobIn, db: Session = Depends(get_db), user: m.User = Depend
 
 @app.get("/api/jobs/{job_id}")
 def get_job_detail(job_id: int, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
-    job = db.get(m.Job, job_id)
+    stmt = (
+        select(m.Job)
+        .options(
+            joinedload(m.Job.asset).joinedload(m.Asset.location),
+            joinedload(m.Job.cost_centre),
+            selectinload(m.Job.parts),
+            selectinload(m.Job.checklists),
+            selectinload(m.Job.loto_steps),
+        )
+        .where(m.Job.id == job_id)
+    )
+    job = db.scalar(stmt)
     if not job:
         raise HTTPException(404, "Job not found.")
     return job_dict(db, job, user)
