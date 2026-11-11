@@ -161,49 +161,45 @@ export default function AssetDetail() {
           )}
         </section>
 
-        <section className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <section className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h2 style={{ margin: 0 }}>Equipment QR Tag</h2>
-              <span className="badge blue small" style={{ fontFamily: 'monospace', fontWeight: 700 }}>{a.code}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--tx)' }}>Equipment QR Tag</h2>
+              <span className="badge blue small" style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '12px', padding: '3px 8px' }}>{a.code}</span>
             </div>
 
-            <div className="qr-box">
-              <div className="qr-frame">
-                <QRCodeSVG value={scanUrl} size={112} level="M" />
+            <div className="qr-box" style={{ display: 'flex', gap: '18px', alignItems: 'center', background: 'var(--bg)', padding: '16px', borderRadius: '10px', border: '1px solid var(--bd)' }}>
+              <div className="qr-frame" style={{ background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid var(--bd)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}>
+                <QRCodeSVG value={scanUrl} size={144} level="M" />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--tx)', wordBreak: 'break-word' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--tx)', wordBreak: 'break-word', lineHeight: 1.3 }}>
                   {a.name}
                 </div>
-                <p className="small muted" style={{ margin: 0, lineHeight: 1.4 }}>
+                <p className="small muted" style={{ margin: 0, fontSize: '13px', lineHeight: 1.45, color: 'var(--mu)' }}>
                   Industrial identification tag. Scanning directly opens equipment context and telemetry in under 2 seconds.
                 </p>
-                <div className="row" style={{ gap: '8px', marginTop: '4px' }}>
+                <div className="row" style={{ gap: '10px', marginTop: '6px' }}>
                   <button
                     type="button"
                     onClick={() => window.print()}
                     className="small bt primary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    style={{ fontWeight: 600, padding: '7px 14px' }}
                   >
-                    <span>🖨️</span> Print QR Tag
+                    Print QR Tag
                   </button>
                   <a
                     href={scanUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="small bt"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    style={{ fontWeight: 500, padding: '7px 14px' }}
                   >
                     Test Scan ↗
                   </a>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div style={{ marginTop: '14px', padding: '10px 12px', background: 'var(--card)', borderRadius: '6px', border: '1px solid var(--bd)', fontSize: '12px', color: 'var(--mu)' }}>
-            💡 <strong>Industrial Compliance:</strong> Compatible with ISO 55001 asset registers and 2D industrial handheld barcode scanners.
           </div>
 
           {/* Hidden print label: strictly for window.print() output */}
