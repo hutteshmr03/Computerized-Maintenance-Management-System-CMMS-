@@ -162,7 +162,7 @@ function Shell() {
           <div className="logo-mark">CM</div>
           <div className="brand-text-wrap">
             <span className="brand-title">Sumant Cloud CMMS</span>
-            <span className="brand-subtitle">Equipment Maintenance Management</span>
+            <span className="brand-subtitle">Equipment Maintenance Management for Manufacturing</span>
           </div>
         </Link>
 

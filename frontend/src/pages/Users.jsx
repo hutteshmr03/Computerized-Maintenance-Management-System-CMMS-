@@ -200,29 +200,27 @@ export default function Users() {
       {/* Page Header */}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700 }}>User Management & Governance</h1>
-          <p className="muted" style={{ margin: '4px 0 0 0' }}>
+          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>User Management & Governance</h1>
+          <p className="muted" style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
             Manage enterprise users, access credentials, custom role definitions, and GDPR Article 15/20 data portability.
           </p>
         </div>
         <div className="row" style={{ gap: '8px' }}>
           {activeTab === 'users' && can('user.manage') && (
             <button
-              className="primary"
+              className="bt p"
               onClick={() => setShowAddUserModal(true)}
-              style={{ background: '#1E3A5F', border: 'none', borderRadius: '8px', padding: '10px 18px', fontWeight: 600 }}
             >
               + Create User
             </button>
           )}
           {activeTab === 'roles' && isAdmin && (
             <button
-              className="primary"
+              className="bt p"
               onClick={() => {
                 setEditingRole(null)
                 setShowRoleModal(true)
               }}
-              style={{ background: '#1E3A5F', border: 'none', borderRadius: '8px', padding: '10px 18px', fontWeight: 600 }}
             >
               + Create Role
             </button>
@@ -232,27 +230,27 @@ export default function Users() {
 
       {/* Tabs */}
       <div
-        className="row"
+        className="tb"
         style={{
-          gap: '8px',
-          borderBottom: '1px solid var(--line, #e5e7eb)',
-          paddingBottom: '12px',
-          marginTop: '8px',
+          gap: '6px',
+          borderBottom: '1px solid var(--bd)',
+          paddingBottom: '8px',
+          marginTop: '6px',
         }}
       >
         <button
           type="button"
+          className={`bt ${activeTab === 'users' ? 'on p' : ''}`}
           onClick={() => setActiveTab('users')}
           style={{
-            padding: '8px 20px',
-            borderRadius: '8px',
+            padding: '7px 16px',
+            borderRadius: '7px',
             fontWeight: 600,
-            fontSize: '0.92rem',
-            background: activeTab === 'users' ? '#1E3A5F' : '#ffffff',
-            color: activeTab === 'users' ? '#ffffff' : '#4b5563',
-            border: '1px solid ' + (activeTab === 'users' ? '#1E3A5F' : '#d1d5db'),
+            fontSize: '13px',
+            background: activeTab === 'users' ? 'var(--navy)' : 'var(--card)',
+            color: activeTab === 'users' ? '#ffffff' : 'var(--mu)',
+            border: `1px solid ${activeTab === 'users' ? 'var(--navy)' : 'var(--bd)'}`,
             cursor: 'pointer',
-            transition: 'all 0.15s ease',
           }}
         >
           Users ({users.length})
@@ -260,17 +258,17 @@ export default function Users() {
         {isAdmin && (
           <button
             type="button"
+            className={`bt ${activeTab === 'roles' ? 'on p' : ''}`}
             onClick={() => setActiveTab('roles')}
             style={{
-              padding: '8px 20px',
-              borderRadius: '8px',
+              padding: '7px 16px',
+              borderRadius: '7px',
               fontWeight: 600,
-              fontSize: '0.92rem',
-              background: activeTab === 'roles' ? '#1E3A5F' : '#ffffff',
-              color: activeTab === 'roles' ? '#ffffff' : '#4b5563',
-              border: '1px solid ' + (activeTab === 'roles' ? '#1E3A5F' : '#d1d5db'),
+              fontSize: '13px',
+              background: activeTab === 'roles' ? 'var(--navy)' : 'var(--card)',
+              color: activeTab === 'roles' ? '#ffffff' : 'var(--mu)',
+              border: `1px solid ${activeTab === 'roles' ? 'var(--navy)' : 'var(--bd)'}`,
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             Roles ({customRoles.length})
@@ -283,49 +281,51 @@ export default function Users() {
 
       {/* USERS TAB CONTENT */}
       {activeTab === 'users' && !loading && (
-        <div className="stack" style={{ gap: '1rem' }}>
+        <div className="stack" style={{ gap: '10px' }}>
           {/* Filter toolbar */}
-          <div className="panel row" style={{ padding: '12px', gap: '12px', alignItems: 'center', background: '#fff', borderRadius: '10px' }}>
-            <input
-              type="search"
-              placeholder="Search by username, name, email, or company..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ flex: 1, minWidth: '220px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
-            />
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              style={{ width: '220px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
-            >
-              <option value="">All Roles</option>
-              {allRolesList.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            <div className="small muted" style={{ whiteSpace: 'nowrap' }}>
+          <div className="tb" style={{ justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flex: 1, alignItems: 'center' }}>
+              <input
+                type="search"
+                placeholder="Search by username, name, email, or company..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ maxWidth: '320px' }}
+              />
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                style={{ maxWidth: '200px', width: 'auto' }}
+              >
+                <option value="">All Roles</option>
+                {allRolesList.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="small muted" style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>
               Showing {filteredUsers.length} of {users.length} users
             </div>
           </div>
 
-          <div className="panel" style={{ padding: 0, overflowX: 'auto', background: '#fff', borderRadius: '10px' }}>
-            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="card" style={{ padding: 0 }}>
+            <table>
               <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line, #e5e7eb)', background: '#f9fafb' }}>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>User & Email</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Role</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Units & Departments</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Status</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Registered</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
+                <tr>
+                  <th>User & Email</th>
+                  <th>Role</th>
+                  <th>Units & Departments</th>
+                  <th>Status</th>
+                  <th>Registered</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#6b7280' }}>
+                    <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: 'var(--mu)' }}>
                       No users match your search criteria.
                     </td>
                   </tr>
@@ -334,53 +334,41 @@ export default function Users() {
                     const roleMeta = allRolesList.find((r) => r.id === u.role) || { label: u.role, desc: 'Role' }
                     const isInactive = u.status === 'inactive'
                     return (
-                      <tr key={u.id} style={{ borderBottom: '1px solid var(--line, #e5e7eb)' }}>
-                        <td style={{ padding: '12px 16px' }}>
+                      <tr key={u.id}>
+                        <td>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <strong style={{ fontSize: '0.95rem', color: '#111827' }}>
+                            <strong style={{ fontSize: '13px', color: 'var(--tx)' }}>
                               {u.full_name || u.name}
                             </strong>
                             {u.username && (
-                              <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>@{u.username}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--mu)' }}>@{u.username}</span>
                             )}
-                            <span className="small muted" style={{ fontSize: '0.8rem' }}>{u.email}</span>
+                            <span className="small muted" style={{ fontSize: '11px' }}>{u.email}</span>
                           </div>
                         </td>
 
-                        <td style={{ padding: '12px 16px' }}>
-                          <span
-                            className="badge blue"
-                            style={{
-                              textTransform: 'capitalize',
-                              fontWeight: 600,
-                              background: '#eff6ff',
-                              color: '#1d4ed8',
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                            }}
-                          >
+                        <td>
+                          <span className="b t">
                             {roleMeta.label}
                           </span>
                           {roleMeta.desc && (
-                            <div className="small muted" style={{ marginTop: '2px', maxWidth: '240px', fontSize: '0.78rem' }}>
+                            <div className="small muted" style={{ marginTop: '2px', maxWidth: '240px', fontSize: '11px' }}>
                               {roleMeta.desc}
                             </div>
                           )}
                         </td>
 
-                        <td style={{ padding: '12px 16px' }}>
+                        <td>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {u.units && u.units.length > 0 && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                 {u.units.map((unit) => (
                                   <span
                                     key={unit}
+                                    className="b"
                                     style={{
-                                      fontSize: '0.75rem',
-                                      background: '#f3f4f6',
-                                      color: '#374151',
+                                      fontSize: '11px',
                                       padding: '1px 6px',
-                                      borderRadius: '4px',
                                     }}
                                   >
                                     📍 {unit}
@@ -393,12 +381,10 @@ export default function Users() {
                                 {u.departments.map((dept) => (
                                   <span
                                     key={dept}
+                                    className="b a"
                                     style={{
-                                      fontSize: '0.75rem',
-                                      background: '#fef3c7',
-                                      color: '#92400e',
+                                      fontSize: '11px',
                                       padding: '1px 6px',
-                                      borderRadius: '4px',
                                     }}
                                   >
                                     🏭 {dept}
@@ -407,40 +393,40 @@ export default function Users() {
                               </div>
                             )}
                             {(!u.units || u.units.length === 0) && (!u.departments || u.departments.length === 0) && (
-                              <span className="muted small" style={{ fontSize: '0.8rem' }}>All Plant Areas</span>
+                              <span className="muted small" style={{ fontSize: '12px' }}>All Plant Areas</span>
                             )}
                           </div>
                         </td>
 
-                        <td style={{ padding: '12px 16px' }}>
+                        <td>
                           {u.is_locked ? (
-                            <span className="badge red" style={{ background: '#fee2e2', color: '#991b1b', padding: '3px 8px', borderRadius: '6px' }}>
-                              🔒 Locked Out
+                            <span className="b r">
+                              🔒 Locked
                             </span>
                           ) : isInactive ? (
-                            <span className="badge gray" style={{ background: '#f3f4f6', color: '#6b7280', padding: '3px 8px', borderRadius: '6px' }}>
+                            <span className="b" style={{ background: 'var(--bg)', color: 'var(--mu)' }}>
                               ○ Inactive
                             </span>
                           ) : (
-                            <span className="badge green" style={{ background: '#ecfdf5', color: '#065f46', padding: '3px 8px', borderRadius: '6px' }}>
+                            <span className="b g1">
                               ✓ Active
                             </span>
                           )}
                         </td>
 
-                        <td style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563' }}>
+                        <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
                           {fmtDate(u.created_at)}
                         </td>
 
-                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right' }}>
                           <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
                             <button
                               type="button"
-                              className="small"
+                              className="bt"
                               disabled={exportingId === u.id}
                               onClick={() => handleGdprExport(u)}
                               title="Download complete GDPR personal activity data archive as JSON"
-                              style={{ padding: '4px 10px', fontSize: '0.8rem', borderRadius: '6px' }}
+                              style={{ padding: '4px 8px', fontSize: '11px' }}
                             >
                               {exportingId === u.id ? 'Exporting…' : 'GDPR Export 📥'}
                             </button>
@@ -448,8 +434,8 @@ export default function Users() {
                             {u.is_locked && (
                               <button
                                 type="button"
-                                className="small ok"
-                                style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', fontSize: '0.8rem', borderRadius: '6px' }}
+                                className="bt p"
+                                style={{ padding: '4px 8px', fontSize: '11px' }}
                                 onClick={() => handleUnlock(u.id)}
                               >
                                 Unlock 🔓
@@ -469,31 +455,30 @@ export default function Users() {
 
       {/* ROLES TAB CONTENT */}
       {activeTab === 'roles' && !loading && (
-        <div className="stack" style={{ gap: '1rem' }}>
-          <div className="panel" style={{ padding: 0, overflowX: 'auto', background: '#fff', borderRadius: '10px' }}>
-            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="stack" style={{ gap: '10px' }}>
+          <div className="card" style={{ padding: 0 }}>
+            <table>
               <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--line, #e5e7eb)', background: '#f9fafb' }}>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Role Name</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Display Name</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Privileges Count</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase' }}>Created By</th>
-                  <th style={{ padding: '12px 16px', fontSize: '0.85rem', color: '#4b5563', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
+                <tr>
+                  <th>Role Name</th>
+                  <th>Display Name</th>
+                  <th>Privileges Count</th>
+                  <th>Created By</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {customRoles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>
-                      <p style={{ margin: '0 0 12px 0', fontSize: '1rem' }}>No custom roles created yet.</p>
+                    <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--mu)' }}>
+                      <p style={{ margin: '0 0 10px 0', fontSize: '13px' }}>No custom roles created yet.</p>
                       <button
                         type="button"
-                        className="primary"
+                        className="bt p"
                         onClick={() => {
                           setEditingRole(null)
                           setShowRoleModal(true)
                         }}
-                        style={{ background: '#1E3A5F', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 600 }}
                       >
                         + Create Role
                       </button>
@@ -501,68 +486,59 @@ export default function Users() {
                   </tr>
                 ) : (
                   customRoles.map((role) => (
-                    <tr key={role.id} style={{ borderBottom: '1px solid var(--line, #e5e7eb)' }}>
-                      <td style={{ padding: '12px 16px' }}>
+                    <tr key={role.id}>
+                      <td>
                         <code
                           style={{
-                            background: '#f3f4f6',
-                            color: '#1f2937',
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '0.88rem',
-                            fontWeight: 600,
+                            background: 'var(--bg)',
+                            color: 'var(--tx)',
+                            border: '1px solid var(--bd)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontFamily: 'monospace',
                           }}
                         >
                           {role.name}
                         </code>
                       </td>
 
-                      <td style={{ padding: '12px 16px', fontWeight: 600, color: '#111827' }}>
+                      <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
                         {role.display_name}
                       </td>
 
-                      <td style={{ padding: '12px 16px' }}>
-                        <span
-                          style={{
-                            background: '#eff6ff',
-                            color: '#1d4ed8',
-                            padding: '2px 10px',
-                            borderRadius: '12px',
-                            fontSize: '0.82rem',
-                            fontWeight: 600,
-                          }}
-                        >
+                      <td>
+                        <span className="b t">
                           {(role.privileges || []).length} privileges
                         </span>
                       </td>
 
-                      <td style={{ padding: '12px 16px', fontSize: '0.88rem', color: '#4b5563' }}>
+                      <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
                         {role.created_by || 'Admin'}
                       </td>
 
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        <div className="row" style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
                           <button
                             type="button"
-                            className="small"
+                            className="bt"
                             onClick={() => {
                               setEditingRole(role)
                               setShowRoleModal(true)
                             }}
-                            style={{ padding: '4px 12px', borderRadius: '6px', cursor: 'pointer' }}
+                            style={{ padding: '4px 8px', fontSize: '11px' }}
                           >
                             Edit ✏️
                           </button>
                           <button
                             type="button"
-                            className="small"
+                            className="bt"
                             onClick={() => handleDeleteRole(role)}
                             style={{
-                              padding: '4px 12px',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              color: '#dc2626',
-                              borderColor: '#fca5a5',
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              color: 'var(--red)',
+                              borderColor: 'var(--red)',
                             }}
                           >
                             Delete 🗑️
@@ -644,15 +620,15 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', position: 'relative' }} ref={containerRef}>
-      <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>{label}</label>
+      <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', margin: 0 }}>{label}</label>
       <div
         onClick={() => setOpen(!open)}
         style={{
-          minHeight: '42px',
-          padding: '6px 12px',
-          border: '1px solid #d1d5db',
-          borderRadius: '8px',
-          background: '#fff',
+          minHeight: '38px',
+          padding: '5px 10px',
+          border: '1px solid var(--bd)',
+          borderRadius: '7px',
+          background: 'var(--card)',
           cursor: 'pointer',
           display: 'flex',
           flexWrap: 'wrap',
@@ -662,21 +638,18 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
         }}
       >
         {selected.length === 0 ? (
-          <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>{placeholder}</span>
+          <span style={{ color: 'var(--mu)', fontSize: '13px' }}>{placeholder}</span>
         ) : (
           selected.map((opt) => (
             <span
               key={opt}
+              className="b t"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
-                background: '#e0e7ff',
-                color: '#1e3a8a',
                 padding: '2px 8px',
-                borderRadius: '6px',
-                fontSize: '0.82rem',
-                fontWeight: 500,
+                fontSize: '11px',
               }}
             >
               {opt}
@@ -688,9 +661,9 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
                   border: 'none',
                   padding: 0,
                   cursor: 'pointer',
-                  color: '#1e3a8a',
+                  color: 'inherit',
                   fontWeight: 'bold',
-                  fontSize: '0.85rem',
+                  fontSize: '12px',
                   lineHeight: 1,
                 }}
               >
@@ -699,7 +672,7 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
             </span>
           ))
         )}
-        <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#6b7280' }}>
+        <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--mu)' }}>
           {open ? '▲' : '▼'}
         </span>
       </div>
@@ -712,11 +685,11 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
             left: 0,
             right: 0,
             zIndex: 1000,
-            background: '#ffffff',
-            border: '1px solid #d1d5db',
-            borderRadius: '8px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
-            maxHeight: '220px',
+            background: 'var(--card)',
+            border: '1px solid var(--bd)',
+            borderRadius: '7px',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+            maxHeight: '200px',
             overflowY: 'auto',
             marginTop: '4px',
             padding: '4px 0',
@@ -731,11 +704,11 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '8px 14px',
+                  padding: '7px 12px',
                   cursor: 'pointer',
-                  background: isSelected ? '#f3f4f6' : 'transparent',
-                  fontSize: '0.875rem',
-                  color: '#1f2937',
+                  background: isSelected ? 'var(--bg)' : 'transparent',
+                  fontSize: '13px',
+                  color: 'var(--tx)',
                   margin: 0,
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -744,7 +717,7 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => toggleOption(opt)}
-                  style={{ accentColor: '#1E3A5F', cursor: 'pointer' }}
+                  style={{ accentColor: 'var(--teal)', cursor: 'pointer', width: 'auto' }}
                 />
                 <span>{opt}</span>
               </label>
@@ -814,38 +787,32 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
   return (
     <div className="scrim" onClick={onClose}>
       <div
-        className="modal"
+        className="modal mb"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '28px',
-          width: '100%',
-          maxWidth: '620px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          boxSizing: 'border-box',
+          maxWidth: '580px',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: '#111827' }}>Create New User</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ margin: 0, fontSize: '15px' }}>Create New User</h3>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280', padding: '4px' }}
+            style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--mu)', padding: '4px' }}
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="stack" style={{ gap: '16px' }}>
+        <form onSubmit={handleSubmit} className="stack" style={{ gap: '12px' }}>
           <ErrorNote error={err} />
 
           {/* Row 1 (two columns side by side): Username * | Full Name * */}
-          <div className="row" style={{ gap: '16px', display: 'flex' }}>
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label htmlFor="usr-username" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+              <label htmlFor="usr-username" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
                 Username *
               </label>
               <input
@@ -855,12 +822,11 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
                 placeholder="e.g. h_richter"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.92rem' }}
               />
             </div>
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label htmlFor="usr-fullname" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+              <label htmlFor="usr-fullname" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
                 Full Name *
               </label>
               <input
@@ -870,14 +836,13 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
                 placeholder="e.g. Hans Richter"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.92rem' }}
               />
             </div>
           </div>
 
           {/* Row 2 (full width): Email Address * */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label htmlFor="usr-email" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+            <label htmlFor="usr-email" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
               Email Address *
             </label>
             <input
@@ -887,20 +852,18 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
               placeholder="e.g. h.richter@plant.de"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.92rem' }}
             />
           </div>
 
           {/* Row 3 (full width): Role * — dropdown showing 9 built-in roles PLUS custom roles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label htmlFor="usr-role" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+            <label htmlFor="usr-role" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
               Role *
             </label>
             <select
               id="usr-role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.92rem', background: '#fff' }}
             >
               <optgroup label="Built-in Roles">
                 {BUILTIN_ROLES.map((r) => (
@@ -940,9 +903,9 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
           />
 
           {/* Row 6 (two columns side by side): Password * | Status */}
-          <div className="row" style={{ gap: '16px', display: 'flex' }}>
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label htmlFor="usr-password" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+              <label htmlFor="usr-password" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
                 Password *
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -955,12 +918,7 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
-                    width: '100%',
-                    padding: '9px 40px 9px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.92rem',
-                    boxSizing: 'border-box',
+                    paddingRight: '38px',
                   }}
                 />
                 <button
@@ -969,13 +927,13 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   style={{
                     position: 'absolute',
-                    right: '10px',
+                    right: '8px',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    fontSize: '1rem',
-                    color: '#6b7280',
-                    padding: '4px',
+                    fontSize: '14px',
+                    color: 'var(--mu)',
+                    padding: '2px',
                     display: 'flex',
                     alignItems: 'center',
                   }}
@@ -986,14 +944,13 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
             </div>
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label htmlFor="usr-status" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+              <label htmlFor="usr-status" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
                 Status
               </label>
               <select
                 id="usr-status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.92rem', background: '#fff' }}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -1001,36 +958,19 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
             </div>
           </div>
 
-          {/* Buttons: Cancel | Create User (blue primary #1E3A5F) */}
-          <div className="row" style={{ justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+          {/* Buttons: Cancel | Create User */}
+          <div className="r">
             <button
               type="button"
+              className="bt"
               onClick={onClose}
-              style={{
-                padding: '10px 18px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                background: '#fff',
-                color: '#374151',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="primary"
+              className="bt p"
               disabled={saving}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#1E3A5F',
-                color: '#ffffff',
-                fontWeight: 600,
-                cursor: saving ? 'not-allowed' : 'pointer',
-              }}
             >
               {saving ? 'Creating…' : 'Create User'}
             </button>
@@ -1115,41 +1055,33 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
   return (
     <div className="scrim" onClick={onClose}>
       <div
-        className="modal"
+        className="modal mb"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          padding: '28px',
-          width: '100%',
-          maxWidth: '680px',
-          maxHeight: 'calc(100vh - 4rem)',
-          overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          boxSizing: 'border-box',
+          maxWidth: '640px',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 700, color: '#111827' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ margin: 0, fontSize: '15px' }}>
             {isEdit ? 'Edit Custom Role' : 'Create Custom Role'}
-          </h2>
+          </h3>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#6b7280', padding: '4px' }}
+            style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--mu)', padding: '4px' }}
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="stack" style={{ gap: '16px' }}>
+        <form onSubmit={handleSubmit} className="stack" style={{ gap: '12px' }}>
           <ErrorNote error={err} />
 
           {/* Role Name * (slug, lowercase, no spaces) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label htmlFor="role-name" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+            <label htmlFor="role-name" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
               Role Name *
             </label>
             <input
@@ -1161,21 +1093,17 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
               style={{
-                padding: '9px 12px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                fontSize: '0.92rem',
-                backgroundColor: isEdit ? '#f3f4f6' : '#fff',
+                backgroundColor: isEdit ? 'var(--bg)' : 'var(--card)',
               }}
             />
-            <span className="muted small" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+            <span className="muted small" style={{ fontSize: '11px', color: 'var(--mu)' }}>
               Slug identifier: lowercase, no spaces, e.g. "shift_supervisor"
             </span>
           </div>
 
           {/* Display Name * */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label htmlFor="role-display-name" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+            <label htmlFor="role-display-name" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
               Display Name *
             </label>
             <input
@@ -1185,27 +1113,26 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
               placeholder="e.g. Shift Supervisor"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.92rem' }}
             />
           </div>
 
           {/* Privileges Grouped Checklist */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
               Privileges ({selectedPrivileges.length} selected)
             </label>
 
             <div
               style={{
-                background: '#ffffff',
-                border: '1px solid #e5e7eb',
-                borderRadius: '10px',
-                padding: '12px 16px',
-                maxHeight: '340px',
+                background: 'var(--card)',
+                border: '1px solid var(--bd)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                maxHeight: '320px',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
+                gap: '10px',
               }}
             >
               {Object.entries(privilegeGroups).map(([groupTitle, privs], index) => {
@@ -1216,8 +1143,8 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                   <div
                     key={groupTitle}
                     style={{
-                      borderTop: index === 0 ? 'none' : '1px solid #e5e7eb',
-                      paddingTop: index === 0 ? '0' : '12px',
+                      borderTop: index === 0 ? 'none' : '1px solid var(--bd)',
+                      paddingTop: index === 0 ? '0' : '10px',
                     }}
                   >
                     {/* Group Header */}
@@ -1226,7 +1153,7 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        marginBottom: '8px',
+                        marginBottom: '6px',
                       }}
                     >
                       <label
@@ -1236,8 +1163,8 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                           gap: '8px',
                           cursor: 'pointer',
                           fontWeight: 600,
-                          fontSize: '0.92rem',
-                          color: '#1f2937',
+                          fontSize: '13px',
+                          color: 'var(--tx)',
                           margin: 0,
                         }}
                       >
@@ -1245,18 +1172,15 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                           type="checkbox"
                           checked={allInGroupSelected}
                           onChange={() => handleToggleGroup(privs)}
-                          style={{ accentColor: '#1E3A5F', cursor: 'pointer' }}
+                          style={{ accentColor: 'var(--teal)', cursor: 'pointer', width: 'auto' }}
                         />
                         <span>{groupTitle}</span>
                       </label>
                       <span
+                        className={groupSelected.length > 0 ? "b t" : "b"}
                         style={{
-                          background: groupSelected.length > 0 ? '#eff6ff' : '#f3f4f6',
-                          color: groupSelected.length > 0 ? '#1d4ed8' : '#6b7280',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
+                          padding: '1px 7px',
+                          fontSize: '11px',
                         }}
                       >
                         {groupSelected.length}
@@ -1267,9 +1191,9 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                        gap: '6px 12px',
-                        paddingLeft: '24px',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                        gap: '6px 10px',
+                        paddingLeft: '22px',
                       }}
                     >
                       {privs.map((priv) => {
@@ -1282,8 +1206,8 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                               alignItems: 'center',
                               gap: '6px',
                               cursor: 'pointer',
-                              fontSize: '0.84rem',
-                              color: isChecked ? '#111827' : '#4b5563',
+                              fontSize: '12px',
+                              color: isChecked ? 'var(--tx)' : 'var(--mu)',
                               margin: 0,
                             }}
                           >
@@ -1291,9 +1215,9 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleTogglePrivilege(priv)}
-                              style={{ accentColor: '#1E3A5F', cursor: 'pointer' }}
+                              style={{ accentColor: 'var(--teal)', cursor: 'pointer', width: 'auto' }}
                             />
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}>{priv}</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>{priv}</span>
                           </label>
                         )
                       })}
@@ -1305,35 +1229,18 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
           </div>
 
           {/* Buttons: Cancel | Create Role */}
-          <div className="row" style={{ justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+          <div className="r">
             <button
               type="button"
+              className="bt"
               onClick={onClose}
-              style={{
-                padding: '10px 18px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                background: '#fff',
-                color: '#374151',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="primary"
+              className="bt p"
               disabled={saving}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#1E3A5F',
-                color: '#ffffff',
-                fontWeight: 600,
-                cursor: saving ? 'not-allowed' : 'pointer',
-              }}
             >
               {saving ? 'Saving…' : isEdit ? 'Save Role' : 'Create Role'}
             </button>

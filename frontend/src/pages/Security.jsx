@@ -71,40 +71,21 @@ export default function Security() {
       <ErrorNote error={error} />
 
       {successMsg && (
-        <div
-          style={{
-            background: '#ecfdf5',
-            color: '#065f46',
-            border: '1px solid #a7f3d0',
-            borderRadius: '8px',
-            padding: '12px 16px',
-            fontSize: '0.9rem',
-            fontWeight: 500,
-          }}
-        >
+        <div className="al" style={{ borderLeftColor: 'var(--grn)', color: 'var(--grn)' }}>
           ✓ {successMsg}
         </div>
       )}
 
-      <form onSubmit={handleSave} className="stack" style={{ gap: '1.25rem' }}>
+      <form onSubmit={handleSave} className="stack" style={{ gap: '1rem' }}>
         {/* Section 1 — 🔒 Password Policy */}
-        <div
-          className="panel"
-          style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid var(--line, #e5e7eb)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div className="row" style={{ alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <span style={{ fontSize: '1.4rem' }}>🔒</span>
-            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600 }}>Password Policy</h2>
+        <div className="card">
+          <div className="row" style={{ alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '1.25rem' }}>🔒</span>
+            <h2 style={{ margin: 0, fontSize: '15px' }}>Password Policy</h2>
           </div>
 
           <div className="stack" style={{ gap: '6px' }}>
-            <label htmlFor="sec-password-expiry" style={{ fontWeight: 500, fontSize: '0.9rem' }}>
+            <label htmlFor="sec-password-expiry" style={{ fontWeight: 600, fontSize: '12px', color: 'var(--mu)' }}>
               Password Expiry (Days)
             </label>
             <input
@@ -114,52 +95,31 @@ export default function Security() {
               max="90"
               value={passwordExpiryDays}
               onChange={(e) => setPasswordExpiryDays(e.target.value)}
-              style={{
-                maxWidth: '280px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                fontSize: '0.95rem',
-              }}
+              style={{ maxWidth: '240px' }}
               required
             />
-            <span className="muted small" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+            <span className="muted small" style={{ fontSize: '11px', color: 'var(--mu)' }}>
               Max 90 days
             </span>
           </div>
         </div>
 
         {/* Section 2 — 🔄 Session Policy */}
-        <div
-          className="panel"
-          style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid var(--line, #e5e7eb)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div className="row" style={{ alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <span style={{ fontSize: '1.4rem' }}>🔄</span>
-            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600 }}>Session Policy</h2>
+        <div className="card">
+          <div className="row" style={{ alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '1.25rem' }}>🔄</span>
+            <h2 style={{ margin: 0, fontSize: '15px' }}>Session Policy</h2>
           </div>
 
           <div className="stack" style={{ gap: '6px' }}>
-            <label htmlFor="sec-session-timeout" style={{ fontWeight: 500, fontSize: '0.9rem' }}>
+            <label htmlFor="sec-session-timeout" style={{ fontWeight: 600, fontSize: '12px', color: 'var(--mu)' }}>
               Session Timeout
             </label>
             <select
               id="sec-session-timeout"
               value={sessionTimeoutMinutes}
               onChange={(e) => setSessionTimeoutMinutes(Number(e.target.value))}
-              style={{
-                maxWidth: '280px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                fontSize: '0.95rem',
-              }}
+              style={{ maxWidth: '240px' }}
             >
               <option value={15}>15 minutes</option>
               <option value={30}>30 minutes</option>
@@ -171,36 +131,21 @@ export default function Security() {
         </div>
 
         {/* Section 3 — ⚠ Account Policy */}
-        <div
-          className="panel"
-          style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            padding: '24px',
-            border: '1px solid var(--line, #e5e7eb)',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
-          <div className="row" style={{ alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
-            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600 }}>Account Policy</h2>
+        <div className="card">
+          <div className="row" style={{ alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+            <h2 style={{ margin: 0, fontSize: '15px' }}>Account Policy</h2>
           </div>
 
           <div className="stack" style={{ gap: '6px' }}>
-            <label htmlFor="sec-login-attempts" style={{ fontWeight: 500, fontSize: '0.9rem' }}>
+            <label htmlFor="sec-login-attempts" style={{ fontWeight: 600, fontSize: '12px', color: 'var(--mu)' }}>
               Max Login Attempts Before Lockout
             </label>
             <select
               id="sec-login-attempts"
               value={maxLoginAttempts}
               onChange={(e) => setMaxLoginAttempts(Number(e.target.value))}
-              style={{
-                maxWidth: '280px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                fontSize: '0.95rem',
-              }}
+              style={{ maxWidth: '240px' }}
             >
               <option value={3}>3 attempts</option>
               <option value={5}>5 attempts</option>
@@ -213,19 +158,13 @@ export default function Security() {
         {/* Save button at bottom */}
         <button
           type="submit"
-          className="primary"
+          className="bt p"
           disabled={saving}
           style={{
             width: '100%',
-            padding: '12px 20px',
-            borderRadius: '8px',
+            padding: '10px 18px',
+            fontSize: '14px',
             fontWeight: 600,
-            fontSize: '1rem',
-            backgroundColor: '#1E3A5F',
-            color: '#ffffff',
-            border: 'none',
-            cursor: saving ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.15s ease',
           }}
         >
           {saving ? 'Saving Settings…' : 'Save Settings'}

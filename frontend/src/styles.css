@@ -362,12 +362,12 @@ a:hover {
 }
 
 /* SUB-NAV (below header, full width, sticky) */
-.sub-nav {
+.sub-nav, nav.sub-nav {
   background: var(--card);
   border-bottom: 1px solid var(--bd);
-  padding: 0 16px;
+  padding: 8px 14px;
   display: flex;
-  gap: 2px;
+  gap: 4px;
   overflow-x: auto;
   position: sticky;
   top: 52px;
@@ -377,13 +377,13 @@ a:hover {
   -webkit-overflow-scrolling: touch;
 }
 
-.sub-nav .nav-tab {
-  border: none;
+.sub-nav .nav-tab, nav button {
+  border: 0;
   background: none;
   color: var(--mu);
   font-weight: 600;
-  padding: 12px 14px;
-  border-bottom: 3px solid transparent;
+  padding: 8px 13px;
+  border-radius: 7px;
   cursor: pointer;
   white-space: nowrap;
   font-size: 13px;
@@ -394,23 +394,25 @@ a:hover {
   box-sizing: border-box;
 }
 
-.sub-nav .nav-tab:hover {
+.sub-nav .nav-tab:hover, nav button:hover {
   color: var(--tx);
   background: var(--bg);
   text-decoration: none;
 }
 
 .sub-nav .nav-tab.on,
-.sub-nav .nav-tab.active {
-  border-bottom-color: var(--teal);
-  color: var(--navy);
-  background: transparent;
+.sub-nav .nav-tab.active,
+nav button.on {
+  background: var(--navy) !important;
+  color: #fff !important;
+  border-radius: 7px;
+  border: none;
 }
 
 /* MAIN CONTENT AREA */
-.main-content {
-  padding: 20px 16px;
-  max-width: 1280px;
+main, .main-content {
+  padding: 16px;
+  max-width: 1250px;
   margin: 0 auto;
   margin-top: 0;
   box-sizing: border-box;
@@ -424,6 +426,13 @@ a:hover {
 }
 
 /* ==========================================================================
+   GRID HELPERS (HR Template)
+   ========================================================================== */
+.g { display: grid; gap: 12px; }
+.k { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.c2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+/* ==========================================================================
    CARD COMPONENTS & KPI TILES
    ========================================================================== */
 
@@ -432,7 +441,7 @@ a:hover {
   background: var(--card);
   border: 1px solid var(--bd);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 14px;
   overflow-x: auto;
   box-sizing: border-box;
   width: 100%;
@@ -456,13 +465,13 @@ a:hover {
 
 .panel-head h2 { margin: 0; }
 
-/* KPI tile card (class .kpi-card) */
-.kpi-card, .kpi-tile {
+/* KPI tile card (class .kpi-card, .kp) */
+.kp, .kpi-card, .kpi-tile {
   background: var(--card);
   border: 1px solid var(--bd);
   border-top: 3px solid var(--teal);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 14px;
   overflow-x: auto;
   box-sizing: border-box;
   display: flex;
@@ -470,6 +479,22 @@ a:hover {
   justify-content: space-between;
 }
 
+.kp b,
+.kpi-card b,
+.kpi-card .kpi-val,
+.kpi-card .kpi-value,
+.kpi-card .value,
+.kpi-tile .kpi-val,
+.kpi-tile .kpi-value,
+.kpi-tile .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--tx);
+  display: block;
+  line-height: 1.2;
+}
+
+.kp span,
 .kpi-card .kpi-label,
 .kpi-card label,
 .kpi-tile .kpi-label,
@@ -481,19 +506,6 @@ a:hover {
   letter-spacing: 0.04em;
   margin-bottom: 6px;
   display: block;
-}
-
-.kpi-card .kpi-val,
-.kpi-card .kpi-value,
-.kpi-card .value,
-.kpi-tile .kpi-val,
-.kpi-tile .kpi-value,
-.kpi-tile .value {
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--tx);
-  display: block;
-  line-height: 1.2;
 }
 
 .kpi-card .kpi-sub,
@@ -517,7 +529,7 @@ a:hover {
 }
 
 /* ==========================================================================
-   TABLE STYLES
+   TABLE STYLES (HR Template)
    ========================================================================== */
 
 table {
@@ -526,21 +538,23 @@ table {
   font-size: 13px;
 }
 
+th, td {
+  text-align: left;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--bd);
+  white-space: nowrap;
+}
+
 th {
   color: var(--mu);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 8px 10px;
-  border-bottom: 2px solid var(--bd);
   font-weight: 600;
-  text-align: left;
   background: transparent;
 }
 
 td {
-  padding: 9px 10px;
-  border-bottom: 1px solid var(--bd);
   color: var(--tx);
   vertical-align: middle;
 }
@@ -557,15 +571,36 @@ tr:hover td {
 }
 
 /* ==========================================================================
-   BUTTON STYLES
+   TOOLBAR (HR Template .tb)
    ========================================================================== */
 
-/* Base button (.btn and button) */
-.btn, button {
+.tb {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tb input {
+  max-width: 240px;
+}
+
+.tb select {
+  max-width: 240px;
+  width: auto;
+}
+
+/* ==========================================================================
+   BUTTON STYLES (HR Template .bt and .btn)
+   ========================================================================== */
+
+/* Base button (.bt, .btn and button) */
+.bt, .btn, button {
   border: 1px solid var(--bd);
   background: var(--card);
   color: var(--tx);
-  padding: 7px 13px;
+  padding: 6px 11px;
   border-radius: 7px;
   cursor: pointer;
   font-size: 12px;
@@ -581,74 +616,75 @@ tr:hover td {
   line-height: 1.4;
 }
 
-.btn:hover, button:hover {
+.bt:hover, .btn:hover, button:hover {
   border-color: #aab;
   background: var(--bg);
   text-decoration: none;
 }
 
-.btn:disabled, button:disabled {
+.bt:disabled, .btn:disabled, button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Primary button (.btn.primary, button.primary) */
-.btn.primary, button.primary, .btn-primary {
+/* Primary button (.bt.p, .btn.primary, button.primary) */
+.bt.p, .btn.primary, button.primary, .btn-primary {
   background: var(--teal);
   color: white;
   border-color: var(--teal);
 }
 
-.btn.primary:hover, button.primary:hover, .btn-primary:hover {
+.bt.p:hover, .btn.primary:hover, button.primary:hover, .btn-primary:hover {
   background: #0c8793;
   border-color: #0c8793;
   color: white;
 }
 
-/* Danger button (.btn.danger, button.danger) */
-.btn.danger, button.danger, .btn-danger {
+/* Danger button (.bt.danger, .btn.danger, button.danger) */
+.bt.danger, .btn.danger, button.danger, .btn-danger {
   background: var(--red);
   color: white;
   border-color: var(--red);
 }
 
-.btn.danger:hover, button.danger:hover, .btn-danger:hover {
+.bt.danger:hover, .btn.danger:hover, button.danger:hover, .btn-danger:hover {
   background: #c03838;
   border-color: #c03838;
   color: white;
 }
 
-.btn.small, button.small {
+.bt.small, .btn.small, button.small {
   padding: 4px 9px;
   font-size: 11px;
 }
 
-.btn.dark, button.dark {
+.bt.dark, .btn.dark, button.dark {
   background: var(--navy);
   color: white;
   border-color: var(--navy);
 }
 
 /* ==========================================================================
-   STATUS BADGE STYLES
+   STATUS BADGE STYLES (HR Template .b and .badge)
    ========================================================================== */
 
-/* Base badge (.badge) */
-.badge {
-  padding: 2px 9px;
+/* Base badge (.b, .badge) */
+.b, .badge {
+  padding: 2px 8px;
   border-radius: 99px;
   font-size: 11px;
   font-weight: 600;
   display: inline-block;
   line-height: 1.4;
   white-space: nowrap;
+  background: #e6edf7;
+  color: #27406b;
 }
 
-.badge.green, .badge-green   { background: #d9f2e6; color: #17704a; }
-.badge.red, .badge-red       { background: #fadcdc; color: #9c2323; }
-.badge.amber, .badge-amber   { background: #fdebc8; color: #8a5600; }
-.badge.teal, .badge-teal     { background: #d4f0f2; color: #0a6870; }
-.badge.blue, .badge-blue     { background: #dde8f7; color: #27406b; }
+.b.g1, .b.success, .badge.green, .badge-green   { background: #d9f2e6; color: #17704a; }
+.b.r, .b.danger, .badge.red, .badge-red       { background: #fadcdc; color: #9c2323; }
+.b.a, .b.warning, .badge.amber, .badge-amber   { background: #fdebc8; color: #8a5600; }
+.b.t, .b.info, .badge.teal, .badge-teal, .badge.blue, .badge-blue     { background: #d4f0f2; color: #0a6870; }
 .badge.grey, .badge-grey     { background: #e5edf5; color: #4b5d78; }
 .badge.purple, .badge-purple { background: #f3e8ff; color: #6b21a8; }
 
@@ -660,11 +696,71 @@ tr:hover td {
 .badge.status-open, .badge.status-normal { background: #dde8f7; color: #27406b; }
 
 /* ==========================================================================
-   ALERT / ESCALATION ITEMS
+   BAR COMPONENT (HR Template .bar)
    ========================================================================== */
 
-.alert {
-  padding: 8px 12px;
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  font-size: 12px;
+}
+.bar i {
+  display: block;
+  height: 14px;
+  border-radius: 4px;
+  min-width: 3px;
+}
+.bar em {
+  width: 120px;
+  font-style: normal;
+  color: var(--mu);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   FILTER CHIPS
+   ========================================================================== */
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.chip {
+  border: 1px solid var(--bd);
+  background: var(--card);
+  color: var(--mu);
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+
+.chip:hover {
+  background: var(--bg);
+  color: var(--tx);
+}
+
+.chip[aria-pressed="true"], .chip.on, .chip.active {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+
+/* ==========================================================================
+   ALERT / ESCALATION ITEMS (HR Template .al and .alert)
+   ========================================================================== */
+
+.al, .alert {
+  padding: 7px 10px;
   border-left: 3px solid var(--red);
   background: var(--bg);
   margin: 5px 0;
@@ -674,36 +770,52 @@ tr:hover td {
   box-sizing: border-box;
 }
 
-.alert.warning {
+.al.w, .alert.warning {
   border-color: var(--amb);
 }
 
 /* ==========================================================================
-   MODAL STYLES
+   MODAL STYLES (HR Template #m, .mb, .r)
    ========================================================================== */
 
-#modal-overlay, .modal-overlay, .scrim {
+#m, #modal-overlay, .modal-overlay, .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: #0008;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 200;
+  z-index: 1000;
   box-sizing: border-box;
 }
 
-.modal, .modal-box {
+.mb, .modal, .modal-box {
   background: var(--card);
   border-radius: 12px;
-  padding: 24px;
+  padding: 18px;
   width: 100%;
-  max-width: 460px;
+  max-width: 440px;
   max-height: 85vh;
   overflow-y: auto;
+  border: 1px solid var(--bd);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
+}
+
+.mb label, .modal label {
+  display: block;
+  margin: 8px 0;
+  font-size: 12px;
+  color: var(--mu);
+  font-weight: 500;
+}
+
+.r {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .modal h3, .modal h2, .modal-title {
