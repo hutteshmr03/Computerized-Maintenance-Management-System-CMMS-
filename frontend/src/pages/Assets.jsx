@@ -84,14 +84,59 @@ export default function Assets() {
         {can('asset.create') && <button className="bt p right" onClick={() => setAdding(true)} disabled={!locs.data}>+ Add asset</button>}
       </div>
 
-      <div className="card tb" style={{ gap: '1rem', flexWrap: 'wrap', marginBottom: '14px', alignItems: 'flex-end' }}>
-        <div className="field" style={{ maxWidth: 360, marginBottom: 0, flex: 1 }}>
-          <label htmlFor="q" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', display: 'block', marginBottom: '4px' }}>Search by name or code</label>
-          <input id="q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="For example press or AST-0003" />
+      <div
+        className="card"
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          gap: '16px',
+          padding: '14px 18px',
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ flex: '1 1 320px', minWidth: '240px' }}>
+          <label
+            htmlFor="q"
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--mu)',
+              display: 'block',
+              marginBottom: '6px',
+            }}
+          >
+            Search by name or code
+          </label>
+          <input
+            id="q"
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="For example press or AST-0003"
+            style={{ width: '100%', height: '38px', boxSizing: 'border-box' }}
+          />
         </div>
-        <div className="field" style={{ minWidth: 220, marginBottom: 0 }}>
-          <label htmlFor="util-filter" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', display: 'block', marginBottom: '4px' }}>Filter by Utility Type</label>
-          <select id="util-filter" value={utilityType} onChange={(e) => setUtilityType(e.target.value)}>
+        <div style={{ flex: '0 1 260px', minWidth: '200px' }}>
+          <label
+            htmlFor="util-filter"
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'var(--mu)',
+              display: 'block',
+              marginBottom: '6px',
+            }}
+          >
+            Filter by Utility Type
+          </label>
+          <select
+            id="util-filter"
+            value={utilityType}
+            onChange={(e) => setUtilityType(e.target.value)}
+            style={{ width: '100%', height: '38px', boxSizing: 'border-box', cursor: 'pointer' }}
+          >
             <option value="">All Utility Types</option>
             <option value="compressor">Compressor</option>
             <option value="boiler">Boiler</option>
@@ -100,6 +145,22 @@ export default function Assets() {
             <option value="other">Other</option>
           </select>
         </div>
+        {(q || utilityType) && (
+          <button
+            type="button"
+            className="bt"
+            onClick={() => { setQ(''); setUtilityType(''); }}
+            style={{
+              height: '38px',
+              marginBottom: 0,
+              whiteSpace: 'nowrap',
+              padding: '0 14px',
+              alignSelf: 'flex-end',
+            }}
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       <ErrorNote error={error} />
