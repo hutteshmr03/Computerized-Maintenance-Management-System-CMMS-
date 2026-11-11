@@ -21,7 +21,15 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(() => { setToken(null); setUser(null) }, [])
-  const can = useCallback((p) => !!user?.permissions.includes(p), [user])
+  const can = useCallback(
+    (p) => {
+      if (!user) return false
+      if (user.role === 'admin' || user.role === 'super_admin') return true
+      if (user.permissions?.includes('*')) return true
+      return !!user.permissions?.includes(p)
+    },
+    [user]
+  )
 
   return <AuthCtx.Provider value={{ user, ready, login, logout, can }}>{children}</AuthCtx.Provider>
 }

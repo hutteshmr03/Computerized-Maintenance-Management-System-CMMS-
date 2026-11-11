@@ -273,7 +273,7 @@ export default function Users() {
           </p>
         </div>
         <div className="row" style={{ gap: '8px' }}>
-          {activeTab === 'users' && can('user.manage') && (
+          {activeTab === 'users' && (isAdmin || can('user.manage') || can('user.create')) && (
             <button
               className="bt p"
               onClick={() => setShowAddUserModal(true)}
@@ -372,8 +372,19 @@ export default function Users() {
                 ))}
               </select>
             </div>
-            <div className="small muted" style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>
-              Showing {filteredUsers.length} of {users.length} users
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="small muted" style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>
+                Showing {filteredUsers.length} of {users.length} users
+              </div>
+              {(isAdmin || can('user.manage') || can('user.create')) && (
+                <button
+                  type="button"
+                  className="bt p"
+                  onClick={() => setShowAddUserModal(true)}
+                >
+                  + Create User
+                </button>
+              )}
             </div>
           </div>
 
