@@ -157,7 +157,7 @@ a:hover {
 
 .cmms-layout {
   min-height: 100vh;
-  padding-top: 52px; /* to clear fixed header */
+  padding-top: 60px; /* to clear fixed header */
   background: var(--bg);
   box-sizing: border-box;
 }
@@ -167,12 +167,13 @@ a:hover {
   background: var(--navy);
   color: white;
   padding: 0 24px;
-  height: 52px;
+  height: 60px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 3px solid var(--gold);
+  border-bottom: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   z-index: 100;
   position: fixed;
   top: 0;
@@ -197,37 +198,37 @@ a:hover {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .brand-title {
   color: #ffffff;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 17px;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
 .brand-subtitle {
   color: #9fb3d1;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
-  line-height: 1.25;
-  margin-top: 1px;
+  line-height: 1.3;
+  margin-top: 2px;
 }
 
 /* Top Header Right */
 .top-header-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   flex-shrink: 0;
 }
 
 .role-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -324,9 +325,9 @@ a:hover {
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: transparent;
   color: #ffffff;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -347,7 +348,7 @@ a:hover {
   gap: 4px;
   overflow-x: auto;
   position: sticky;
-  top: 52px;
+  top: 60px;
   z-index: 99;
   box-sizing: border-box;
   white-space: nowrap;
