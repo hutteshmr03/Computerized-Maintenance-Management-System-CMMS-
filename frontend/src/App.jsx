@@ -24,6 +24,7 @@ import Users from './pages/Users.jsx'
 import Audit from './pages/Audit.jsx'
 import Scan from './pages/Scan.jsx'
 import Calibration from './pages/Calibration.jsx'
+import Security from './pages/Security.jsx'
 
 const MENU = {
   dashboard: { to: '/', label: 'Home', end: true, icon: '🏠' },
@@ -43,6 +44,7 @@ const MENU = {
   audit: { to: '/audit', label: 'Audit Log', icon: '🔍' },
   scan: { to: '/scan', label: 'Scan Asset', icon: '📷' },
   calibration: { to: '/calibration', label: 'Calibration', icon: '⚖️' },
+  security: { to: '/security', label: 'Security', icon: '🔒' },
 }
 
 function Bell() {
@@ -488,6 +490,7 @@ export default function App() {
         <Route path="audit" element={<Audit />} />
         <Route path="scan" element={<Scan />} />
         <Route path="calibration" element={<Calibration />} />
+        <Route path="security" element={<Security />} />
         <Route path="scan/:code" element={<Scan />} />
         <Route
           path="*"

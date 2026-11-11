@@ -12,7 +12,7 @@ from .security import hash_password
 
 # Exactly 9 HR Roles
 DEMO_USERS = [
-    ("Super Admin", "superadmin@cmms.test", "SuperAdmin@123", "super_admin", "", "+49 711 901201"),
+    ("Admin", "superadmin@cmms.test", "SuperAdmin@123", "admin", "", "+49 711 901201"),
     ("Ravi Plant Head", "planthead@cmms.test", "PlantHead@123", "plant_head", "", "+49 711 901202"),
     ("Anita Manager", "manager@cmms.test", "Manager@123", "maintenance_manager", "", "+49 711 901203"),
     ("Kiran Engineer", "engineer@cmms.test", "Engineer@123", "maintenance_engineer", "", "+49 711 901204"),
@@ -66,14 +66,29 @@ def seed(db: Session):
     for name, email, pw, role, company, phone in DEMO_USERS:
         u = m.User(
             name=name,
+            full_name=name,
+            username=email.split("@")[0],
             email=email,
             password_hash=hash_password(pw),
             role=role,
             contractor_company=company,
             phone=phone,
+            status="active",
         )
         db.add(u)
         users[email] = u
+    db.flush()
+
+    # Seed Default Security Settings
+    if not db.query(m.SecuritySettings).first():
+        db.add(m.SecuritySettings(
+            id=1,
+            password_expiry_days=90,
+            session_timeout_minutes=30,
+            max_login_attempts=5,
+            updated_by="System",
+            updated_at=now,
+        ))
     db.flush()
 
     # 2. Seed Cost Centres

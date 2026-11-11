@@ -20,6 +20,7 @@ from .db import Base, SessionLocal, engine, get_db, utcnow
 from .security import (
     MENUS,
     PERMISSIONS,
+    PRIVILEGE_GROUPS,
     current_user,
     hash_password,
     make_token,
@@ -151,16 +152,56 @@ def user_name(db: Session, uid: int | None) -> str:
     return u.name if u else ""
 
 
-def user_payload(u: m.User) -> dict:
-    perms = sorted(PERMISSIONS.get(u.role, set()))
+def get_user_permissions(u: m.User, db: Session | None = None) -> list[str]:
+    if u.role in PERMISSIONS:
+        return sorted(PERMISSIONS[u.role])
+    if db:
+        cr = db.scalar(select(m.CustomRole).where(m.CustomRole.name == u.role))
+        if cr and cr.privileges:
+            return sorted(cr.privileges)
+    return []
+
+
+def get_user_menu(u: m.User, db: Session | None = None) -> list[str]:
+    if u.role in MENUS:
+        return MENUS[u.role]
+    menu = ["dashboard"]
+    perms = get_user_permissions(u, db)
+    if any(p.startswith("asset.") for p in perms):
+        menu.append("assets")
+    if any(p.startswith("wo.") or p.startswith("pm.") or p.startswith("bd.") for p in perms):
+        menu.append("jobs")
+    if any(p.startswith("part.") for p in perms):
+        menu.append("parts")
+    if any(p.startswith("pr.") for p in perms):
+        menu.append("procurement")
+    if any(p.startswith("report.") or p.startswith("kpi.") for p in perms):
+        menu.append("reports")
+    if any(p.startswith("audit.") for p in perms):
+        menu.append("audit")
+    if any(p.startswith("calibration.") for p in perms):
+        menu.append("calibration")
+    if any(p.startswith("user.") for p in perms):
+        menu.append("users")
+    return menu
+
+
+def user_payload(u: m.User, db: Session | None = None) -> dict:
+    perms = get_user_permissions(u, db)
+    menu = get_user_menu(u, db)
     return {
         "id": u.id,
         "name": u.name,
+        "full_name": u.full_name or u.name,
+        "username": u.username,
         "email": u.email,
         "role": u.role,
+        "units": u.units or [],
+        "departments": u.departments or [],
+        "status": u.status or "active",
         "contractor_company": u.contractor_company,
         "permissions": perms,
-        "menu": MENUS.get(u.role, ["dashboard", "jobs"]),
+        "menu": menu,
     }
 
 
@@ -170,8 +211,8 @@ def job_actions(job: m.Job, user: m.User) -> list[str]:
     perms = PERMISSIONS.get(role, set())
     acts: list[str] = []
 
-    # Super Admin, Maintenance Manager, and Plant Head
-    if role in ("super_admin", "maintenance_manager", "plant_head"):
+    # Admin, Super Admin, Maintenance Manager, and Plant Head
+    if role in ("admin", "super_admin", "maintenance_manager", "plant_head"):
         if job.status == "created":
             acts += ["send", "plan", "edit", "cancel"]
         elif job.status == "planned":
@@ -413,7 +454,11 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     if not user or not pw_ok:
         if user:
             user.failed_logins += 1
-            if user.failed_logins >= MAX_FAILED_LOGINS:
+            sec = db.get(m.SecuritySettings, 1)
+            max_attempts = sec.max_login_attempts if (sec and sec.max_login_attempts is not None) else MAX_FAILED_LOGINS
+            if max_attempts <= 0:
+                max_attempts = 999999  # Unlimited
+            if user.failed_logins >= max_attempts:
                 user.locked_until = utcnow() + timedelta(minutes=LOCK_MINUTES)
                 user.failed_logins = 0
             audit(db, user, "login_failed", "user", user.id, f"Wrong password attempt for {user.email}")
@@ -424,7 +469,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     user.locked_until = None
     audit(db, user, "login", "user", user.id, f"User {user.name} ({user.role}) logged in")
     db.commit()
-    return {"token": make_token(user), "user": user_payload(user)}
+    return {"token": make_token(user), "user": user_payload(user, db)}
 
 
 @app.post("/api/auth/sso/callback")
@@ -444,12 +489,12 @@ def sso_callback(payload: dict, db: Session = Depends(get_db)):
         db.refresh(user)
     audit(db, user, "sso_login", "user", user.id, f"SSO authenticated via {claims.get('provider', 'OIDC')}")
     db.commit()
-    return {"token": make_token(user), "user": user_payload(user)}
+    return {"token": make_token(user), "user": user_payload(user, db)}
 
 
 @app.get("/api/me")
-def me(user: m.User = Depends(current_user)):
-    return user_payload(user)
+def me(user: m.User = Depends(current_user), db: Session = Depends(get_db)):
+    return user_payload(user, db)
 
 
 @app.get("/api/users")
@@ -1167,18 +1212,18 @@ def perform_job_action(
 
     perm = ACTION_PERMS.get(action)
     user_perms = PERMISSIONS.get(user.role, set())
-    if perm and perm not in user_perms and user.role != "super_admin":
+    if perm and perm not in user_perms and user.role not in ("admin", "super_admin"):
         raise HTTPException(403, f"Your role ({user.role}) is not allowed to '{action}' jobs.")
 
     allowed = job_actions(job, user)
-    if action not in allowed and "super_admin" != user.role:
+    if action not in allowed and user.role not in ("admin", "super_admin"):
         raise HTTPException(409, f"Cannot '{action}' a job that is in '{job.status}'.")
 
     now = utcnow()
 
     if action == "send":
         job.status = "sent_for_approval"
-        notify(db, users_with_role(db, "maintenance_manager", "super_admin", "plant_head"), f"Job #{job.id} awaiting approval: {job.title}", f"/jobs/{job.id}")
+        notify(db, users_with_role(db, "maintenance_manager", "admin", "super_admin", "plant_head"), f"Job #{job.id} awaiting approval: {job.title}", f"/jobs/{job.id}")
 
     elif action == "plan":
         job.status = "planned"
@@ -1211,7 +1256,7 @@ def perform_job_action(
             job.contractor_invoice_amount = float(body["contractor_invoice_amount"])
         if "contractor_invoice_ref" in body:
             job.contractor_invoice_ref = body["contractor_invoice_ref"]
-        notify(db, users_with_role(db, "maintenance_manager", "super_admin", "plant_head"), f"Job #{job.id} submitted for review: {job.title}", f"/jobs/{job.id}")
+        notify(db, users_with_role(db, "maintenance_manager", "admin", "super_admin", "plant_head"), f"Job #{job.id} submitted for review: {job.title}", f"/jobs/{job.id}")
 
     elif action == "close":
         if job.type == "repair" and not (job.breakdown_reason or body.get("breakdown_reason")):
@@ -1485,7 +1530,7 @@ def procurement_action(
         raise HTTPException(404, "Purchase request not found.")
 
     user_perms = PERMISSIONS.get(user.role, set())
-    has_all = "*" in user_perms or user.role == "super_admin"
+    has_all = "*" in user_perms or user.role in ("admin", "super_admin")
 
     if action == "approve":
         if not (has_all or "procurement.approve" in user_perms or "procurement.manage" in user_perms):
@@ -1731,7 +1776,7 @@ def contractor_assigned_jobs(db: Session = Depends(get_db), user: m.User = Depen
     return [job_dict(db, j, user) for j in db.scalars(stmt)]
 
 
-# ---------------------------------------------------------------- USER MANAGEMENT (Super Admin)
+# ---------------------------------------------------------------- USER MANAGEMENT & ROLES (Admin)
 @app.get("/api/admin/users")
 def admin_list_users(db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
     users = db.scalars(select(m.User).order_by(m.User.name)).all()
@@ -1739,8 +1784,13 @@ def admin_list_users(db: Session = Depends(get_db), user: m.User = Depends(requi
         {
             "id": u.id,
             "name": u.name,
+            "full_name": u.full_name or u.name,
+            "username": u.username,
             "email": u.email,
             "role": u.role,
+            "units": u.units or [],
+            "departments": u.departments or [],
+            "status": u.status or "active",
             "contractor_company": u.contractor_company,
             "phone": u.phone,
             "is_locked": bool(u.locked_until and u.locked_until > utcnow()),
@@ -1751,32 +1801,65 @@ def admin_list_users(db: Session = Depends(get_db), user: m.User = Depends(requi
 
 
 class UserCreateIn(BaseModel):
-    name: str
+    name: str | None = None
+    full_name: str | None = None
+    username: str | None = None
     email: str
     password: str
     role: str
+    units: list[str] = []
+    departments: list[str] = []
+    status: str = "active"
     contractor_company: str = ""
     phone: str = ""
 
 
+@app.post("/api/users", status_code=201)
 @app.post("/api/admin/users", status_code=201)
 def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
-    existing = db.scalar(select(m.User).where(func.lower(m.User.email) == body.email.strip().lower()))
+    clean_email = body.email.strip().lower()
+    existing = db.scalar(select(m.User).where(func.lower(m.User.email) == clean_email))
     if existing:
         raise HTTPException(409, "User email already registered.")
 
+    clean_username = body.username.strip() if body.username else None
+    if clean_username:
+        existing_u = db.scalar(select(m.User).where(func.lower(m.User.username) == clean_username.lower()))
+        if existing_u:
+            raise HTTPException(409, "Username already registered.")
+
+    name = (body.full_name or body.name or clean_username or clean_email.split("@")[0]).strip()
+    full_name = (body.full_name or body.name or name).strip()
+
     new_u = m.User(
-        name=body.name.strip(),
-        email=body.email.strip().lower(),
+        name=name,
+        full_name=full_name,
+        username=clean_username,
+        email=clean_email,
         password_hash=hash_password(body.password),
         role=body.role,
+        units=body.units or [],
+        departments=body.departments or [],
+        status=body.status or "active",
         contractor_company=body.contractor_company.strip(),
         phone=body.phone.strip(),
     )
     db.add(new_u)
     audit(db, user, "create_user", "user", None, f"Created {new_u.name} ({new_u.role})")
     db.commit()
-    return {"id": new_u.id, "email": new_u.email, "message": "User created successfully."}
+    db.refresh(new_u)
+    return {
+        "id": new_u.id,
+        "name": new_u.name,
+        "full_name": new_u.full_name,
+        "username": new_u.username,
+        "email": new_u.email,
+        "role": new_u.role,
+        "units": new_u.units,
+        "departments": new_u.departments,
+        "status": new_u.status,
+        "message": "User created successfully."
+    }
 
 
 @app.put("/api/admin/users/{user_id}/unlock")
@@ -1791,10 +1874,196 @@ def admin_unlock_user(user_id: int, db: Session = Depends(get_db), user: m.User 
     return {"message": "User account unlocked."}
 
 
+# ---------------------------------------------------------------- CUSTOM ROLES MANAGEMENT (Admin)
+@app.get("/api/roles")
+def list_custom_roles(db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    if user.role not in ("admin", "super_admin"):
+        raise HTTPException(403, "Admin access required.")
+    roles = db.scalars(select(m.CustomRole).order_by(m.CustomRole.name)).all()
+    return [
+        {
+            "id": r.id,
+            "name": r.name,
+            "display_name": r.display_name,
+            "privileges": r.privileges or [],
+            "created_by": r.created_by,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in roles
+    ]
+
+
+class RoleCreateIn(BaseModel):
+    name: str
+    display_name: str
+    privileges: list[str] = []
+
+
+@app.post("/api/roles", status_code=201)
+def create_custom_role(body: RoleCreateIn, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    if user.role not in ("admin", "super_admin"):
+        raise HTTPException(403, "Admin access required.")
+
+    clean_name = body.name.strip().lower().replace(" ", "_")
+    if not clean_name:
+        raise HTTPException(400, "Role name cannot be empty.")
+    if clean_name in m.VALID_ROLES or clean_name == "super_admin":
+        raise HTTPException(400, "Cannot use a built-in role name.")
+
+    existing = db.scalar(select(m.CustomRole).where(m.CustomRole.name == clean_name))
+    if existing:
+        raise HTTPException(409, "A role with this name already exists.")
+
+    new_role = m.CustomRole(
+        name=clean_name,
+        display_name=body.display_name.strip() or clean_name,
+        privileges=body.privileges or [],
+        created_by=user.name or user.email,
+        created_at=utcnow(),
+    )
+    db.add(new_role)
+    audit(db, user, "create_role", "custom_role", None, f"Created custom role {new_role.name}")
+    db.commit()
+    db.refresh(new_role)
+    return {
+        "id": new_role.id,
+        "name": new_role.name,
+        "display_name": new_role.display_name,
+        "privileges": new_role.privileges,
+        "created_by": new_role.created_by,
+        "created_at": new_role.created_at.isoformat() if new_role.created_at else None,
+    }
+
+
+class RoleUpdateIn(BaseModel):
+    display_name: str | None = None
+    privileges: list[str] = []
+
+
+@app.put("/api/roles/{role_id}")
+def update_custom_role(role_id: int, body: RoleUpdateIn, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    if user.role not in ("admin", "super_admin"):
+        raise HTTPException(403, "Admin access required.")
+
+    role = db.get(m.CustomRole, role_id)
+    if not role:
+        raise HTTPException(404, "Custom role not found.")
+
+    if body.display_name:
+        role.display_name = body.display_name.strip()
+    role.privileges = body.privileges
+    audit(db, user, "update_role", "custom_role", role.id, f"Updated privileges for {role.name}")
+    db.commit()
+    db.refresh(role)
+    return {
+        "id": role.id,
+        "name": role.name,
+        "display_name": role.display_name,
+        "privileges": role.privileges,
+        "created_by": role.created_by,
+        "created_at": role.created_at.isoformat() if role.created_at else None,
+    }
+
+
+@app.delete("/api/roles/{role_id}")
+def delete_custom_role(role_id: int, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    if user.role not in ("admin", "super_admin"):
+        raise HTTPException(403, "Admin access required.")
+
+    role = db.get(m.CustomRole, role_id)
+    if not role:
+        raise HTTPException(404, "Custom role not found.")
+
+    if role.name in m.VALID_ROLES or role.name in ("admin", "super_admin"):
+        raise HTTPException(400, "Cannot delete built-in roles.")
+
+    user_count = db.scalar(select(func.count(m.User.id)).where(m.User.role == role.name))
+    if user_count and user_count > 0:
+        raise HTTPException(400, f"Cannot delete role '{role.display_name}' because {user_count} user(s) are assigned to it.")
+
+    role_name = role.name
+    db.delete(role)
+    audit(db, user, "delete_role", "custom_role", role_id, f"Deleted custom role {role_name}")
+    db.commit()
+    return {"ok": True, "message": f"Role '{role_name}' deleted."}
+
+
+@app.get("/api/roles/privileges")
+def get_privilege_groups(user: m.User = Depends(current_user)):
+    if user.role not in ("admin", "super_admin"):
+        raise HTTPException(403, "Admin access required.")
+    return PRIVILEGE_GROUPS
+
+
+# ---------------------------------------------------------------- SECURITY SETTINGS (Admin)
+@app.get("/api/security-settings")
+def get_security_settings(db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    s = db.get(m.SecuritySettings, 1)
+    if not s:
+        s = m.SecuritySettings(
+            id=1,
+            password_expiry_days=90,
+            session_timeout_minutes=30,
+            max_login_attempts=5,
+            updated_by="System",
+            updated_at=utcnow(),
+        )
+        db.add(s)
+        db.commit()
+        db.refresh(s)
+    return {
+        "id": s.id,
+        "password_expiry_days": s.password_expiry_days,
+        "session_timeout_minutes": s.session_timeout_minutes,
+        "max_login_attempts": s.max_login_attempts,
+        "updated_by": s.updated_by,
+        "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+    }
+
+
+class SecuritySettingsUpdateIn(BaseModel):
+    password_expiry_days: int = 90
+    session_timeout_minutes: int = 30
+    max_login_attempts: int = 5
+
+
+@app.put("/api/security-settings")
+def update_security_settings(
+    body: SecuritySettingsUpdateIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    if user.role not in ("admin", "super_admin"):
+        raise HTTPException(403, "Admin access required.")
+
+    s = db.get(m.SecuritySettings, 1)
+    if not s:
+        s = m.SecuritySettings(id=1)
+        db.add(s)
+
+    days = min(90, max(1, body.password_expiry_days))
+    s.password_expiry_days = days
+    s.session_timeout_minutes = body.session_timeout_minutes
+    s.max_login_attempts = body.max_login_attempts
+    s.updated_by = user.name or user.email
+    s.updated_at = utcnow()
+    audit(db, user, "update_security_settings", "security_settings", 1, "Updated enterprise security settings")
+    db.commit()
+    db.refresh(s)
+    return {
+        "id": s.id,
+        "password_expiry_days": s.password_expiry_days,
+        "session_timeout_minutes": s.session_timeout_minutes,
+        "max_login_attempts": s.max_login_attempts,
+        "updated_by": s.updated_by,
+        "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+    }
+
+
 # ---------------------------------------------------------------- GDPR COMPLIANCE
 @app.get("/api/gdpr/export/{user_id}")
 def gdpr_export_user_data(user_id: int, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
-    if user.id != user_id and user.role != "super_admin":
+    if user.id != user_id and user.role not in ("admin", "super_admin"):
         raise HTTPException(403, "Access denied to export data.")
     target = db.get(m.User, user_id)
     if not target:
@@ -2215,7 +2484,7 @@ def request_transfer(asset_id: int, body: dict, db: Session = Depends(get_db), u
 
     t = m.Transfer(asset_id=asset.id, to_location_id=to_loc.id, requested_by=user.id, reason=body.get("reason", ""))
     db.add(t)
-    notify(db, users_with_role(db, "maintenance_manager", "super_admin", "plant_head"), f"Transfer requested for {asset.name} to {to_loc.name}", "/transfers")
+    notify(db, users_with_role(db, "maintenance_manager", "admin", "super_admin", "plant_head"), f"Transfer requested for {asset.name} to {to_loc.name}", "/transfers")
     audit(db, user, "request_transfer", "asset", asset.id, f"Requested transfer to {to_loc.name}")
     db.commit()
     return {"id": t.id, "message": "Transfer requested."}
@@ -2374,7 +2643,8 @@ def create_calibration(
     # Verify permission (asset.manage / asset.edit / asset.create / calibration.manage or super_admin / admin / plant_head)
     user_perms = PERMISSIONS.get(user.role, set())
     allowed = (
-        user.role in ("super_admin", "maintenance_manager", "plant_head")
+        user.role in ("admin", "super_admin", "maintenance_manager", "plant_head")
+        or "*" in user_perms
         or "asset.manage" in user_perms
         or "asset.edit" in user_perms
         or "asset.create" in user_perms
@@ -2413,7 +2683,8 @@ def update_calibration(
 ):
     user_perms = PERMISSIONS.get(user.role, set())
     allowed = (
-        user.role in ("super_admin", "maintenance_manager", "plant_head")
+        user.role in ("admin", "super_admin", "maintenance_manager", "plant_head")
+        or "*" in user_perms
         or "asset.manage" in user_perms
         or "asset.edit" in user_perms
         or "calibration.manage" in user_perms

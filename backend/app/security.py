@@ -18,7 +18,8 @@ bearer = HTTPBearer(auto_error=False)
 
 # Comprehensive RBAC for German Industrial Enterprise CMMS (DIN 31051, EN 13306, ISO 55001)
 PERMISSIONS = {
-    "super_admin": {"*"},  # all permissions
+    "admin": {"*"},  # all permissions
+    "super_admin": {"*"},  # backward compatibility alias
     "plant_head": {"report.view", "kpi.view", "oee.view", "asset.view", "job.view", "audit.view", "calibration.view", "downtime.view"},
     "maintenance_manager": {"asset.create", "asset.transfer", "transfer.decide", "job.create", "job.send", "job.decide", "job.work", "part.manage", "report.view", "audit.view", "user.view", "calibration.view"},
     "maintenance_engineer": {"asset.transfer", "job.create", "job.send", "job.decide", "job.work", "part.manage", "calibration.view"},
@@ -30,7 +31,8 @@ PERMISSIONS = {
 }
 
 MENUS = {
-    "super_admin": ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users"],
+    "admin": ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users", "security"],
+    "super_admin": ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users", "security"],
     "plant_head": ["dashboard", "assets", "jobs", "reports", "audit", "calibration"],
     "maintenance_manager": ["dashboard", "assets", "transfers", "jobs", "parts", "reports", "audit", "calibration"],
     "maintenance_engineer": ["dashboard", "assets", "jobs", "parts", "calibration"],
@@ -39,6 +41,45 @@ MENUS = {
     "production_manager": ["dashboard", "assets", "jobs"],
     "purchase_manager": ["dashboard", "procurement"],
     "auditor": ["dashboard", "assets", "jobs", "parts", "reports", "audit"],
+}
+
+PRIVILEGE_GROUPS = {
+    "Master Data": [
+        "asset.view", "asset.create", 
+        "asset.edit", "asset.delete"
+    ],
+    "Work Orders": [
+        "wo.view", "wo.create", 
+        "wo.assign", "wo.close"
+    ],
+    "Preventive Maintenance": [
+        "pm.view", "pm.create", "pm.generate"
+    ],
+    "Breakdown Management": [
+        "bd.view", "bd.report", "bd.close"
+    ],
+    "Spare Parts & Inventory": [
+        "part.view", "part.manage", 
+        "part.transfer", "part.adjust"
+    ],
+    "Purchase & Procurement": [
+        "pr.view", "pr.create", 
+        "pr.approve", "pr.order"
+    ],
+    "Reports & Analytics": [
+        "report.view", "report.export", 
+        "kpi.view", "audit.view"
+    ],
+    "Calibration": [
+        "calibration.view", "calibration.log"
+    ],
+    "Downtime Monitoring": [
+        "downtime.view", "downtime.manage"
+    ],
+    "User Management": [
+        "user.view", "user.create", 
+        "user.edit", "user.deactivate"
+    ],
 }
 
 
@@ -83,9 +124,13 @@ def current_user(
 
 
 def require(permission: str):
-    def checker(user: User = Depends(current_user)) -> User:
-        user_perms = PERMISSIONS.get(user.role, set())
-        if permission not in user_perms and "*" not in user_perms and "super_admin" != user.role:
+    def checker(user: User = Depends(current_user), db: Session = Depends(get_db)) -> User:
+        user_perms = PERMISSIONS.get(user.role)
+        if user_perms is None:
+            from .models import CustomRole
+            cr = db.query(CustomRole).filter_by(name=user.role).first()
+            user_perms = set(cr.privileges) if cr and cr.privileges else set()
+        if permission not in user_perms and "*" not in user_perms and user.role not in ("admin", "super_admin"):
             raise HTTPException(403, f"Your role ({user.role}) is not allowed to perform action: {permission}.")
         return user
     return checker

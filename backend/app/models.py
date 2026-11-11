@@ -1,10 +1,10 @@
 from datetime import datetime, date
-from sqlalchemy import String, Integer, Float, Boolean, DateTime, Date, ForeignKey, Text, CheckConstraint
+from sqlalchemy import String, Integer, Float, Boolean, DateTime, Date, ForeignKey, Text, CheckConstraint, JSON, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from .db import Base, utcnow
 
 VALID_ROLES = (
-    "super_admin",
+    "admin",
     "plant_head",
     "maintenance_manager",
     "maintenance_engineer",
@@ -20,17 +20,22 @@ class User(Base):
     __tablename__ = "users"
     __table_args__ = (
         CheckConstraint(
-            "role IN ('super_admin', 'plant_head', 'maintenance_manager', 'maintenance_engineer', "
-            "'technician', 'store_manager', 'production_manager', 'purchase_manager', 'auditor')",
+            "role IN ('admin', 'plant_head', 'maintenance_manager', 'maintenance_engineer', "
+            "'technician', 'store_manager', 'production_manager', 'purchase_manager', 'auditor') OR length(role) > 0",
             name="check_valid_user_role",
         ),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    username: Mapped[str | None] = mapped_column(String(60), unique=True, nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     email: Mapped[str] = mapped_column(String(120), unique=True)
     password_hash: Mapped[str] = mapped_column(String(200))
-    # Exactly 9 HR roles: super_admin, plant_head, maintenance_manager, maintenance_engineer, technician, store_manager, production_manager, purchase_manager, auditor
-    role: Mapped[str] = mapped_column(String(30))
+    # Built-in or custom roles
+    role: Mapped[str] = mapped_column(String(60))
+    units: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
+    departments: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="active", nullable=True)  # active / inactive
     contractor_company: Mapped[str] = mapped_column(String(120), default="")
     phone: Mapped[str] = mapped_column(String(40), default="")
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
@@ -39,8 +44,8 @@ class User(Base):
 
     @validates("role")
     def validate_role(self, key, value):
-        if value not in VALID_ROLES:
-            raise ValueError(f"Invalid role: {value}. Allowed roles are: {', '.join(VALID_ROLES)}")
+        if not value:
+            raise ValueError("Role cannot be empty")
         return value
 
 
@@ -414,3 +419,23 @@ class Calibration(Base):
     result: Mapped[str] = mapped_column(String(30))  # pass | fail | conditional
     notes: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class CustomRole(Base):
+    __tablename__ = "custom_roles"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(60), unique=True, nullable=False)
+    display_name = Column(String(100), nullable=False)
+    privileges = Column(JSON, nullable=False, default=list)
+    created_by = Column(String(120), nullable=True)
+    created_at = Column(DateTime, default=utcnow)
+
+
+class SecuritySettings(Base):
+    __tablename__ = "security_settings"
+    id = Column(Integer, primary_key=True, default=1)
+    password_expiry_days = Column(Integer, default=90)
+    session_timeout_minutes = Column(Integer, default=30)
+    max_login_attempts = Column(Integer, default=5)
+    updated_by = Column(String(120), nullable=True)
+    updated_at = Column(DateTime, default=utcnow)

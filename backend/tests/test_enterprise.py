@@ -13,7 +13,7 @@ def superadmin(client):
 
 def test_nine_hr_roles_authentication(client):
     expected_menus = {
-        ("superadmin@cmms.test", "SuperAdmin@123"): ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users"],
+        ("superadmin@cmms.test", "SuperAdmin@123"): ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users", "security"],
         ("planthead@cmms.test", "PlantHead@123"): ["dashboard", "assets", "jobs", "reports", "audit", "calibration"],
         ("manager@cmms.test", "Manager@123"): ["dashboard", "assets", "transfers", "jobs", "parts", "reports", "audit", "calibration"],
         ("engineer@cmms.test", "Engineer@123"): ["dashboard", "assets", "jobs", "parts", "calibration"],
