@@ -82,6 +82,7 @@ function EnterpriseDashboard({ d, user }) {
   const [notifications, setNotifications] = useState({ unread: 0 })
   const [liveDowntime, setLiveDowntime] = useState([])
   const [mtbfData, setMtbfData] = useState(null)
+  const [hoveredDonut, setHoveredDonut] = useState(null)
 
   const isManagerOrPlantHead = ['maintenance_manager', 'plant_head', 'admin', 'super_admin'].includes(user.role)
 
@@ -313,19 +314,17 @@ function EnterpriseDashboard({ d, user }) {
 
           {/* BOTTOM: Equipment Status Donut */}
           <div
+            className="card"
             style={{
-              background: '#ffffff',
-              borderRadius: '12px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
               padding: '1.25rem',
             }}
           >
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--tx)', marginBottom: '0.75rem' }}>
               Equipment Status
             </h3>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', flexWrap: 'wrap', gap: '1.5rem' }}>
-              {/* Donut Chart with center label */}
+              {/* Donut Chart with dynamic interactive center label */}
               <div style={{ position: 'relative', width: 200, height: 200 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -337,16 +336,32 @@ function EnterpriseDashboard({ d, user }) {
                       outerRadius={85}
                       paddingAngle={3}
                       dataKey="value"
+                      onMouseEnter={(_, index) => setHoveredDonut(donutData[index])}
+                      onMouseLeave={() => setHoveredDonut(null)}
                     >
-                      {donutData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
+                      {donutData.map((entry, index) => {
+                        const isHovered = hoveredDonut?.name === entry.name
+                        return (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            opacity={hoveredDonut ? (isHovered ? 1 : 0.45) : 1}
+                            stroke={isHovered ? 'var(--card)' : 'none'}
+                            strokeWidth={isHovered ? 2 : 0}
+                            style={{
+                              cursor: 'pointer',
+                              outline: 'none',
+                              transition: 'opacity 0.2s ease, filter 0.2s ease',
+                              filter: isHovered ? 'drop-shadow(0 2px 8px rgba(0,0,0,0.25))' : 'none',
+                            }}
+                          />
+                        )
+                      })}
                     </Pie>
-                    <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
 
-                {/* Centered label */}
+                {/* Centered label - Dynamically updates to show Active / PM / Maintenance / Breakdown clearly */}
                 <div
                   style={{
                     position: 'absolute',
@@ -355,19 +370,84 @@ function EnterpriseDashboard({ d, user }) {
                     transform: 'translate(-50%, -50%)',
                     textAlign: 'center',
                     pointerEvents: 'none',
+                    width: '110px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#111827', lineHeight: 1 }}>
-                    {totalAssets}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Assets
-                  </div>
+                  {hoveredDonut ? (
+                    <>
+                      <div
+                        style={{
+                          fontSize: '1.75rem',
+                          fontWeight: 800,
+                          color: hoveredDonut.color,
+                          lineHeight: 1.1,
+                          letterSpacing: '-0.02em',
+                        }}
+                      >
+                        {hoveredDonut.value}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          color: 'var(--tx)',
+                          marginTop: '3px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                          whiteSpace: 'nowrap',
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {hoveredDonut.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          color: 'var(--mu)',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {totalAssets > 0 ? Math.round((hoveredDonut.value / totalAssets) * 100) : 0}% of assets
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          fontSize: '1.75rem',
+                          fontWeight: 800,
+                          color: 'var(--tx)',
+                          lineHeight: 1.1,
+                          letterSpacing: '-0.02em',
+                        }}
+                      >
+                        {totalAssets}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          color: 'var(--mu)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          marginTop: '3px',
+                        }}
+                      >
+                        Total Assets
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Legend on the right */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', minWidth: 200 }}>
+              {/* Legend on the right with interactive hover sync */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: 200 }}>
                 {[
                   { label: 'Active', count: eqStatus.active || 0, color: '#2563eb' },
                   { label: 'In PM', count: eqStatus.in_pm || 0, color: '#16a34a' },
@@ -375,22 +455,46 @@ function EnterpriseDashboard({ d, user }) {
                   { label: 'Breakdown', count: eqStatus.breakdown || 0, color: '#dc2626' },
                 ].map((item) => {
                   const pct = totalAssets > 0 ? Math.round((item.count / totalAssets) * 100) : 0
+                  const isHovered = hoveredDonut?.name === item.label
                   return (
                     <div
                       key={item.label}
+                      onMouseEnter={() => setHoveredDonut({ name: item.label, value: item.count, color: item.color })}
+                      onMouseLeave={() => setHoveredDonut(null)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         fontSize: '0.85rem',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        background: isHovered ? 'var(--bg)' : 'transparent',
+                        border: isHovered ? '1px solid var(--bd)' : '1px solid transparent',
+                        transition: 'all 0.15s ease',
+                        cursor: 'pointer',
+                        transform: isHovered ? 'translateX(3px)' : 'none',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
-                        <span style={{ color: '#374151', fontWeight: 500 }}>{item.label}</span>
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            background: item.color,
+                            boxShadow: isHovered ? `0 0 0 3px ${item.color}33` : 'none',
+                            transition: 'box-shadow 0.15s ease',
+                          }}
+                        />
+                        <span style={{ color: isHovered ? 'var(--tx)' : 'var(--mu)', fontWeight: isHovered ? 700 : 500 }}>
+                          {item.label}
+                        </span>
                       </div>
-                      <div style={{ color: '#6b7280' }}>
-                        <strong style={{ color: '#111827' }}>{item.count}</strong> ({pct}%)
+                      <div style={{ color: 'var(--mu)' }}>
+                        <strong style={{ color: isHovered ? item.color : 'var(--tx)', fontWeight: 700 }}>
+                          {item.count}
+                        </strong>{' '}
+                        <span style={{ fontSize: '0.78rem' }}>({pct}%)</span>
                       </div>
                     </div>
                   )
