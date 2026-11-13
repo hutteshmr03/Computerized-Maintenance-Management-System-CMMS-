@@ -135,6 +135,21 @@ function Shell() {
   const { user, ready, logout } = useAuth()
   const loc = useLocation()
 
+  // Keep-alive heartbeat: pings backend /api/health every 3 minutes to prevent Render free instance sleep
+  useEffect(() => {
+    const pingBackend = () => {
+      if (navigator.onLine) {
+        api.get('/api/health').catch(() => {})
+      }
+    }
+    const initialTimer = setTimeout(pingBackend, 15000)
+    const interval = setInterval(pingBackend, 180000) // 3 minutes
+    return () => {
+      clearTimeout(initialTimer)
+      clearInterval(interval)
+    }
+  }, [])
+
   if (!ready) return <div className="page"><Loading /></div>
   if (!user) return <Navigate to="/login" state={{ from: loc.pathname }} replace />
 

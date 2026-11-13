@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import shutil
@@ -5,6 +6,8 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
+
+import httpx
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -77,6 +80,21 @@ INDEXES_SQL = [
 ]
 
 
+async def keep_alive_task():
+    """Pings the public service URL every 3 minutes (180s) to keep Render awake."""
+    await asyncio.sleep(45)  # Initial wait before starting pings
+    while True:
+        url = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("SELF_PING_URL")
+        if url:
+            ping_url = f"{url.rstrip('/')}/api/health"
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    await client.get(ping_url)
+            except Exception:
+                pass
+        await asyncio.sleep(180)  # Ping every 3 minutes
+
+
 @asynccontextmanager
 async def lifespan(_app):
     Base.metadata.create_all(engine)
@@ -123,7 +141,12 @@ async def lifespan(_app):
                         notes="Calibration compliant with ISO standards.",
                     ))
             db.commit()
-    yield
+
+    ping_task = asyncio.create_task(keep_alive_task())
+    try:
+        yield
+    finally:
+        ping_task.cancel()
 
 
 app = FastAPI(
@@ -133,14 +156,27 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
+    allow_origins=["*"] if cors_origins_env == "*" else [o.strip() for o in cors_origins_env.split(",") if o.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    """Unauthenticated health probe and keep-alive heartbeat target."""
+    return {
+        "status": "ok",
+        "service": "Enterprise CMMS",
+        "timestamp": utcnow().isoformat(),
+        "keep_alive_every": "3min",
+    }
 
 
 # ---------------------------------------------------------------- helpers & auditing

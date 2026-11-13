@@ -2,6 +2,13 @@ const TOKEN_KEY = 'cmms_token'
 const QUEUE_KEY = 'cmms_offline_queue'
 const CACHE_PREFIX = 'cmms_cache_'
 
+export const API_BASE = (import.meta.env?.VITE_API_URL || '').replace(/\/+$/, '')
+
+export function resolveUrl(url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return API_BASE ? `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}` : url
+}
+
 export const getToken = () => {
   try { return localStorage.getItem(TOKEN_KEY) } catch { return null }
 }
@@ -90,7 +97,8 @@ async function request(method, url, body, isForm = false, skipQueue = false) {
 
   let res
   try {
-    res = await fetch(url, {
+    const targetUrl = resolveUrl(url)
+    res = await fetch(targetUrl, {
       method,
       headers,
       body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
