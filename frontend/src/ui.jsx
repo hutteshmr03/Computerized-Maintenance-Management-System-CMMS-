@@ -369,94 +369,60 @@ export function SpeechInput({ onTranscript, placeholder = 'Click mic to speak no
   )
 }
 
-/* ---------- Persistent Offline & Sync Banner ---------- */
+/* ---------- Automatic Background Sync Manager (No Card UI) ---------- */
 export function OfflineBanner() {
-  const [online, setOnline] = useState(navigator.onLine)
-  const [queuedCount, setQueuedCount] = useState(getOfflineQueue().length)
-  const [syncing, setSyncing] = useState(false)
+  const syncingRef = useRef(false)
   const toast = useToast()
 
-  useEffect(() => {
-    const onOnline = () => {
-      setOnline(true)
-      handleAutoSync()
+  const syncQueue = useCallback(async () => {
+    if (syncingRef.current || !navigator.onLine) return
+    const queue = getOfflineQueue()
+    if (!queue || queue.length === 0) return
+
+    syncingRef.current = true
+    try {
+      const result = await flushOfflineQueue()
+      if (result.processed > 0) {
+        toast(`Synced ${result.processed} queued offline update${result.processed > 1 ? 's' : ''}.`, 'ok')
+      }
+    } catch {
+      // Background retry on next online event or interval
+    } finally {
+      syncingRef.current = false
     }
-    const onOffline = () => setOnline(false)
-    const onQueueChange = (e) => setQueuedCount(e.detail?.count ?? getOfflineQueue().length)
+  }, [toast])
+
+  useEffect(() => {
+    // 1. Auto-sync immediately on mount if online and queue has items
+    if (navigator.onLine && getOfflineQueue().length > 0) {
+      syncQueue()
+    }
+
+    // 2. Auto-sync whenever browser transitions to online
+    const onOnline = () => syncQueue()
+
+    // 3. Auto-sync whenever a new action is queued while online
+    const onQueueChange = () => {
+      if (navigator.onLine) syncQueue()
+    }
 
     window.addEventListener('online', onOnline)
-    window.addEventListener('offline', onOffline)
     window.addEventListener('cmms_queue_change', onQueueChange)
+
+    // 4. Background polling every 20s if pending items exist
+    const interval = setInterval(() => {
+      if (navigator.onLine && getOfflineQueue().length > 0) {
+        syncQueue()
+      }
+    }, 20000)
 
     return () => {
       window.removeEventListener('online', onOnline)
-      window.removeEventListener('offline', onOffline)
       window.removeEventListener('cmms_queue_change', onQueueChange)
+      clearInterval(interval)
     }
-  }, [])
+  }, [syncQueue])
 
-  const handleAutoSync = async () => {
-    if (syncing) return
-    const currentQueue = getOfflineQueue()
-    if (currentQueue.length === 0) return
-    setSyncing(true)
-    try {
-      const result = await flushOfflineQueue()
-      setQueuedCount(result.remaining)
-      if (result.processed > 0) {
-        toast(`Synced ${result.processed} queued changes to server.`, 'ok')
-      }
-    } catch {
-      toast('Failed to sync some offline items. Will retry.', 'bad')
-    } finally {
-      setSyncing(false)
-    }
-  }
-
-  if (online && queuedCount === 0) return null
-
-  return (
-    <div
-      className={`banner ${!online ? 'banner-offline' : 'banner-sync'}`}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 16px',
-        backgroundColor: !online ? '#b42318' : '#a96a00',
-        color: '#ffffff',
-        fontWeight: 500,
-        fontSize: '0.9rem',
-        borderRadius: 'var(--radius)',
-        marginBottom: '14px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span>{!online ? '⚡ Offline mode' : '🔄 Sync Queue'}:</span>
-        <span>
-          {!online
-            ? `Working locally. Changes are saved and will sync automatically when back online.`
-            : `${queuedCount} item${queuedCount > 1 ? 's' : ''} waiting to sync.`}
-        </span>
-      </div>
-      {online && queuedCount > 0 && (
-        <button
-          onClick={handleAutoSync}
-          disabled={syncing}
-          style={{
-            padding: '4px 12px',
-            backgroundColor: '#ffffff',
-            color: '#1d2326',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          {syncing ? 'Syncing…' : 'Sync Now'}
-        </button>
-      )}
-    </div>
-  )
+  // Completely removed from UI - operates silently in background
+  return null
 }

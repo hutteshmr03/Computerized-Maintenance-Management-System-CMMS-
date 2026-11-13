@@ -61,10 +61,14 @@ export async function flushOfflineQueue(onProgress) {
       await request(item.method, item.url, item.body, false, true)
       processed++
     } catch (err) {
-      // If server returns validation/conflict error, keep or discard depending on status
       console.warn('Failed to replay offline item', item, err)
       failed++
-      remaining.push(item)
+      // Discard permanent 4xx errors (e.g. 400 Bad Request, 404 Not Found, 422 Unprocessable)
+      // Retain network failures and 5xx server errors for background retry
+      const isPermanentError = err?.status >= 400 && err?.status < 500 && err?.status !== 408 && err?.status !== 429
+      if (!isPermanentError) {
+        remaining.push(item)
+      }
     }
   }
 
@@ -117,7 +121,9 @@ async function request(method, url, body, isForm = false, skipQueue = false) {
   if (!res.ok) {
     let msg = data?.detail
     if (Array.isArray(msg)) msg = 'Please check the form: ' + msg.map((e) => e.loc?.slice(-1)[0]).join(', ')
-    throw new Error(msg || `Something went wrong (${res.status}).`)
+    const err = new Error(msg || `Something went wrong (${res.status}).`)
+    err.status = res.status
+    throw err
   }
 
   // Cache successful GET responses for offline reading
