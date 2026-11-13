@@ -401,15 +401,6 @@ export default function Users() {
               <div className="small muted" style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>
                 Showing {filteredUsers.length} of {users.length} users
               </div>
-              {(isAdmin || can('user.manage') || can('user.create')) && (
-                <button
-                  type="button"
-                  className="bt p"
-                  onClick={() => setShowAddUserModal(true)}
-                >
-                  + Create User
-                </button>
-              )}
             </div>
           </div>
 
