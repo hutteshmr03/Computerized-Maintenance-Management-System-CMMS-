@@ -312,8 +312,8 @@ def job_actions(job: m.Job, user: m.User) -> list[str]:
     perms = PERMISSIONS.get(role, set())
     acts: list[str] = []
 
-    # Admin, Super Admin, Maintenance Manager, and Plant Head
-    if role in ("admin", "super_admin", "maintenance_manager", "plant_head"):
+    # Admin, Super Admin, and Maintenance Manager
+    if role in ("admin", "super_admin", "maintenance_manager"):
         if job.status == "created":
             acts += ["send", "plan", "edit", "cancel"]
         elif job.status == "planned":
@@ -1396,7 +1396,7 @@ def perform_job_action(
 
     if action == "send":
         job.status = "sent_for_approval"
-        notify(db, users_with_role(db, "maintenance_manager", "admin", "super_admin", "plant_head"), f"Job #{job.id} awaiting approval: {job.title}", f"/jobs/{job.id}")
+        notify(db, users_with_role(db, "maintenance_manager", "maintenance_engineer", "admin"), f"Job #{job.id} awaiting approval: {job.title}", f"/jobs/{job.id}")
 
     elif action == "plan":
         job.status = "planned"
@@ -1444,7 +1444,7 @@ def perform_job_action(
             job.contractor_invoice_amount = float(body["contractor_invoice_amount"])
         if "contractor_invoice_ref" in body:
             job.contractor_invoice_ref = body["contractor_invoice_ref"]
-        notify(db, users_with_role(db, "maintenance_manager", "admin", "super_admin", "plant_head"), f"Job #{job.id} submitted for review: {job.title}", f"/jobs/{job.id}")
+        notify(db, users_with_role(db, "maintenance_manager", "maintenance_engineer", "admin"), f"Job #{job.id} submitted for review: {job.title}", f"/jobs/{job.id}")
 
     elif action == "close":
         if job.type == "repair" and not (job.breakdown_reason or body.get("breakdown_reason")):
@@ -1734,6 +1734,8 @@ def create_purchase_request(body: dict, db: Session = Depends(get_db), user: m.U
     )
     db.add(pr)
     db.commit()
+    notify(db, users_with_role(db, "purchase_manager", "admin"), f"New Purchase Request {pr.pr_number} raised for {part.name} (qty: {qty})", "/procurement")
+    db.commit()
     return {"id": pr.id, "pr_number": pr.pr_number, "message": "Purchase request created."}
 
 
@@ -1756,11 +1758,13 @@ def procurement_action(
             raise HTTPException(403, "Permission denied")
         pr.status = "approved"
         pr.approved_by = user.id
+        notify(db, [pr.requested_by], f"Purchase Request {pr.pr_number} approved", "/procurement")
     elif action == "order":
         if not (has_all or "procurement.order" in user_perms or "procurement.manage" in user_perms):
             raise HTTPException(403, "Permission denied")
         pr.status = "ordered"
         pr.ordered_at = utcnow()
+        notify(db, [pr.requested_by], f"Purchase Request {pr.pr_number} has been ordered", "/procurement")
     elif action == "receive":
         if not (has_all or "procurement.manage" in user_perms or "procurement.order" in user_perms):
             raise HTTPException(403, "Permission denied")
@@ -1772,6 +1776,7 @@ def procurement_action(
         if not (has_all or "procurement.approve" in user_perms or "procurement.manage" in user_perms):
             raise HTTPException(403, "Permission denied")
         pr.status = "rejected"
+        notify(db, [pr.requested_by], f"Purchase Request {pr.pr_number} was rejected", "/procurement")
 
     db.commit()
     return {"id": pr.id, "status": pr.status}
@@ -2785,7 +2790,7 @@ def request_transfer(asset_id: int, body: dict, db: Session = Depends(get_db), u
 
     t = m.Transfer(asset_id=asset.id, to_location_id=to_loc.id, requested_by=user.id, reason=body.get("reason", ""))
     db.add(t)
-    notify(db, users_with_role(db, "maintenance_manager", "admin", "super_admin", "plant_head"), f"Transfer requested for {asset.name} to {to_loc.name}", "/transfers")
+    notify(db, users_with_role(db, "maintenance_manager", "admin"), f"Transfer requested for {asset.name} to {to_loc.name}", "/transfers")
     audit(db, user, "request_transfer", "asset", asset.id, f"Requested transfer to {to_loc.name}")
     db.commit()
     return {"id": t.id, "message": "Transfer requested."}

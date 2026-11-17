@@ -191,7 +191,7 @@ export default function Procurement() {
                           </button>
                         )}
 
-                        {r.status === 'approved' && can('procurement.manage') && (
+                        {r.status === 'approved' && can('procurement.order') && (
                           <button
                             type="button"
                             className="small primary"
