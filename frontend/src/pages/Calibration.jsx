@@ -261,17 +261,17 @@ export default function Calibration() {
 
       {filtered.length > 0 && (
         <div className="card table-wrap" style={{ padding: 0 }}>
-          <table>
+          <table style={{ width: '100%', tableLayout: 'auto' }}>
             <thead>
               <tr>
-                <th>Asset</th>
-                <th>Last Calibrated</th>
-                <th>Next Due</th>
-                <th>Certificate No.</th>
-                <th>Standard Used</th>
-                <th>Result</th>
-                <th>Calibrated By</th>
-                <th>Notes</th>
+                <th style={{ minWidth: 160 }}>Asset</th>
+                <th style={{ whiteSpace: 'nowrap', width: 110 }}>Last Calibrated</th>
+                <th style={{ whiteSpace: 'nowrap', width: 130 }}>Next Due</th>
+                <th style={{ whiteSpace: 'nowrap', width: 120 }}>Certificate No.</th>
+                <th style={{ minWidth: 130, maxWidth: 160 }}>Standard Used</th>
+                <th style={{ width: 90, textAlign: 'center' }}>Result</th>
+                <th style={{ minWidth: 130, maxWidth: 170 }}>Calibrated By</th>
+                <th style={{ minWidth: 200, maxWidth: 280 }}>Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -286,7 +286,7 @@ export default function Calibration() {
                         : undefined
                     }
                   >
-                    <td>
+                    <td style={{ minWidth: 160, whiteSpace: 'normal' }}>
                       <Link to={`/assets/${c.asset_id}`} style={{ fontWeight: 600 }}>
                         {c.asset_name}
                       </Link>
@@ -294,8 +294,8 @@ export default function Calibration() {
                         ({c.asset_code})
                       </span>
                     </td>
-                    <td>{fmtDate(c.last_calibrated_date)}</td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(c.last_calibrated_date)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <span style={{ fontWeight: isDueSoon ? 600 : 'normal' }}>
                         {fmtDate(c.next_due_date)}
                       </span>
@@ -309,11 +309,13 @@ export default function Calibration() {
                         </span>
                       ) : null}
                     </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.88rem' }}>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.88rem', whiteSpace: 'nowrap' }}>
                       {c.certificate_number}
                     </td>
-                    <td className="muted small">{c.standard_used || '—'}</td>
-                    <td>
+                    <td className="muted small" style={{ minWidth: 130, maxWidth: 160, whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                      {c.standard_used || '—'}
+                    </td>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                       {c.result === 'pass' && (
                         <span className="badge green small">Pass</span>
                       )}
@@ -327,8 +329,10 @@ export default function Calibration() {
                         <span className="badge grey small">{c.result}</span>
                       )}
                     </td>
-                    <td className="muted small">{c.calibrated_by}</td>
-                    <td className="muted small" style={{ maxWidth: 260 }}>
+                    <td className="muted small" style={{ minWidth: 130, maxWidth: 170, whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                      {c.calibrated_by}
+                    </td>
+                    <td className="muted small" style={{ minWidth: 200, maxWidth: 280, whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.35 }}>
                       {c.notes || '—'}
                     </td>
                   </tr>
