@@ -1181,10 +1181,15 @@ def reschedule_job(
     job = db.get(m.Job, job_id)
     if not job:
         raise HTTPException(404, "Job not found.")
-    if "start" in body:
-        job.scheduled_start = datetime.fromisoformat(body["start"])
-    if "end" in body:
-        job.scheduled_end = datetime.fromisoformat(body["end"])
+    start_val = body.get("scheduled_start") or body.get("start")
+    if start_val:
+        job.scheduled_start = datetime.fromisoformat(start_val.replace("Z", "+00:00") if isinstance(start_val, str) else start_val)
+    if "estimated_hours" in body and body["estimated_hours"] is not None:
+        job.estimated_hours = float(body["estimated_hours"])
+        if job.scheduled_start:
+            job.scheduled_end = job.scheduled_start + timedelta(hours=job.estimated_hours)
+    elif "end" in body and body["end"]:
+        job.scheduled_end = datetime.fromisoformat(body["end"].replace("Z", "+00:00") if isinstance(body["end"], str) else body["end"])
     if "due_date" in body and body["due_date"]:
         job.due_date = date.fromisoformat(body["due_date"])
     if "assigned_to" in body:
@@ -1402,8 +1407,9 @@ def perform_job_action(
         job.status = "planned"
         if "assigned_to" in body:
             job.assigned_to = body["assigned_to"]
-        if "scheduled_start" in body:
-            job.scheduled_start = datetime.fromisoformat(body["scheduled_start"])
+        if "scheduled_start" in body and body["scheduled_start"]:
+            start_str = body["scheduled_start"]
+            job.scheduled_start = datetime.fromisoformat(start_str.replace("Z", "+00:00") if isinstance(start_str, str) else start_str)
 
     elif action == "approve":
         job.status = "approved"
@@ -2594,7 +2600,7 @@ def export_reports_csv(report_type: str = "kpis", db: Session = Depends(get_db),
 @app.post("/api/reports/schedule-email")
 async def schedule_report_email(body: dict, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
     """Trigger scheduled report email dispatch using FastMail with SMTP config."""
-    email = body.get("recipient_email", user.email)
+    email = body.get("recipient_email") or body.get("email") or user.email
     freq = body.get("frequency", "weekly")
     report_type = body.get("report_type", "summary")
     audit(db, user, "schedule_report", "report", None, f"Scheduled {freq} maintenance report to {email}")

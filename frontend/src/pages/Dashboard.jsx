@@ -79,7 +79,6 @@ function EnterpriseDashboard({ d, user }) {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [chartView, setChartView] = useState('Month') // Week | Month | Year
-  const [notifications, setNotifications] = useState({ unread: 0 })
   const [liveDowntime, setLiveDowntime] = useState([])
   const [mtbfData, setMtbfData] = useState(null)
   const [hoveredDonut, setHoveredDonut] = useState(null)
@@ -106,16 +105,11 @@ function EnterpriseDashboard({ d, user }) {
     }
   }, [])
 
-  // Fetch MTBF and unread notifications
+  // Fetch MTBF report metrics
   useEffect(() => {
     api
       .get('/api/reports/mtbf')
       .then(setMtbfData)
-      .catch(() => {})
-
-    api
-      .get('/api/notifications')
-      .then(setNotifications)
       .catch(() => {})
   }, [])
 

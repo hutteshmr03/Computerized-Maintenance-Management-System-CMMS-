@@ -150,5 +150,6 @@ export const api = {
   put: (u, b) => request('PUT', u, b),
   patch: (u, b) => request('PATCH', u, b),
   del: (u) => request('DELETE', u),
+  delete: (u) => request('DELETE', u),
   upload: (u, form) => request('POST', u, form, true),
 }
