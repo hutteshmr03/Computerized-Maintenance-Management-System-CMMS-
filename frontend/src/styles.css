@@ -891,6 +891,14 @@ tr:hover td {
   background: var(--bg);
 }
 
+tr.row-due-soon td {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+}
+
+tr.row-due-soon:hover td {
+  background-color: rgba(245, 158, 11, 0.22) !important;
+}
+
 .table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

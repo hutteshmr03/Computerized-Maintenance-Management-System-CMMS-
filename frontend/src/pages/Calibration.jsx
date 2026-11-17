@@ -261,7 +261,7 @@ export default function Calibration() {
 
       {filtered.length > 0 && (
         <div className="card table-wrap" style={{ padding: 0 }}>
-          <table style={{ width: '100%', tableLayout: 'auto' }}>
+          <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
             <thead>
               <tr>
                 <th style={{ minWidth: 160 }}>Asset</th>
@@ -280,11 +280,7 @@ export default function Calibration() {
                 return (
                   <tr
                     key={c.id}
-                    style={
-                      isDueSoon
-                        ? { background: 'rgba(245, 158, 11, 0.12)' }
-                        : undefined
-                    }
+                    className={isDueSoon ? 'row-due-soon' : ''}
                   >
                     <td style={{ minWidth: 160, whiteSpace: 'normal' }}>
                       <Link to={`/assets/${c.asset_id}`} style={{ fontWeight: 600 }}>
