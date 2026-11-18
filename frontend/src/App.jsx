@@ -36,7 +36,7 @@ const TAB_MAP = {
   reports: { to: '/reports', label: 'Reports & KPIs' },
   audit: { to: '/audit', label: 'Audit Log' },
   calibration: { to: '/calibration', label: 'Calibration' },
-  users: { to: '/users', label: 'Users & GDPR' },
+  users: { to: '/users', label: 'Users & Roles' },
   security: { to: '/security', label: 'Security' },
 }
 
