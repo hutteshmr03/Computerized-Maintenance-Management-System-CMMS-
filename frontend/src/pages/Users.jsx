@@ -1430,7 +1430,7 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
 
           {/* Privileges Grouped Checklist */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
               Privileges ({selectedPrivileges.length} selected)
             </label>
 
@@ -1439,12 +1439,13 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                 background: 'var(--card)',
                 border: '1px solid var(--bd)',
                 borderRadius: '8px',
-                padding: '10px 14px',
-                maxHeight: '320px',
+                padding: '12px 14px',
+                maxHeight: '340px',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '10px',
+                gap: '12px',
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               }}
             >
               {Object.entries(privilegeGroups).map(([groupTitle, privs], index) => {
@@ -1465,7 +1466,7 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        marginBottom: '6px',
+                        marginBottom: '8px',
                       }}
                     >
                       <label
@@ -1474,10 +1475,11 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                           alignItems: 'center',
                           gap: '8px',
                           cursor: 'pointer',
-                          fontWeight: 600,
+                          fontWeight: 650,
                           fontSize: '13px',
                           color: 'var(--tx)',
                           margin: 0,
+                          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                         }}
                       >
                         <input
@@ -1491,8 +1493,10 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                       <span
                         className={groupSelected.length > 0 ? "b t" : "b"}
                         style={{
-                          padding: '1px 7px',
+                          padding: '1px 8px',
                           fontSize: '11px',
+                          borderRadius: '10px',
+                          fontWeight: 600,
                         }}
                       >
                         {groupSelected.length}
@@ -1504,7 +1508,7 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                       style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                        gap: '8px 12px',
+                        gap: '6px 10px',
                         paddingLeft: '22px',
                       }}
                     >
@@ -1519,25 +1523,60 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
                               display: 'flex',
                               alignItems: 'flex-start',
                               gap: '8px',
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              background: isChecked ? 'rgba(14, 154, 167, 0.05)' : 'transparent',
+                              border: isChecked ? '1px solid rgba(14, 154, 167, 0.2)' : '1px solid transparent',
                               cursor: 'pointer',
-                              fontSize: '12px',
-                              color: isChecked ? 'var(--tx)' : 'var(--mu)',
                               margin: 0,
-                              lineHeight: 1.3,
+                              lineHeight: 1.35,
+                              transition: 'all 0.15s ease',
+                              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isChecked) e.currentTarget.style.background = 'var(--bg)'
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isChecked) e.currentTarget.style.background = 'transparent'
                             }}
                           >
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => handleTogglePrivilege(priv)}
-                              style={{ accentColor: 'var(--teal)', cursor: 'pointer', width: 'auto', marginTop: '2px', flexShrink: 0 }}
+                              style={{
+                                accentColor: 'var(--teal)',
+                                cursor: 'pointer',
+                                width: '14px',
+                                height: '14px',
+                                marginTop: '2px',
+                                flexShrink: 0,
+                              }}
                             />
-                            <div>
-                              <code style={{ fontSize: '11px', fontWeight: 600, color: isChecked ? 'var(--tx)' : 'var(--mu)', display: 'block' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <span
+                                style={{
+                                  display: 'block',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  color: isChecked ? 'var(--navy)' : 'var(--tx)',
+                                  letterSpacing: '-0.01em',
+                                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                }}
+                              >
                                 {priv}
-                              </code>
+                              </span>
                               {desc && (
-                                <span style={{ fontSize: '10.5px', color: 'var(--mu)', display: 'block', marginTop: '1px' }}>
+                                <span
+                                  style={{
+                                    display: 'block',
+                                    fontSize: '11px',
+                                    color: 'var(--mu)',
+                                    marginTop: '2px',
+                                    lineHeight: 1.3,
+                                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                  }}
+                                >
                                   {desc}
                                 </span>
                               )}
