@@ -33,6 +33,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200))
     # Built-in or custom roles
     role: Mapped[str] = mapped_column(String(60))
+    locations: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
     units: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
     departments: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=True)  # active / inactive

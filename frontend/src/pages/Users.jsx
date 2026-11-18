@@ -126,6 +126,13 @@ export const PRIVILEGE_DESCRIPTIONS = {
   "user.manage": "Create users, manage roles & unlock",
 }
 
+const DEFAULT_LOCATION_OPTIONS = [
+  'Plant A',
+  'Plant B',
+  'Warehouse',
+  'Workshop',
+]
+
 const UNIT_OPTIONS = [
   'Unit 1',
   'Unit 2',
@@ -283,7 +290,8 @@ export default function Users() {
       (u.full_name && u.full_name.toLowerCase().includes(q)) ||
       (u.username && u.username.toLowerCase().includes(q)) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
-      (u.contractor_company && u.contractor_company.toLowerCase().includes(q))
+      (u.contractor_company && u.contractor_company.toLowerCase().includes(q)) ||
+      (u.locations && u.locations.some((loc) => loc.toLowerCase().includes(q)))
     return matchesRole && matchesSearch
   })
 
@@ -410,7 +418,7 @@ export default function Users() {
                 <tr>
                   <th>User & Email</th>
                   <th>Role</th>
-                  <th>Units & Departments</th>
+                  <th>Plants, Units & Depts</th>
                   <th>Status</th>
                   <th>Registered</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
@@ -454,6 +462,25 @@ export default function Users() {
 
                         <td>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {u.locations && u.locations.length > 0 && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {u.locations.map((loc) => (
+                                  <span
+                                    key={loc}
+                                    className="b"
+                                    style={{
+                                      fontSize: '11px',
+                                      padding: '1px 6px',
+                                      background: '#e0f2fe',
+                                      color: '#0369a1',
+                                      border: '1px solid #bae6fd',
+                                    }}
+                                  >
+                                    📍 {loc}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             {u.units && u.units.length > 0 && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                 {u.units.map((unit) => (
@@ -465,7 +492,7 @@ export default function Users() {
                                       padding: '1px 6px',
                                     }}
                                   >
-                                    📍 {unit}
+                                    ⚙️ {unit}
                                   </span>
                                 ))}
                               </div>
@@ -486,7 +513,7 @@ export default function Users() {
                                 ))}
                               </div>
                             )}
-                            {(!u.units || u.units.length === 0) && (!u.departments || u.departments.length === 0) && (
+                            {(!u.locations || u.locations.length === 0) && (!u.units || u.units.length === 0) && (!u.departments || u.departments.length === 0) && (
                               <span className="muted small" style={{ fontSize: '12px' }}>All Plant Areas</span>
                             )}
                           </div>
@@ -860,6 +887,8 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState(BUILTIN_ROLES[0].id)
+  const [locations, setLocations] = useState([])
+  const [locationOptions, setLocationOptions] = useState(DEFAULT_LOCATION_OPTIONS)
   const [units, setUnits] = useState([])
   const [departments, setDepartments] = useState([])
   const [password, setPassword] = useState('')
@@ -868,6 +897,18 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
 
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
+
+  useEffect(() => {
+    api
+      .get('/api/locations')
+      .then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          const names = Array.from(new Set([...res.map((l) => l.name), ...DEFAULT_LOCATION_OPTIONS]))
+          setLocationOptions(names)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const handleKey = (e) => e.key === 'Escape' && onClose()
@@ -886,6 +927,7 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
         name: fullName.trim(),
         email: email.trim(),
         role,
+        locations,
         units,
         departments,
         password,
@@ -999,7 +1041,16 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
             </select>
           </div>
 
-          {/* Row 4 (full width): Units (Select Multiple) */}
+          {/* Row 4 (full width): Plant / Locations (Select Multiple) */}
+          <MultiSelect
+            label="Plant / Locations (Select Multiple)"
+            options={locationOptions}
+            selected={locations}
+            onChange={setLocations}
+            placeholder="Select applicable plants / locations (e.g. Plant A, Plant B)..."
+          />
+
+          {/* Row 5 (full width): Units (Select Multiple) */}
           <MultiSelect
             label="Units (Select Multiple)"
             options={UNIT_OPTIONS}
@@ -1008,7 +1059,7 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
             placeholder="Select applicable plant units..."
           />
 
-          {/* Row 5 (full width): Departments (Select Multiple) */}
+          {/* Row 6 (full width): Departments (Select Multiple) */}
           <MultiSelect
             label="Departments (Select Multiple)"
             options={DEPARTMENT_OPTIONS}

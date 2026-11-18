@@ -108,6 +108,14 @@ async def lifespan(_app):
         except Exception:
             pass
 
+        try:
+            res = conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
+            col_names = [r[1] for r in res]
+            if "locations" not in col_names:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN locations JSON DEFAULT '[]'")
+        except Exception:
+            pass
+
         for idx in INDEXES_SQL:
             try:
                 conn.exec_driver_sql(idx)
@@ -2018,6 +2026,7 @@ def admin_list_users(db: Session = Depends(get_db), user: m.User = Depends(requi
             "username": u.username,
             "email": u.email,
             "role": u.role,
+            "locations": getattr(u, "locations", []) or [],
             "units": u.units or [],
             "departments": u.departments or [],
             "status": u.status or "active",
@@ -2037,6 +2046,7 @@ class UserCreateIn(BaseModel):
     email: str
     password: str
     role: str
+    locations: list[str] = []
     units: list[str] = []
     departments: list[str] = []
     status: str = "active"
@@ -2068,6 +2078,7 @@ def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m
         email=clean_email,
         password_hash=hash_password(body.password),
         role=body.role,
+        locations=body.locations or [],
         units=body.units or [],
         departments=body.departments or [],
         status=body.status or "active",
@@ -2085,6 +2096,7 @@ def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m
         "username": new_u.username,
         "email": new_u.email,
         "role": new_u.role,
+        "locations": new_u.locations,
         "units": new_u.units,
         "departments": new_u.departments,
         "status": new_u.status,
