@@ -153,6 +153,28 @@ const DEPARTMENT_OPTIONS = [
   'Maintenance',
 ]
 
+function TrashIcon({ size = 15, color = 'currentColor' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    >
+      <path d="M9 3.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 3.5V6H9V3.5z" />
+      <path d="M4.5 6h15" />
+      <path d="M6 6l1.1 13.2a2 2 0 0 0 2 1.8h5.8a2 2 0 0 0 2-1.8L18 6" />
+      <line x1="10" y1="10" x2="10" y2="17" />
+      <line x1="14" y1="10" x2="14" y2="17" />
+    </svg>
+  )
+}
+
 export default function Users() {
   const { user, can } = useAuth()
   const toast = useToast()
@@ -648,7 +670,6 @@ export default function Users() {
                             {(isAdmin || can('user.manage')) && u.id !== user?.id && !['superadmin@cmms.test', 'admin@cmms.test'].includes(u.email?.toLowerCase()) && (
                               <button
                                 type="button"
-                                className="bt"
                                 onClick={() => handleDeleteUser(u)}
                                 title={`Delete user ${u.full_name || u.name}`}
                                 aria-label={`Delete user ${u.full_name || u.name}`}
@@ -659,15 +680,25 @@ export default function Users() {
                                   width: '28px',
                                   height: '26px',
                                   padding: 0,
-                                  fontSize: '13px',
-                                  color: '#dc2626',
-                                  borderColor: '#fca5a5',
-                                  background: '#fef2f2',
+                                  background: 'transparent',
+                                  border: '1px solid var(--bd)',
+                                  borderRadius: '5px',
+                                  color: 'var(--mu)',
                                   cursor: 'pointer',
-                                  borderRadius: '6px',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = '#dc2626'
+                                  e.currentTarget.style.borderColor = '#fca5a5'
+                                  e.currentTarget.style.background = '#fef2f2'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = 'var(--mu)'
+                                  e.currentTarget.style.borderColor = 'var(--bd)'
+                                  e.currentTarget.style.background = 'transparent'
                                 }}
                               >
-                                🗑️
+                                <TrashIcon size={15} />
                               </button>
                             )}
                           </div>
