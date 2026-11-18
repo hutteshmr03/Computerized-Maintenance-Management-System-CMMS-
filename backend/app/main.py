@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update, delete
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from . import models as m
@@ -609,6 +609,9 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
             audit(db, user, "login_failed", "user", user.id, f"Wrong password attempt for {user.email}")
             db.commit()
         raise HTTPException(401, "Email or password is not correct.")
+
+    if user.status == "inactive":
+        raise HTTPException(403, "Your account has been deactivated. Please contact your system administrator.")
 
     user.failed_logins = 0
     user.locked_until = None
@@ -2114,6 +2117,73 @@ def admin_unlock_user(user_id: int, db: Session = Depends(get_db), user: m.User 
     audit(db, user, "unlock_user", "user", target.id, f"Unlocked account {target.email}")
     db.commit()
     return {"message": "User account unlocked."}
+
+
+@app.put("/api/admin/users/{user_id}/status")
+def admin_toggle_user_status(
+    user_id: int,
+    body: dict = {},
+    db: Session = Depends(get_db),
+    user: m.User = Depends(require("user.manage")),
+):
+    target = db.get(m.User, user_id)
+    if not target:
+        raise HTTPException(404, "User not found.")
+    if target.id == user.id:
+        raise HTTPException(400, "You cannot change the status of your own account.")
+
+    req_status = body.get("status")
+    if req_status in ("active", "inactive"):
+        target.status = req_status
+    else:
+        target.status = "inactive" if target.status == "active" else "active"
+
+    audit(db, user, "update_user_status", "user", target.id, f"Changed status of {target.email} to {target.status}")
+    db.commit()
+    return {"message": f"User status updated to {target.status}.", "status": target.status}
+
+
+@app.delete("/api/admin/users/{user_id}")
+def admin_delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(require("user.manage")),
+):
+    target = db.get(m.User, user_id)
+    if not target:
+        raise HTTPException(404, "User not found.")
+    if target.id == user.id:
+        raise HTTPException(400, "You cannot delete your own account.")
+
+    clean_email = target.email.lower()
+    if clean_email in ("superadmin@cmms.test", "admin@cmms.test") and target.role in ("admin", "super_admin"):
+        raise HTTPException(400, "Cannot delete primary system administrator account.")
+
+    name = target.name
+    email = target.email
+
+    try:
+        # Clear non-critical assignments
+        db.execute(update(m.Job).where(m.Job.assigned_to == target.id).values(assigned_to=None))
+        db.execute(update(m.Job).where(m.Job.contractor_id == target.id).values(contractor_id=None))
+        db.execute(update(m.MaintenancePlan).where(m.MaintenancePlan.assigned_to == target.id).values(assigned_to=None))
+        db.execute(delete(m.Notification).where(m.Notification.user_id == target.id))
+
+        audit(db, user, "delete_user", "user", target.id, f"Deleted user account {name} ({email})")
+        db.delete(target)
+        db.commit()
+        return {"message": f"User '{name}' deleted successfully."}
+    except Exception as e:
+        db.rollback()
+        # If foreign key constraints prevent physical deletion due to historical work orders/audits,
+        # deactivate the user instead to maintain audit compliance.
+        target = db.get(m.User, user_id)
+        if target:
+            target.status = "inactive"
+            audit(db, user, "archive_user", "user", target.id, f"Deactivated user {name} ({email}) to preserve compliance history.")
+            db.commit()
+            return {"message": f"User '{name}' has historical work order records and has been deactivated/archived to preserve audit history."}
+        raise HTTPException(500, f"Failed to delete user: {str(e)}")
 
 
 # ---------------------------------------------------------------- CUSTOM ROLES MANAGEMENT (Admin)

@@ -217,6 +217,40 @@ export default function Users() {
     }
   }
 
+  const handleToggleStatus = async (targetUser) => {
+    if (targetUser.id === user?.id) {
+      toast('You cannot deactivate your own account.', 'bad')
+      return
+    }
+    const isCurrentlyInactive = targetUser.status === 'inactive'
+    const nextStatus = isCurrentlyInactive ? 'active' : 'inactive'
+    try {
+      await api.put(`/api/admin/users/${targetUser.id}/status`, { status: nextStatus })
+      toast(`User "${targetUser.full_name || targetUser.name}" switched to ${nextStatus}.`, 'ok')
+      loadData()
+    } catch (err) {
+      toast(err.message || 'Failed to update user status', 'bad')
+    }
+  }
+
+  const handleDeleteUser = async (targetUser) => {
+    if (targetUser.id === user?.id) {
+      toast('You cannot delete your own account.', 'bad')
+      return
+    }
+    const name = targetUser.full_name || targetUser.name
+    if (!window.confirm(`Are you sure you want to delete user "${name}" (${targetUser.email})?`)) {
+      return
+    }
+    try {
+      const res = await api.delete(`/api/admin/users/${targetUser.id}`)
+      toast(res.message || `User "${name}" deleted successfully.`, 'ok')
+      loadData()
+    } catch (err) {
+      toast(err.message || 'Failed to delete user', 'bad')
+    }
+  }
+
   const handleDeleteRole = async (role) => {
     if (!window.confirm(`Are you sure you want to delete custom role "${role.display_name}"?`)) {
       return
@@ -521,17 +555,65 @@ export default function Users() {
 
                         <td>
                           {u.is_locked ? (
-                            <span className="b r">
+                            <span className="b r" title="Account locked due to multiple failed logins">
                               🔒 Locked
                             </span>
-                          ) : isInactive ? (
-                            <span className="b" style={{ background: 'var(--bg)', color: 'var(--mu)' }}>
-                              ○ Inactive
-                            </span>
                           ) : (
-                            <span className="b g1">
-                              ✓ Active
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(u)}
+                              disabled={u.id === user?.id}
+                              title={
+                                u.id === user?.id
+                                  ? 'You cannot deactivate your own account'
+                                  : isInactive
+                                  ? 'Click to switch to Active'
+                                  : 'Click to switch to Inactive'
+                              }
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '7px',
+                                padding: '3px 8px 3px 5px',
+                                borderRadius: '20px',
+                                fontSize: '11.5px',
+                                fontWeight: 600,
+                                cursor: u.id === user?.id ? 'not-allowed' : 'pointer',
+                                opacity: u.id === user?.id ? 0.7 : 1,
+                                border: isInactive ? '1px solid var(--bd)' : '1px solid #86efac',
+                                background: isInactive ? '#f1f5f9' : '#ecfdf5',
+                                color: isInactive ? '#64748b' : '#047857',
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  position: 'relative',
+                                  display: 'inline-block',
+                                  width: '26px',
+                                  height: '14px',
+                                  background: isInactive ? '#cbd5e1' : '#10b981',
+                                  borderRadius: '14px',
+                                  transition: 'background 0.2s ease',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    position: 'absolute',
+                                    top: '1px',
+                                    left: isInactive ? '2px' : '13px',
+                                    width: '12px',
+                                    height: '12px',
+                                    background: '#ffffff',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                                    transition: 'left 0.2s ease',
+                                  }}
+                                />
+                              </span>
+                              <span>{isInactive ? 'Inactive' : 'Active'}</span>
+                            </button>
                           )}
                         </td>
 
@@ -540,7 +622,7 @@ export default function Users() {
                         </td>
 
                         <td style={{ textAlign: 'right' }}>
-                          <div className="row" style={{ justifyContent: 'flex-end', gap: '6px' }}>
+                          <div className="row" style={{ justifyContent: 'flex-end', gap: '6px', flexWrap: 'wrap' }}>
                             <button
                               type="button"
                               className="bt"
@@ -560,6 +642,25 @@ export default function Users() {
                                 onClick={() => handleUnlock(u.id)}
                               >
                                 Unlock 🔓
+                              </button>
+                            )}
+
+                            {(isAdmin || can('user.manage')) && u.id !== user?.id && !['superadmin@cmms.test', 'admin@cmms.test'].includes(u.email?.toLowerCase()) && (
+                              <button
+                                type="button"
+                                className="bt"
+                                onClick={() => handleDeleteUser(u)}
+                                title={`Delete user ${u.full_name || u.name}`}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  color: '#dc2626',
+                                  borderColor: '#fca5a5',
+                                  background: '#fef2f2',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                🗑️ Delete
                               </button>
                             )}
                           </div>
@@ -1041,13 +1142,13 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
             </select>
           </div>
 
-          {/* Row 4 (full width): Plant / Locations (Select Multiple) */}
+          {/* Row 4 (full width): Location (Select Multiple) */}
           <MultiSelect
-            label="Plant / Locations (Select Multiple)"
+            label="Location (Select Multiple)"
             options={locationOptions}
             selected={locations}
             onChange={setLocations}
-            placeholder="Select applicable plants / locations (e.g. Plant A, Plant B)..."
+            placeholder="Select applicable locations (e.g. Plant A, Plant B)..."
           />
 
           {/* Row 5 (full width): Units (Select Multiple) */}
