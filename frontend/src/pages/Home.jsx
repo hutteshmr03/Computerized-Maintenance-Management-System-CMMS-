@@ -107,28 +107,34 @@ export default function Home() {
   const { user } = useAuth()
   const menu = user?.menu || []
 
-  // Filter to modules the user has access to, skip 'dashboard' — it appears as the first special card
   const modules = menu
     .filter((k) => MODULE_CONFIG[k])
     .map((k) => ({ key: k, ...MODULE_CONFIG[k] }))
 
   const firstName = (user?.full_name || user?.name || 'User').split(' ')[0]
-  const roleLabel = user?.role?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || ''
+  const count = modules.length
+
+  // Decide columns: ≤4 mods → 2 cols, 5–6 → 3, 7–9 → 3, 10+ → 4
+  const cols = count <= 4 ? 2 : count <= 6 ? 3 : count <= 9 ? 3 : 4
 
   return (
     <div
       style={{
-        minHeight: 'calc(100vh - 100px)',
-        padding: '32px 24px 48px',
+        height: 'calc(100vh - 100px)',
+        padding: '20px 24px 16px',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
-      {/* Welcome header */}
-      <div style={{ marginBottom: '32px' }}>
+      {/* Welcome header — compact */}
+      <div style={{ marginBottom: '18px', flexShrink: 0 }}>
         <h1
           style={{
-            margin: '0 0 6px',
-            fontSize: '1.6rem',
+            margin: 0,
+            fontSize: '1.4rem',
             fontWeight: 700,
             color: 'var(--tx)',
             letterSpacing: '-0.02em',
@@ -136,44 +142,44 @@ export default function Home() {
         >
           Welcome back, {firstName} 👋
         </h1>
-        <p style={{ margin: 0, fontSize: '14px', color: 'var(--mu)' }}>
-          {roleLabel} &middot; Select a module below to get started
-        </p>
       </div>
 
-      {/* Module Cards Grid */}
+      {/* Module Cards Grid — fills remaining height */}
       <div
         style={{
+          flex: 1,
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-          gap: '18px',
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gap: '14px',
+          alignContent: 'stretch',
+          minHeight: 0,
         }}
       >
         {modules.map((mod) => (
           <Link
             key={mod.key}
             to={mod.to}
-            style={{ textDecoration: 'none' }}
+            style={{ textDecoration: 'none', display: 'flex' }}
           >
             <div
               style={{
                 background: 'var(--card)',
                 border: '1px solid var(--bd)',
-                borderRadius: '14px',
-                padding: '22px 20px',
+                borderRadius: '12px',
+                padding: '16px 18px 14px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
+                gap: '10px',
                 transition: 'all 0.18s ease',
                 cursor: 'pointer',
-                height: '100%',
+                width: '100%',
                 boxSizing: 'border-box',
                 position: 'relative',
                 overflow: 'hidden',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = mod.border
-                e.currentTarget.style.boxShadow = `0 4px 20px 0 rgba(0,0,0,0.08), 0 0 0 2px ${mod.border}`
+                e.currentTarget.style.boxShadow = `0 4px 16px 0 rgba(0,0,0,0.07), 0 0 0 2px ${mod.border}`
                 e.currentTarget.style.transform = 'translateY(-2px)'
               }}
               onMouseLeave={(e) => {
@@ -185,15 +191,15 @@ export default function Home() {
               {/* Icon */}
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '10px',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '9px',
                   background: mod.bg,
                   border: `1px solid ${mod.border}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '22px',
+                  fontSize: '19px',
                   flexShrink: 0,
                 }}
               >
@@ -204,22 +210,20 @@ export default function Home() {
               <div>
                 <div
                   style={{
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: 700,
                     color: 'var(--tx)',
                     letterSpacing: '-0.01em',
-                    marginBottom: '5px',
-                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                    marginBottom: '4px',
                   }}
                 >
                   {mod.label}
                 </div>
                 <div
                   style={{
-                    fontSize: '12.5px',
+                    fontSize: '12px',
                     color: 'var(--mu)',
-                    lineHeight: 1.45,
-                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                    lineHeight: 1.4,
                   }}
                 >
                   {mod.description}
@@ -230,11 +234,11 @@ export default function Home() {
               <div
                 style={{
                   position: 'absolute',
-                  bottom: '18px',
-                  right: '18px',
-                  fontSize: '14px',
+                  bottom: '14px',
+                  right: '14px',
+                  fontSize: '13px',
                   color: mod.color,
-                  opacity: 0.6,
+                  opacity: 0.55,
                   fontWeight: 700,
                 }}
               >
