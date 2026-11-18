@@ -120,13 +120,11 @@ export default function Home() {
   return (
     <div
       style={{
-        height: 'calc(100vh - 100px)',
-        padding: '20px 24px 16px',
+        padding: '20px 24px 32px',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
-        overflow: 'hidden',
       }}
     >
       {/* Welcome header — compact */}
@@ -144,15 +142,12 @@ export default function Home() {
         </h1>
       </div>
 
-      {/* Module Cards Grid — fills remaining height */}
+      {/* Module Cards Grid */}
       <div
         style={{
-          flex: 1,
           display: 'grid',
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gap: '14px',
-          alignContent: 'stretch',
-          minHeight: 0,
         }}
       >
         {modules.map((mod) => (
