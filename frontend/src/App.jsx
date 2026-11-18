@@ -4,6 +4,7 @@ import { api } from './api'
 import { useAuth } from './auth.jsx'
 import { Loading, OfflineBanner, fmtDateTime } from './ui.jsx'
 import Login from './pages/Login.jsx'
+import Home from './pages/Home.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Hierarchy from './pages/Hierarchy.jsx'
 import Assets from './pages/Assets.jsx'
@@ -27,7 +28,8 @@ import Calibration from './pages/Calibration.jsx'
 import Security from './pages/Security.jsx'
 
 const TAB_MAP = {
-  dashboard: { to: '/', label: 'Dashboard', end: true },
+  home: { to: '/', label: '🏠 Home', end: true },
+  dashboard: { to: '/dashboard', label: 'Dashboard' },
   assets: { to: '/assets', label: 'Assets' },
   transfers: { to: '/transfers', label: 'Transfers' },
   jobs: { to: '/jobs', label: 'Work Orders' },
@@ -153,7 +155,7 @@ function Shell() {
   if (!ready) return <div className="page"><Loading /></div>
   if (!user) return <Navigate to="/login" state={{ from: loc.pathname }} replace />
 
-  const allowedTabs = (user.menu || [])
+  const allowedTabs = ['home', ...(user.menu || [])]
     .map((k) => TAB_MAP[k])
     .filter(Boolean)
 
@@ -212,7 +214,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route element={<Shell />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Home />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="hierarchy" element={<Hierarchy />} />
         <Route path="assets" element={<Assets />} />
         <Route path="assets/:id" element={<AssetDetail />} />
@@ -240,7 +243,7 @@ export default function App() {
             <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
               <h2 style={{ margin: '0 0 8px 0' }}>Page not found</h2>
               <p className="muted" style={{ margin: '0 0 16px 0' }}>The requested page could not be located.</p>
-              <Link to="/" className="btn primary">Return to Dashboard</Link>
+              <Link to="/" className="btn primary">Return to Home</Link>
             </div>
           }
         />
