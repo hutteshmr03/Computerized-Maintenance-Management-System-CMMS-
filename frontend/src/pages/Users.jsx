@@ -651,16 +651,23 @@ export default function Users() {
                                 className="bt"
                                 onClick={() => handleDeleteUser(u)}
                                 title={`Delete user ${u.full_name || u.name}`}
+                                aria-label={`Delete user ${u.full_name || u.name}`}
                                 style={{
-                                  padding: '4px 8px',
-                                  fontSize: '11px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '28px',
+                                  height: '26px',
+                                  padding: 0,
+                                  fontSize: '13px',
                                   color: '#dc2626',
                                   borderColor: '#fca5a5',
                                   background: '#fef2f2',
                                   cursor: 'pointer',
+                                  borderRadius: '6px',
                                 }}
                               >
-                                🗑️ Delete
+                                🗑️
                               </button>
                             )}
                           </div>
