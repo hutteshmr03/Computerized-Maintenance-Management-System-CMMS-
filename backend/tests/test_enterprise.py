@@ -11,7 +11,7 @@ def superadmin(client):
     return login(client, "superadmin@cmms.test", "SuperAdmin@123")
 
 
-def test_nine_hr_roles_authentication(client):
+def test_ten_hr_roles_authentication(client):
     expected_menus = {
         ("superadmin@cmms.test", "SuperAdmin@123"): ["dashboard", "assets", "transfers", "jobs", "parts", "procurement", "reports", "audit", "calibration", "users", "security"],
         ("planthead@cmms.test", "PlantHead@123"): ["dashboard", "assets", "jobs", "reports", "audit", "calibration"],
@@ -21,6 +21,7 @@ def test_nine_hr_roles_authentication(client):
         ("store@cmms.test", "Store@123"): ["dashboard", "parts", "procurement"],
         ("production@cmms.test", "Prod@123"): ["dashboard", "assets", "jobs"],
         ("purchase@cmms.test", "Purchase@123"): ["dashboard", "procurement"],
+        ("quality@cmms.test", "Quality@123"): ["dashboard", "assets", "jobs", "reports", "audit", "calibration"],
         ("auditor@cmms.test", "Audit@123"): ["dashboard", "assets", "jobs", "parts", "reports", "audit"],
     }
     for (email, pw), expected in expected_menus.items():

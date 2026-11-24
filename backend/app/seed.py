@@ -10,7 +10,7 @@ from . import models as m
 from .db import utcnow
 from .security import hash_password
 
-# Exactly 9 HR Roles
+# Exactly 10 HR Roles
 DEMO_USERS = [
     ("Admin", "superadmin@cmms.test", "SuperAdmin@123", "admin", "", "+49 711 901201"),
     ("Ravi Plant Head", "planthead@cmms.test", "PlantHead@123", "plant_head", "", "+49 711 901202"),
@@ -20,6 +20,7 @@ DEMO_USERS = [
     ("Meena Store", "store@cmms.test", "Store@123", "store_manager", "", "+49 711 901206"),
     ("Arjun Production", "production@cmms.test", "Prod@123", "production_manager", "", "+49 711 901207"),
     ("Priya Purchase", "purchase@cmms.test", "Purchase@123", "purchase_manager", "", "+49 711 901208"),
+    ("Vikram Quality", "quality@cmms.test", "Quality@123", "quality_manager", "", "+49 711 901210"),
     ("Suresh Auditor", "auditor@cmms.test", "Audit@123", "auditor", "", "+49 711 901209"),
 ]
 
