@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 # SQLite by default so the POC runs with no setup.
 # For PostgreSQL set: DATABASE_URL=postgresql+psycopg2://user:pass@localhost/cmms
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cmms.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False, "timeout": 15} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(

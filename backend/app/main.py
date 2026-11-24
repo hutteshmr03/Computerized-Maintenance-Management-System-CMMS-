@@ -97,25 +97,13 @@ async def keep_alive_task():
 
 @asynccontextmanager
 async def lifespan(_app):
+    # 1. Run migrations before any queries or superadmin initialization
+    from .migrations import run_all_migrations
+    run_all_migrations()
     Base.metadata.create_all(engine)
-    # Ensure performance indexes and schema migrations
+
+    # 2. Ensure performance indexes
     with engine.connect() as conn:
-        try:
-            res = conn.exec_driver_sql("PRAGMA table_info(assets)").fetchall()
-            col_names = [r[1] for r in res]
-            if "utility_type" not in col_names:
-                conn.exec_driver_sql("ALTER TABLE assets ADD COLUMN utility_type VARCHAR(30)")
-        except Exception:
-            pass
-
-        try:
-            res = conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
-            col_names = [r[1] for r in res]
-            if "locations" not in col_names:
-                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN locations JSON DEFAULT '[]'")
-        except Exception:
-            pass
-
         for idx in INDEXES_SQL:
             try:
                 conn.exec_driver_sql(idx)
@@ -123,17 +111,36 @@ async def lifespan(_app):
                 pass
         conn.commit()
 
+    # 3. Seed initialization or role updates
     with SessionLocal() as db:
         if not db.scalar(select(func.count()).select_from(m.User)):
             from .seed import seed
             seed(db)
         else:
-            # Ensure new roles exist in DB
+            # Ensure new roles and users exist in DB
             from .seed import DEMO_USERS
+            default_org = db.scalar(select(m.Organization).where(m.Organization.id == 1))
+            default_site = db.scalar(select(m.Site).where(m.Site.id == 1))
+            org_id = default_org.id if default_org else 1
+            site_id = default_site.id if default_site else 1
+
             for name, email, pw, role, company, phone in DEMO_USERS:
                 existing = db.scalar(select(m.User).where(func.lower(m.User.email) == email.lower()))
                 if not existing:
-                    db.add(m.User(name=name, email=email, password_hash=hash_password(pw), role=role, contractor_company=company, phone=phone))
+                    db.add(m.User(
+                        name=name,
+                        full_name=name,
+                        username=email.split("@")[0],
+                        email=email,
+                        password_hash=hash_password(pw),
+                        role=role,
+                        organization_id=org_id,
+                        site_id=site_id,
+                        locations=["Plant A", "Plant B"] if role in ("admin", "plant_head", "quality_manager") else ["Plant A"],
+                        contractor_company=company,
+                        phone=phone,
+                        status="active",
+                    ))
             # Ensure sample calibrations exist
             if not db.scalar(select(func.count()).select_from(m.Calibration)):
                 ast = db.scalar(select(m.Asset))
