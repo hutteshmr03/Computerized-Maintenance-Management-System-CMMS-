@@ -1092,6 +1092,9 @@ function MultiSelect({ label, options, selected = [], onChange, placeholder = 'S
    Buttons: Cancel | Create User
 ---------------------------------------------------- */
 function CreateUserModal({ customRoles, onClose, onAdded }) {
+  const builtinRoleIds = new Set(BUILTIN_ROLES.map((r) => r.id))
+  const userDefinedCustomRoles = (customRoles || []).filter((cr) => !builtinRoleIds.has(cr.name || cr.id))
+
   const [username, setUsername] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -1238,9 +1241,9 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
                   </option>
                 ))}
               </optgroup>
-              {customRoles.length > 0 && (
+              {userDefinedCustomRoles.length > 0 && (
                 <optgroup label="Custom Roles">
-                  {customRoles.map((cr) => (
+                  {userDefinedCustomRoles.map((cr) => (
                     <option key={cr.id} value={cr.name}>
                       {cr.display_name} ({cr.name})
                     </option>
@@ -1360,6 +1363,9 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
    EDIT USER MODAL (SCR-059 Enterprise Administration)
 ---------------------------------------------------- */
 function EditUserModal({ user, customRoles, onClose, onSaved }) {
+  const builtinRoleIds = new Set(BUILTIN_ROLES.map((r) => r.id))
+  const userDefinedCustomRoles = (customRoles || []).filter((cr) => !builtinRoleIds.has(cr.name || cr.id))
+
   const [username, setUsername] = useState(user.username || '')
   const [fullName, setFullName] = useState(user.full_name || user.name || '')
   const [email, setEmail] = useState(user.email || '')
@@ -1529,9 +1535,9 @@ function EditUserModal({ user, customRoles, onClose, onSaved }) {
                   </option>
                 ))}
               </optgroup>
-              {customRoles.length > 0 && (
+              {userDefinedCustomRoles.length > 0 && (
                 <optgroup label="Custom Roles">
-                  {customRoles.map((cr) => (
+                  {userDefinedCustomRoles.map((cr) => (
                     <option key={cr.id} value={cr.name}>
                       {cr.display_name} ({cr.name})
                     </option>
