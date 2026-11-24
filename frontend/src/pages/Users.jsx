@@ -200,10 +200,12 @@ export default function Users() {
   const toast = useToast()
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
-  const [activeTab, setActiveTab] = useState('users') // 'users' | 'roles'
+  const [activeTab, setActiveTab] = useState('users') // 'users' | 'roles' | 'sites'
   const [users, setUsers] = useState([])
   const [customRoles, setCustomRoles] = useState([])
   const [privilegeGroups, setPrivilegeGroups] = useState(PRIVILEGE_GROUPS_FALLBACK)
+  const [sites, setSites] = useState([])
+  const [organizations, setOrganizations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -212,6 +214,8 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [editingRole, setEditingRole] = useState(null)
+  const [showSiteModal, setShowSiteModal] = useState(false)
+  const [editingSite, setEditingSite] = useState(null)
 
   // Filters
   const [filterRole, setFilterRole] = useState('')
@@ -222,8 +226,14 @@ export default function Users() {
     setLoading(true)
     setError('')
     try {
-      const uRes = await api.get('/api/admin/users')
+      const [uRes, sRes, oRes] = await Promise.all([
+        api.get('/api/admin/users'),
+        api.get('/api/sites').catch(() => []),
+        api.get('/api/organizations').catch(() => []),
+      ])
       setUsers(uRes || [])
+      setSites(sRes || [])
+      setOrganizations(oRes || [])
 
       if (isAdmin) {
         try {
@@ -240,7 +250,7 @@ export default function Users() {
         }
       }
     } catch (err) {
-      setError(err.message || 'Failed to load user data')
+      setError(err.message || 'Failed to load user and organization data')
     } finally {
       setLoading(false)
     }
@@ -402,6 +412,17 @@ export default function Users() {
               + Create Role
             </button>
           )}
+          {activeTab === 'sites' && isAdmin && (
+            <button
+              className="bt p"
+              onClick={() => {
+                setEditingSite(null)
+                setShowSiteModal(true)
+              }}
+            >
+              + Register Plant / Site
+            </button>
+          )}
         </div>
       </div>
 
@@ -451,6 +472,23 @@ export default function Users() {
             Roles ({displayRolesList.length})
           </button>
         )}
+        <button
+          type="button"
+          className={`bt ${activeTab === 'sites' ? 'on p' : ''}`}
+          onClick={() => setActiveTab('sites')}
+          style={{
+            padding: '7px 16px',
+            borderRadius: '7px',
+            fontWeight: 600,
+            fontSize: '13px',
+            background: activeTab === 'sites' ? 'var(--navy)' : 'var(--card)',
+            color: activeTab === 'sites' ? '#ffffff' : 'var(--mu)',
+            border: `1px solid ${activeTab === 'sites' ? 'var(--navy)' : 'var(--bd)'}`,
+            cursor: 'pointer',
+          }}
+        >
+          Plants & Sites ({sites.length})
+        </button>
       </div>
 
       <ErrorNote error={error} />
@@ -891,6 +929,93 @@ export default function Users() {
         </div>
       )}
 
+      {/* PLANTS & SITES TAB CONTENT (URS-001 & URS-002) */}
+      {activeTab === 'sites' && !loading && (
+        <div className="stack" style={{ gap: '10px' }}>
+          <div className="card" style={{ padding: '16px', background: 'var(--subtle)' }}>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '14px', fontWeight: 600 }}>Multi-Plant Enterprise Governance (URS-001 & URS-002)</h3>
+            <p className="muted" style={{ margin: 0, fontSize: '12px' }}>
+              Manufacturing plants, physical factory sites, and logistics facilities registered across your enterprise group. Each site establishes operational data boundaries for equipment, inventory, work orders, and plant-specific user permissions.
+            </p>
+          </div>
+
+          <div className="card table-wrap" style={{ padding: 0 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Site Code</th>
+                  <th>Plant / Facility Name</th>
+                  <th>City & Country</th>
+                  <th>Organization (Company)</th>
+                  <th>Timezone</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sites.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--mu)' }}>
+                      No manufacturing plants or sites registered yet.
+                    </td>
+                  </tr>
+                ) : (
+                  sites.map((st) => (
+                    <tr key={st.id}>
+                      <td style={{ fontWeight: 600, fontFamily: 'monospace', color: 'var(--accent, #2563eb)' }}>
+                        {st.code}
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{st.name}</div>
+                        {st.address && <div className="muted" style={{ fontSize: '11px' }}>{st.address}</div>}
+                      </td>
+                      <td>
+                        {st.city ? `${st.city}, ${st.country || 'Germany'}` : st.country || '—'}
+                      </td>
+                      <td>
+                        <span className="badge" style={{ background: '#f3f4f6', color: '#1f2937', fontSize: '11px' }}>
+                          {st.organization_name || 'Sumant Industrial Manufacturing AG'}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                        {st.timezone || 'Europe/Berlin'}
+                      </td>
+                      <td>
+                        <span
+                          className="badge"
+                          style={{
+                            background: st.is_active ? '#dcfce7' : '#fee2e2',
+                            color: st.is_active ? '#15803d' : '#991b1b',
+                            fontSize: '11px',
+                          }}
+                        >
+                          {st.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="bt"
+                            style={{ padding: '4px 8px', fontSize: '11px' }}
+                            onClick={() => {
+                              setEditingSite(st)
+                              setShowSiteModal(true)
+                            }}
+                          >
+                            Edit ✏️
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* CREATE USER MODAL */}
       {showAddUserModal && (
         <CreateUserModal
@@ -932,6 +1057,24 @@ export default function Users() {
             setEditingRole(null)
             loadData()
             toast(editingRole ? 'Role updated successfully.' : 'Custom role created successfully.', 'ok')
+          }}
+        />
+      )}
+
+      {/* CREATE / EDIT SITE MODAL (URS-001 & URS-002) */}
+      {showSiteModal && (
+        <SiteModal
+          site={editingSite}
+          organizations={organizations}
+          onClose={() => {
+            setShowSiteModal(false)
+            setEditingSite(null)
+          }}
+          onSaved={() => {
+            setShowSiteModal(false)
+            setEditingSite(null)
+            loadData()
+            toast(editingSite ? 'Plant details updated successfully.' : 'Manufacturing plant registered successfully.', 'ok')
           }}
         />
       )}
@@ -1986,6 +2129,236 @@ function RoleModal({ role, privilegeGroups, onClose, onSaved }) {
               disabled={saving}
             >
               {saving ? 'Saving…' : isEdit ? 'Save Role' : 'Create Role'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/* ----------------------------------------------------
+   SITE / PLANT MODAL (URS-001 & URS-002)
+---------------------------------------------------- */
+function SiteModal({ site, organizations, onClose, onSaved }) {
+  const isEdit = Boolean(site)
+  const [code, setCode] = useState(site?.code || '')
+  const [name, setName] = useState(site?.name || '')
+  const [organizationId, setOrganizationId] = useState(site?.organization_id || (organizations[0]?.id || 1))
+  const [city, setCity] = useState(site?.city || '')
+  const [country, setCountry] = useState(site?.country || 'Germany')
+  const [address, setAddress] = useState(site?.address || '')
+  const [timezone, setTimezone] = useState(site?.timezone || 'Europe/Berlin')
+  const [isActive, setIsActive] = useState(site ? site.is_active : true)
+
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    const handleKey = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setErr('')
+    try {
+      const payload = {
+        organization_id: Number(organizationId),
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        city: city.trim(),
+        country: country.trim(),
+        address: address.trim(),
+        timezone: timezone.trim(),
+        is_active: isActive,
+      }
+      if (isEdit) {
+        await api.put(`/api/sites/${site.id}`, payload)
+      } else {
+        await api.post('/api/sites', payload)
+      }
+      onSaved()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div
+        className="modal mb"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '540px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15px' }}>{isEdit ? 'Edit Manufacturing Site' : 'Register Manufacturing Site'}</h3>
+            <p className="muted" style={{ margin: '2px 0 0 0', fontSize: '11px' }}>
+              Multi-plant industrial facility registration (URS-001 & URS-002)
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--mu)', padding: '4px' }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="stack" style={{ gap: '12px' }}>
+          <ErrorNote error={err} />
+
+          {/* Row 1: Code * | Organization * */}
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="site-code" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Site Code *
+              </label>
+              <input
+                id="site-code"
+                type="text"
+                required
+                placeholder="e.g. SITE-04"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                style={{ fontFamily: 'monospace', fontWeight: 600 }}
+              />
+            </div>
+
+            <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="site-org" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Parent Organization *
+              </label>
+              <select
+                id="site-org"
+                value={organizationId}
+                onChange={(e) => setOrganizationId(e.target.value)}
+              >
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name} ({org.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Row 2: Plant / Facility Name * */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label htmlFor="site-name" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+              Plant / Facility Name *
+            </label>
+            <input
+              id="site-name"
+              type="text"
+              required
+              placeholder="e.g. Plant C - Battery Storage & Cells"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          {/* Row 3: City | Country */}
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="site-city" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                City
+              </label>
+              <input
+                id="site-city"
+                type="text"
+                placeholder="e.g. Stuttgart"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="site-country" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Country
+              </label>
+              <input
+                id="site-country"
+                type="text"
+                placeholder="e.g. Germany"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Street Address */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label htmlFor="site-addr" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+              Physical Address (Optional)
+            </label>
+            <input
+              id="site-addr"
+              type="text"
+              placeholder="e.g. Mercedesstrasse 120, 70372 Stuttgart"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+
+          {/* Row 5: Timezone | Status */}
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="site-tz" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Plant Operating Timezone
+              </label>
+              <select
+                id="site-tz"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+              >
+                <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                <option value="America/New_York">America/New_York (EST/EDT)</option>
+                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="site-status" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Operational Status
+              </label>
+              <select
+                id="site-status"
+                value={isActive ? 'active' : 'inactive'}
+                onChange={(e) => setIsActive(e.target.value === 'active')}
+              >
+                <option value="active">Active Facility</option>
+                <option value="inactive">Inactive / Decommissioned</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Buttons: Cancel | Submit */}
+          <div className="r" style={{ marginTop: '6px' }}>
+            <button
+              type="button"
+              className="bt"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bt p"
+              disabled={saving}
+            >
+              {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Register Site'}
             </button>
           </div>
         </form>

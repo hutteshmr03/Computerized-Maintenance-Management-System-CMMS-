@@ -284,3 +284,67 @@ def test_user_management_edit_and_quality_manager_role(client, superadmin):
     # 5. Clean up created test user
     del_res = client.delete(f"/api/admin/users/{user_id}", headers=superadmin)
     assert del_res.status_code == 200
+
+
+def test_organizations_and_sites_crud(client, superadmin):
+    # 1. List organizations (URS-001)
+    orgs_res = client.get("/api/organizations", headers=superadmin)
+    assert orgs_res.status_code == 200
+    orgs = orgs_res.json()
+    assert len(orgs) >= 1
+    assert any(o["code"] == "ORG-001" for o in orgs)
+
+    # 2. Create new organization
+    new_org_res = client.post(
+        "/api/organizations",
+        headers=superadmin,
+        json={
+            "code": "ORG-TEST",
+            "name": "Bayer Automation Werk GmbH",
+            "domain": "bayer-plant.de",
+            "tax_id": "DE998877665",
+            "is_active": True,
+        },
+    )
+    assert new_org_res.status_code == 201
+    new_org = new_org_res.json()
+    assert new_org["code"] == "ORG-TEST"
+
+    # 3. List manufacturing sites (URS-002)
+    sites_res = client.get("/api/sites", headers=superadmin)
+    assert sites_res.status_code == 200
+    sites = sites_res.json()
+    assert len(sites) >= 3
+    assert any(s["code"] == "SITE-01" for s in sites)
+
+    # 4. Create new manufacturing site under organization
+    new_site_res = client.post(
+        "/api/sites",
+        headers=superadmin,
+        json={
+            "organization_id": new_org["id"],
+            "code": "SITE-TEST-01",
+            "name": "Plant C - Battery Storage & Cells",
+            "city": "Nuremberg",
+            "country": "Germany",
+            "address": "Industriestrasse 10",
+            "timezone": "Europe/Berlin",
+        },
+    )
+    assert new_site_res.status_code == 201
+    new_site = new_site_res.json()
+    assert new_site["code"] == "SITE-TEST-01"
+    assert new_site["name"] == "Plant C - Battery Storage & Cells"
+
+    # 5. Update site details
+    update_res = client.put(
+        f"/api/sites/{new_site['id']}",
+        headers=superadmin,
+        json={"city": "Erlangen", "address": "Am Werk 5"},
+    )
+    assert update_res.status_code == 200
+
+    # 6. Verify updated details
+    get_res = client.get(f"/api/sites/{new_site['id']}", headers=superadmin)
+    assert get_res.status_code == 200
+    assert get_res.json()["city"] == "Erlangen"

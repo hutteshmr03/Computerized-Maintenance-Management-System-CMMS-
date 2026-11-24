@@ -76,6 +76,42 @@ def seed(db: Session):
             ))
     db.flush()
 
+    # 0.1 Seed Multi-Tenant Organization & Manufacturing Sites (Domain A: URS-001, URS-002)
+    org = db.query(m.Organization).filter_by(code="ORG-001").first()
+    if not org:
+        org = m.Organization(
+            code="ORG-001",
+            name="Sumant Industrial Manufacturing AG",
+            domain="cmms.test",
+            tax_id="DE348920194",
+            is_active=True,
+        )
+        db.add(org)
+        db.flush()
+
+    sites_data = [
+        ("SITE-01", "Plant A - Heavy Machinery & Power", "Stuttgart", "Germany", "Mercedesstrasse 120, 70372 Stuttgart", "Europe/Berlin"),
+        ("SITE-02", "Plant B - Precision Assembly & Packaging", "Munich", "Germany", "Frankfurter Ring 85, 80807 Munich", "Europe/Berlin"),
+        ("SITE-03", "Central Logistics Hub", "Frankfurt", "Germany", "Industriepark Höchst, 65926 Frankfurt", "Europe/Berlin"),
+    ]
+    sites_map = {}
+    for scode, sname, scity, scountry, saddr, stz in sites_data:
+        st = db.query(m.Site).filter_by(code=scode).first()
+        if not st:
+            st = m.Site(
+                organization_id=org.id,
+                code=scode,
+                name=sname,
+                city=scity,
+                country=scountry,
+                address=saddr,
+                timezone=stz,
+                is_active=True,
+            )
+            db.add(st)
+            db.flush()
+        sites_map[scode] = st
+
     # 1. Seed Users
     users = {}
     for name, email, pw, role, company, phone in DEMO_USERS:
@@ -86,6 +122,9 @@ def seed(db: Session):
             email=email,
             password_hash=hash_password(pw),
             role=role,
+            organization_id=org.id,
+            site_id=sites_map.get("SITE-01", list(sites_map.values())[0]).id,
+            locations=["Plant A", "Plant B"] if role in ("admin", "plant_head", "quality_manager") else ["Plant A"],
             contractor_company=company,
             phone=phone,
             status="active",
@@ -115,7 +154,12 @@ def seed(db: Session):
     db.flush()
 
     # 3. Seed Legacy Locations
-    locs = {n: m.Location(name=n) for n in LOCATIONS}
+    locs = {
+        "Plant A": m.Location(name="Plant A", site_id=sites_map.get("SITE-01", list(sites_map.values())[0]).id),
+        "Plant B": m.Location(name="Plant B", site_id=sites_map.get("SITE-02", list(sites_map.values())[0]).id),
+        "Warehouse": m.Location(name="Warehouse", site_id=sites_map.get("SITE-03", list(sites_map.values())[0]).id),
+        "Workshop": m.Location(name="Workshop", site_id=sites_map.get("SITE-01", list(sites_map.values())[0]).id),
+    }
     db.add_all(locs.values())
     db.flush()
 

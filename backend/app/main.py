@@ -741,6 +741,243 @@ def create_node(body: NodeIn, db: Session = Depends(get_db), user: m.User = Depe
     return asset_dict(db, node)
 
 
+# ---------------------------------------------------------------- MULTI-TENANT ORGANIZATIONS & SITES (Domain A)
+class OrganizationCreateIn(BaseModel):
+    name: str
+    code: str
+    domain: str = ""
+    tax_id: str = ""
+    is_active: bool = True
+
+
+class OrganizationUpdateIn(BaseModel):
+    name: str | None = None
+    code: str | None = None
+    domain: str | None = None
+    tax_id: str | None = None
+    is_active: bool | None = None
+
+
+class SiteCreateIn(BaseModel):
+    organization_id: int = 1
+    code: str
+    name: str
+    city: str = ""
+    country: str = "Germany"
+    address: str = ""
+    timezone: str = "Europe/Berlin"
+    is_active: bool = True
+
+
+class SiteUpdateIn(BaseModel):
+    organization_id: int | None = None
+    code: str | None = None
+    name: str | None = None
+    city: str | None = None
+    country: str | None = None
+    address: str | None = None
+    timezone: str | None = None
+    is_active: bool | None = None
+
+
+@app.get("/api/organizations")
+def list_organizations(db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    orgs = db.scalars(select(m.Organization).order_by(m.Organization.name)).all()
+    out = []
+    for o in orgs:
+        out.append({
+            "id": o.id,
+            "code": o.code,
+            "name": o.name,
+            "domain": o.domain,
+            "tax_id": o.tax_id,
+            "is_active": o.is_active,
+            "sites_count": len(o.sites),
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+        })
+    return out
+
+
+@app.post("/api/organizations", status_code=201)
+def create_organization(body: OrganizationCreateIn, db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
+    clean_code = body.code.strip().upper()
+    existing = db.scalar(select(m.Organization).where(m.Organization.code == clean_code))
+    if existing:
+        raise HTTPException(409, f"Organization with code '{clean_code}' already exists.")
+    org = m.Organization(
+        code=clean_code,
+        name=body.name.strip(),
+        domain=body.domain.strip(),
+        tax_id=body.tax_id.strip(),
+        is_active=body.is_active,
+    )
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    audit(db, user, "create_organization", "organization", org.id, f"Created organization {org.name} ({org.code})")
+    return {"id": org.id, "code": org.code, "name": org.name, "domain": org.domain, "is_active": org.is_active}
+
+
+@app.get("/api/organizations/{org_id}")
+def get_organization(org_id: int, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    org = db.get(m.Organization, org_id)
+    if not org:
+        raise HTTPException(404, "Organization not found.")
+    return {
+        "id": org.id,
+        "code": org.code,
+        "name": org.name,
+        "domain": org.domain,
+        "tax_id": org.tax_id,
+        "is_active": org.is_active,
+        "created_at": org.created_at.isoformat() if org.created_at else None,
+        "sites": [
+            {
+                "id": s.id,
+                "code": s.code,
+                "name": s.name,
+                "city": s.city,
+                "country": s.country,
+                "timezone": s.timezone,
+                "is_active": s.is_active,
+            }
+            for s in org.sites
+        ],
+    }
+
+
+@app.put("/api/organizations/{org_id}")
+def update_organization(org_id: int, body: OrganizationUpdateIn, db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
+    org = db.get(m.Organization, org_id)
+    if not org:
+        raise HTTPException(404, "Organization not found.")
+    if body.name is not None:
+        org.name = body.name.strip()
+    if body.code is not None:
+        org.code = body.code.strip().upper()
+    if body.domain is not None:
+        org.domain = body.domain.strip()
+    if body.tax_id is not None:
+        org.tax_id = body.tax_id.strip()
+    if body.is_active is not None:
+        org.is_active = body.is_active
+    db.commit()
+    audit(db, user, "update_organization", "organization", org.id, f"Updated organization {org.name}")
+    return {"message": "Organization updated successfully."}
+
+
+@app.get("/api/sites")
+def list_sites(organization_id: int | None = None, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    stmt = select(m.Site).options(joinedload(m.Site.organization)).order_by(m.Site.code)
+    if organization_id:
+        stmt = stmt.where(m.Site.organization_id == organization_id)
+    sites = db.scalars(stmt).all()
+    return [
+        {
+            "id": s.id,
+            "organization_id": s.organization_id,
+            "organization_name": s.organization.name if s.organization else "Default",
+            "code": s.code,
+            "name": s.name,
+            "city": s.city,
+            "country": s.country,
+            "address": s.address,
+            "timezone": s.timezone,
+            "is_active": s.is_active,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        }
+        for s in sites
+    ]
+
+
+@app.post("/api/sites", status_code=201)
+def create_site(body: SiteCreateIn, db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
+    clean_code = body.code.strip().upper()
+    existing = db.scalar(select(m.Site).where(m.Site.code == clean_code))
+    if existing:
+        raise HTTPException(409, f"Site with code '{clean_code}' already exists.")
+
+    org = db.get(m.Organization, body.organization_id)
+    org_id = org.id if org else 1
+
+    site = m.Site(
+        organization_id=org_id,
+        code=clean_code,
+        name=body.name.strip(),
+        city=body.city.strip(),
+        country=body.country.strip(),
+        address=body.address.strip(),
+        timezone=body.timezone.strip(),
+        is_active=body.is_active,
+    )
+    db.add(site)
+    db.flush()
+
+    loc_existing = db.scalar(select(m.Location).where(m.Location.name == site.name))
+    if not loc_existing:
+        db.add(m.Location(name=site.name, site_id=site.id))
+
+    db.commit()
+    db.refresh(site)
+    audit(db, user, "create_site", "site", site.id, f"Created manufacturing site {site.name} ({site.code})")
+    return {
+        "id": site.id,
+        "organization_id": site.organization_id,
+        "code": site.code,
+        "name": site.name,
+        "city": site.city,
+        "country": site.country,
+        "timezone": site.timezone,
+        "is_active": site.is_active,
+    }
+
+
+@app.get("/api/sites/{site_id}")
+def get_site(site_id: int, db: Session = Depends(get_db), user: m.User = Depends(current_user)):
+    site = db.get(m.Site, site_id)
+    if not site:
+        raise HTTPException(404, "Site not found.")
+    return {
+        "id": site.id,
+        "organization_id": site.organization_id,
+        "code": site.code,
+        "name": site.name,
+        "city": site.city,
+        "country": site.country,
+        "address": site.address,
+        "timezone": site.timezone,
+        "is_active": site.is_active,
+    }
+
+
+@app.put("/api/sites/{site_id}")
+def update_site(site_id: int, body: SiteUpdateIn, db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
+    site = db.get(m.Site, site_id)
+    if not site:
+        raise HTTPException(404, "Site not found.")
+    if body.name is not None:
+        old_name = site.name
+        site.name = body.name.strip()
+        loc = db.scalar(select(m.Location).where(m.Location.name == old_name))
+        if loc:
+            loc.name = site.name
+    if body.code is not None:
+        site.code = body.code.strip().upper()
+    if body.city is not None:
+        site.city = body.city.strip()
+    if body.country is not None:
+        site.country = body.country.strip()
+    if body.address is not None:
+        site.address = body.address.strip()
+    if body.timezone is not None:
+        site.timezone = body.timezone.strip()
+    if body.is_active is not None:
+        site.is_active = body.is_active
+    db.commit()
+    audit(db, user, "update_site", "site", site.id, f"Updated manufacturing site {site.name}")
+    return {"message": "Site updated successfully."}
+
+
 # ---------------------------------------------------------------- ASSETS (Flat / Search & Backward Compatibility)
 @app.get("/api/locations")
 def list_locations(db: Session = Depends(get_db), user: m.User = Depends(current_user)):

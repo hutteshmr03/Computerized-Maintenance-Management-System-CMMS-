@@ -17,6 +17,41 @@ VALID_ROLES = (
 )
 
 
+class Organization(Base):
+    """
+    Multi-tenant customer company entity (URS-001).
+    """
+    __tablename__ = "organizations"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(30), unique=True)
+    name: Mapped[str] = mapped_column(String(140))
+    domain: Mapped[str] = mapped_column(String(120), default="")
+    tax_id: Mapped[str] = mapped_column(String(60), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    sites: Mapped[list["Site"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
+
+
+class Site(Base):
+    """
+    Manufacturing plant / physical factory site (URS-002).
+    """
+    __tablename__ = "sites"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), default=1)
+    code: Mapped[str] = mapped_column(String(30), unique=True)
+    name: Mapped[str] = mapped_column(String(140))
+    city: Mapped[str] = mapped_column(String(100), default="")
+    country: Mapped[str] = mapped_column(String(100), default="Germany")
+    address: Mapped[str] = mapped_column(String(200), default="")
+    timezone: Mapped[str] = mapped_column(String(60), default="Europe/Berlin")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    organization: Mapped[Organization] = relationship(back_populates="sites")
+
+
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
@@ -34,6 +69,8 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200))
     # Built-in or custom roles
     role: Mapped[str] = mapped_column(String(60))
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), nullable=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True)
     locations: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
     units: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
     departments: Mapped[list] = mapped_column(JSON, default=list, nullable=True)
@@ -64,6 +101,7 @@ class Location(Base):
     __tablename__ = "locations"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True)
 
 
 class Asset(Base):
@@ -91,6 +129,8 @@ class Asset(Base):
     running_hours: Mapped[float] = mapped_column(Float, default=0.0)
     location_id: Mapped[int] = mapped_column(ForeignKey("locations.id"), default=1)
     location: Mapped[Location] = relationship()
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), nullable=True)
     cost_centre_id: Mapped[int | None] = mapped_column(ForeignKey("cost_centres.id"), nullable=True)
     cost_centre: Mapped[CostCentre | None] = relationship()
     # Utility type enum: compressor | boiler | chiller | generator | other | None
