@@ -27,6 +27,7 @@ PERMISSIONS = {
     "store_manager": {"part.manage", "part.view", "procurement.manage"},
     "production_manager": {"job.create", "job.send", "asset.view", "downtime.view"},
     "purchase_manager": {"procurement.approve", "procurement.order"},
+    "quality_manager": {"calibration.view", "calibration.manage", "report.view", "report.export", "audit.view", "asset.view", "job.view"},
     "auditor": {"report.view", "audit.view", "asset.view", "job.view", "part.view"},
 }
 
@@ -40,6 +41,7 @@ MENUS = {
     "store_manager": ["dashboard", "parts", "procurement"],
     "production_manager": ["dashboard", "assets", "jobs"],
     "purchase_manager": ["dashboard", "procurement"],
+    "quality_manager": ["dashboard", "assets", "jobs", "reports", "audit", "calibration"],
     "auditor": ["dashboard", "assets", "jobs", "parts", "reports", "audit"],
 }
 
@@ -171,6 +173,11 @@ DEFAULT_BUILTIN_ROLES = [
         "name": "purchase_manager",
         "display_name": "Purchase Manager",
         "privileges": ["procurement.view", "procurement.approve", "procurement.order"],
+    },
+    {
+        "name": "quality_manager",
+        "display_name": "Quality Manager",
+        "privileges": ["calibration.view", "calibration.manage", "report.view", "report.export", "audit.view", "asset.view", "job.view"],
     },
     {
         "name": "auditor",

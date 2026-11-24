@@ -12,6 +12,7 @@ VALID_ROLES = (
     "store_manager",
     "production_manager",
     "purchase_manager",
+    "quality_manager",
     "auditor",
 )
 
@@ -21,7 +22,7 @@ class User(Base):
     __table_args__ = (
         CheckConstraint(
             "role IN ('admin', 'plant_head', 'maintenance_manager', 'maintenance_engineer', "
-            "'technician', 'store_manager', 'production_manager', 'purchase_manager', 'auditor') OR length(role) > 0",
+            "'technician', 'store_manager', 'production_manager', 'purchase_manager', 'quality_manager', 'auditor') OR length(role) > 0",
             name="check_valid_user_role",
         ),
     )

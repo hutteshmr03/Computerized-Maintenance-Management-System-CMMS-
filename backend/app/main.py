@@ -2057,6 +2057,21 @@ class UserCreateIn(BaseModel):
     phone: str = ""
 
 
+class UserUpdateIn(BaseModel):
+    name: str | None = None
+    full_name: str | None = None
+    username: str | None = None
+    email: str | None = None
+    role: str | None = None
+    password: str | None = None
+    locations: list[str] | None = None
+    units: list[str] | None = None
+    departments: list[str] | None = None
+    status: str | None = None
+    contractor_company: str | None = None
+    phone: str | None = None
+
+
 @app.post("/api/users", status_code=201)
 @app.post("/api/admin/users", status_code=201)
 def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m.User = Depends(require("user.manage"))):
@@ -2104,6 +2119,81 @@ def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m
         "departments": new_u.departments,
         "status": new_u.status,
         "message": "User created successfully."
+    }
+
+
+@app.put("/api/admin/users/{user_id}")
+def admin_update_user(
+    user_id: int,
+    body: UserUpdateIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(require("user.manage")),
+):
+    target = db.get(m.User, user_id)
+    if not target:
+        raise HTTPException(404, "User not found.")
+
+    if body.email and body.email.strip():
+        clean_email = body.email.strip().lower()
+        if clean_email != target.email.lower():
+            existing = db.scalar(select(m.User).where(func.lower(m.User.email) == clean_email, m.User.id != target.id))
+            if existing:
+                raise HTTPException(409, "User email already registered by another account.")
+            target.email = clean_email
+
+    if body.username is not None:
+        clean_username = body.username.strip() if body.username.strip() else None
+        if clean_username:
+            existing_u = db.scalar(select(m.User).where(func.lower(m.User.username) == clean_username.lower(), m.User.id != target.id))
+            if existing_u:
+                raise HTTPException(409, "Username already registered by another account.")
+        target.username = clean_username
+
+    if body.full_name is not None or body.name is not None:
+        new_name = (body.full_name or body.name or target.name).strip()
+        target.name = new_name
+        target.full_name = (body.full_name or target.full_name or new_name).strip()
+
+    if body.role is not None and body.role.strip():
+        target.role = body.role.strip()
+
+    if body.password is not None and body.password.strip():
+        target.password_hash = hash_password(body.password.strip())
+
+    if body.locations is not None:
+        target.locations = body.locations
+    if body.units is not None:
+        target.units = body.units
+    if body.departments is not None:
+        target.departments = body.departments
+
+    if body.status is not None and body.status in ("active", "inactive"):
+        if target.id == user.id and body.status == "inactive":
+            raise HTTPException(400, "You cannot deactivate your own account.")
+        target.status = body.status
+
+    if body.contractor_company is not None:
+        target.contractor_company = body.contractor_company.strip()
+    if body.phone is not None:
+        target.phone = body.phone.strip()
+
+    audit(db, user, "update_user", "user", target.id, f"Updated user {target.email} ({target.role})")
+    db.commit()
+    db.refresh(target)
+    return {
+        "id": target.id,
+        "name": target.name,
+        "full_name": target.full_name,
+        "username": target.username,
+        "email": target.email,
+        "role": target.role,
+        "locations": target.locations,
+        "units": target.units,
+        "departments": target.departments,
+        "status": target.status,
+        "contractor_company": target.contractor_company,
+        "phone": target.phone,
+        "message": "User updated successfully.",
     }
 
 
@@ -2227,6 +2317,11 @@ DEFAULT_BUILTIN_ROLES = [
         "name": "purchase_manager",
         "display_name": "Purchase Manager",
         "privileges": ["procurement.view", "procurement.approve", "procurement.order"],
+    },
+    {
+        "name": "quality_manager",
+        "display_name": "Quality Manager",
+        "privileges": ["calibration.view", "calibration.manage", "report.view", "report.export", "audit.view", "asset.view", "job.view"],
     },
     {
         "name": "auditor",

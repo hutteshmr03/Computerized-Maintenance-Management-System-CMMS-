@@ -217,3 +217,69 @@ def test_asset_utility_type(client, admin):
     # Filter by utility_type
     filtered = client.get("/api/assets?utility_type=chiller", headers=admin).json()
     assert any(a["id"] == asset["id"] for a in filtered)
+
+
+def test_user_management_edit_and_quality_manager_role(client, superadmin):
+    # 1. Create a quality manager user
+    email = "qm_test@cmms.test"
+    create_res = client.post(
+        "/api/admin/users",
+        headers=superadmin,
+        json={
+            "full_name": "Quality Officer",
+            "username": "qm_officer",
+            "email": email,
+            "password": "QualityPass@123",
+            "role": "quality_manager",
+            "locations": ["Plant A"],
+            "units": ["Packaging Unit"],
+            "departments": ["Quality"],
+            "phone": "+49 89 1234567",
+        },
+    )
+    assert create_res.status_code == 201
+    created_user = create_res.json()
+    user_id = created_user["id"]
+    assert created_user["role"] == "quality_manager"
+    assert created_user["locations"] == ["Plant A"]
+
+    # 2. Login as the new quality manager and verify menu permissions
+    qm_headers = login(client, email, "QualityPass@123")
+    me = client.get("/api/me", headers=qm_headers).json()
+    assert me["role"] == "quality_manager"
+    assert "calibration" in me["menu"]
+    assert "reports" in me["menu"]
+
+    # 3. Edit the user profile (SCR-059) via PUT /api/admin/users/{user_id}
+    edit_res = client.put(
+        f"/api/admin/users/{user_id}",
+        headers=superadmin,
+        json={
+            "full_name": "Senior Quality Officer",
+            "locations": ["Plant A", "Plant B"],
+            "units": ["Packaging Unit", "Assembly Line 1"],
+            "departments": ["Quality", "Maintenance"],
+            "phone": "+49 89 7654321",
+            "contractor_company": "TUV SUD QM Services",
+        },
+    )
+    assert edit_res.status_code == 200
+    updated_user = edit_res.json()
+    assert updated_user["name"] == "Senior Quality Officer"
+    assert updated_user["locations"] == ["Plant A", "Plant B"]
+    assert updated_user["phone"] == "+49 89 7654321"
+    assert updated_user["contractor_company"] == "TUV SUD QM Services"
+
+    # 4. Verify password update via edit endpoint
+    pw_update_res = client.put(
+        f"/api/admin/users/{user_id}",
+        headers=superadmin,
+        json={"password": "NewQualityPass@456"},
+    )
+    assert pw_update_res.status_code == 200
+    new_qm_headers = login(client, email, "NewQualityPass@456")
+    assert new_qm_headers is not None
+
+    # 5. Clean up created test user
+    del_res = client.delete(f"/api/admin/users/{user_id}", headers=superadmin)
+    assert del_res.status_code == 200

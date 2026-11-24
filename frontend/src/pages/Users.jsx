@@ -17,6 +17,7 @@ export const BUILTIN_ROLES = [
   { id: 'store_manager', label: 'Store Manager', desc: 'Spare parts inventory & procurement management', count: '3 privileges' },
   { id: 'production_manager', label: 'Production Manager', desc: 'Breakdown reporting & machine status tracking', count: '4 privileges' },
   { id: 'purchase_manager', label: 'Purchase Manager', desc: 'Purchase orders approval & procurement placement', count: '2 privileges' },
+  { id: 'quality_manager', label: 'Quality Manager', desc: 'Calibration governance, quality audit & inspection reports', count: '7 privileges' },
   { id: 'auditor', label: 'Auditor', desc: 'Read-only compliance audit & logs review', count: '5 privileges' },
 ]
 
@@ -175,6 +176,25 @@ function TrashIcon({ size = 15, color = 'currentColor' }) {
   )
 }
 
+function EditIcon({ size = 14, color = 'currentColor' }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </svg>
+  )
+}
+
 export default function Users() {
   const { user, can } = useAuth()
   const toast = useToast()
@@ -189,6 +209,7 @@ export default function Users() {
 
   // Modals
   const [showAddUserModal, setShowAddUserModal] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [editingRole, setEditingRole] = useState(null)
 
@@ -667,6 +688,41 @@ export default function Users() {
                               </button>
                             )}
 
+                            {(isAdmin || can('user.manage')) && (
+                              <button
+                                type="button"
+                                onClick={() => setEditingUser(u)}
+                                title={`Edit user ${u.full_name || u.name}`}
+                                aria-label={`Edit user ${u.full_name || u.name}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '28px',
+                                  height: '26px',
+                                  padding: 0,
+                                  background: 'transparent',
+                                  border: '1px solid var(--bd)',
+                                  borderRadius: '5px',
+                                  color: 'var(--mu)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = 'var(--accent, #2563eb)'
+                                  e.currentTarget.style.borderColor = 'var(--accent, #93c5fd)'
+                                  e.currentTarget.style.background = '#eff6ff'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = 'var(--mu)'
+                                  e.currentTarget.style.borderColor = 'var(--bd)'
+                                  e.currentTarget.style.background = 'transparent'
+                                }}
+                              >
+                                <EditIcon size={14} />
+                              </button>
+                            )}
+
                             {(isAdmin || can('user.manage')) && u.id !== user?.id && !['superadmin@cmms.test', 'admin@cmms.test'].includes(u.email?.toLowerCase()) && (
                               <button
                                 type="button"
@@ -844,6 +900,20 @@ export default function Users() {
             setShowAddUserModal(false)
             loadData()
             toast('User account created successfully.', 'ok')
+          }}
+        />
+      )}
+
+      {/* EDIT USER MODAL */}
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          customRoles={customRoles}
+          onClose={() => setEditingUser(null)}
+          onSaved={() => {
+            setEditingUser(null)
+            loadData()
+            toast('User profile updated successfully.', 'ok')
           }}
         />
       )}
@@ -1278,6 +1348,310 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
               disabled={saving}
             >
               {saving ? 'Creating…' : 'Create User'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/* ----------------------------------------------------
+   EDIT USER MODAL (SCR-059 Enterprise Administration)
+---------------------------------------------------- */
+function EditUserModal({ user, customRoles, onClose, onSaved }) {
+  const [username, setUsername] = useState(user.username || '')
+  const [fullName, setFullName] = useState(user.full_name || user.name || '')
+  const [email, setEmail] = useState(user.email || '')
+  const [role, setRole] = useState(user.role || BUILTIN_ROLES[0].id)
+  const [locations, setLocations] = useState(Array.isArray(user.locations) ? user.locations : [])
+  const [locationOptions, setLocationOptions] = useState(DEFAULT_LOCATION_OPTIONS)
+  const [units, setUnits] = useState(Array.isArray(user.units) ? user.units : [])
+  const [departments, setDepartments] = useState(Array.isArray(user.departments) ? user.departments : [])
+  const [phone, setPhone] = useState(user.phone || '')
+  const [contractorCompany, setContractorCompany] = useState(user.contractor_company || '')
+  const [status, setStatus] = useState(user.status || 'active')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    api
+      .get('/api/locations')
+      .then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          const names = Array.from(new Set([...res.map((l) => l.name), ...DEFAULT_LOCATION_OPTIONS]))
+          setLocationOptions(names)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const handleKey = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setErr('')
+    try {
+      const payload = {
+        username: username.trim() || null,
+        full_name: fullName.trim(),
+        name: fullName.trim(),
+        email: email.trim(),
+        role,
+        locations,
+        units,
+        departments,
+        phone: phone.trim(),
+        contractor_company: contractorCompany.trim(),
+        status,
+      }
+      if (password.trim()) {
+        payload.password = password.trim()
+      }
+      await api.put(`/api/admin/users/${user.id}`, payload)
+      onSaved()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div
+        className="modal mb"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: '580px',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15px' }}>Edit User: {user.full_name || user.name}</h3>
+            <p className="muted" style={{ margin: '2px 0 0 0', fontSize: '11px' }}>ID: #{user.id} &bull; {user.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--mu)', padding: '4px' }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="stack" style={{ gap: '12px' }}>
+          <ErrorNote error={err} />
+
+          {/* Row 1: Username | Full Name * */}
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="edit-usr-username" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Username
+              </label>
+              <input
+                id="edit-usr-username"
+                type="text"
+                placeholder="e.g. h_richter"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="edit-usr-fullname" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Full Name *
+              </label>
+              <input
+                id="edit-usr-fullname"
+                type="text"
+                required
+                placeholder="e.g. Hans Richter"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Row 2: Email Address * | Phone */}
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="edit-usr-email" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Email Address *
+              </label>
+              <input
+                id="edit-usr-email"
+                type="email"
+                required
+                placeholder="e.g. h.richter@plant.de"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="edit-usr-phone" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Phone Number
+              </label>
+              <input
+                id="edit-usr-phone"
+                type="tel"
+                placeholder="+49 170 1234567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Role * */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label htmlFor="edit-usr-role" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+              Enterprise Role *
+            </label>
+            <select
+              id="edit-usr-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <optgroup label="Built-in Roles">
+                {BUILTIN_ROLES.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
+              </optgroup>
+              {customRoles.length > 0 && (
+                <optgroup label="Custom Roles">
+                  {customRoles.map((cr) => (
+                    <option key={cr.id} value={cr.name}>
+                      {cr.display_name} ({cr.name})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+
+          {/* Row 4: Location (Select Multiple) */}
+          <MultiSelect
+            label="Assigned Plants / Locations (Select Multiple)"
+            options={locationOptions}
+            selected={locations}
+            onChange={setLocations}
+            placeholder="Select applicable plants / locations..."
+          />
+
+          {/* Row 5: Units (Select Multiple) */}
+          <MultiSelect
+            label="Assigned Plant Units (Select Multiple)"
+            options={UNIT_OPTIONS}
+            selected={units}
+            onChange={setUnits}
+            placeholder="Select applicable plant units..."
+          />
+
+          {/* Row 6: Departments (Select Multiple) */}
+          <MultiSelect
+            label="Assigned Departments (Select Multiple)"
+            options={DEPARTMENT_OPTIONS}
+            selected={departments}
+            onChange={setDepartments}
+            placeholder="Select applicable departments..."
+          />
+
+          {/* Row 7: Contractor / Vendor Company */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label htmlFor="edit-usr-contractor" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+              Contractor / External Company (Optional)
+            </label>
+            <input
+              id="edit-usr-contractor"
+              type="text"
+              placeholder="e.g. Siemens Energy Service GmbH"
+              value={contractorCompany}
+              onChange={(e) => setContractorCompany(e.target.value)}
+            />
+          </div>
+
+          {/* Row 8: Status | Password Reset (Optional) */}
+          <div className="row" style={{ gap: '12px', display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="edit-usr-status" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Account Status
+              </label>
+              <select
+                id="edit-usr-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label htmlFor="edit-usr-password" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
+                Reset Password (Optional)
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  id="edit-usr-password"
+                  type={showPassword ? 'text' : 'password'}
+                  minLength={6}
+                  placeholder="Leave blank to keep current"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{
+                    paddingRight: '38px',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: 'var(--mu)',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  {showPassword ? '👁️' : '🔒'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Buttons: Cancel | Save Changes */}
+          <div className="r" style={{ marginTop: '6px' }}>
+            <button
+              type="button"
+              className="bt"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bt p"
+              disabled={saving}
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
         </form>
