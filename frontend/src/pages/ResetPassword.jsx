@@ -288,6 +288,7 @@ export default function ResetPassword() {
                 <input
                   id="reset-new-pwd"
                   type={showNew ? 'text' : 'password'}
+                  autoComplete="new-password"
                   className="login-input"
                   placeholder="Minimum 6 characters"
                   value={newPassword}
@@ -312,6 +313,7 @@ export default function ResetPassword() {
                 <input
                   id="reset-confirm-pwd"
                   type={showConfirm ? 'text' : 'password'}
+                  autoComplete="new-password"
                   className="login-input"
                   placeholder="Re-enter new password"
                   value={confirmPassword}

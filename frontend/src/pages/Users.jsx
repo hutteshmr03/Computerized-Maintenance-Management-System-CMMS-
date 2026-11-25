@@ -1452,7 +1452,9 @@ function CreateUserModal({ customRoles, onClose, onAdded }) {
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   id="usr-password"
+                  name="cmms-create-password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   required
                   minLength={6}
                   placeholder="Password"
@@ -1619,7 +1621,7 @@ function EditUserModal({ user, customRoles, onClose, onSaved }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="stack" style={{ gap: '12px' }}>
+        <form onSubmit={handleSubmit} autoComplete="off" className="stack" style={{ gap: '12px' }}>
           <ErrorNote error={err} />
 
           {(user.is_locked || user._focusPasswordReset) && (
@@ -1791,7 +1793,9 @@ function EditUserModal({ user, customRoles, onClose, onSaved }) {
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   id="edit-usr-password"
+                  name="cmms-reset-temp-password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   minLength={6}
                   required={Boolean(user._focusPasswordReset)}
                   autoFocus={Boolean(user._focusPasswordReset)}
