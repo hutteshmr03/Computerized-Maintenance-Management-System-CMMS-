@@ -185,10 +185,19 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 @app.get("/health")
 @app.get("/api/health")
 def health_check():
-    """Unauthenticated health probe and keep-alive heartbeat target."""
+    """Unauthenticated health probe, DB connectivity check, and keep-alive heartbeat target."""
+    db_status = "connected"
+    dialect = engine.dialect.name
+    try:
+        with engine.connect() as conn:
+            conn.exec_driver_sql("SELECT 1")
+    except Exception:
+        db_status = "error"
     return {
-        "status": "ok",
+        "status": "ok" if db_status == "connected" else "degraded",
         "service": "Enterprise CMMS",
+        "database": db_status,
+        "dialect": dialect,
         "timestamp": utcnow().isoformat(),
         "keep_alive_every": "3min",
     }

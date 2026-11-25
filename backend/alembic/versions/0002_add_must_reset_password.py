@@ -29,7 +29,7 @@ def upgrade() -> None:
     if not column_exists(conn, 'users', 'must_reset_password'):
         with op.batch_alter_table('users', schema=None) as batch_op:
             batch_op.add_column(
-                sa.Column('must_reset_password', sa.Boolean(), server_default='0', nullable=True)
+                sa.Column('must_reset_password', sa.Boolean(), server_default=sa.false(), nullable=True)
             )
 
 

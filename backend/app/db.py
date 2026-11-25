@@ -1,22 +1,58 @@
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-# SQLite by default so the POC runs with no setup.
-# For PostgreSQL set: DATABASE_URL=postgresql+psycopg2://user:pass@localhost/cmms
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cmms.db")
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+try:
+    from dotenv import load_dotenv
+    # Load backend/.env if present (useful for MilesWeb cPanel / VPS deployments)
+    _env_path = Path(__file__).resolve().parent.parent / ".env"
+    if _env_path.exists():
+        load_dotenv(_env_path)
+    else:
+        load_dotenv()
+except ImportError:
+    pass
 
-connect_args = {"check_same_thread": False, "timeout": 15} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-)
 
-if DATABASE_URL.startswith("sqlite"):
+def normalize_database_url(url: str) -> str:
+    """Normalize shorthand DB URLs for SQLAlchemy 2.0 compatibility across SQLite, PostgreSQL, and MySQL."""
+    if not url:
+        return "sqlite:///./cmms.db"
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("mysql://"):
+        return url.replace("mysql://", "mysql+pymysql://", 1)
+    return url
+
+
+# SQLite by default so local dev runs with no setup.
+# For MilesWeb PostgreSQL set: DATABASE_URL=postgresql://user:pass@localhost:5432/cmms
+# For MilesWeb MySQL/MariaDB set: DATABASE_URL=mysql+pymysql://user:pass@localhost:3306/cmms
+DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///./cmms.db"))
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
+
+
+def build_engine_kwargs(db_url: str) -> dict:
+    """Return SQLAlchemy create_engine keyword args tuned for SQLite vs pooled PostgreSQL/MySQL."""
+    if db_url.startswith("sqlite"):
+        return {
+            "connect_args": {"check_same_thread": False, "timeout": 15},
+            "pool_pre_ping": True,
+        }
+    return {
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "20")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "300")),
+        "pool_pre_ping": True,
+    }
+
+
+engine = create_engine(DATABASE_URL, **build_engine_kwargs(DATABASE_URL))
+
+if IS_SQLITE:
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()

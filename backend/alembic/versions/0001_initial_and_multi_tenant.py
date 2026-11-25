@@ -39,7 +39,7 @@ def upgrade() -> None:
             sa.Column('name', sa.String(length=140), nullable=False),
             sa.Column('domain', sa.String(length=120), server_default='', nullable=False),
             sa.Column('tax_id', sa.String(length=60), server_default='', nullable=False),
-            sa.Column('is_active', sa.Boolean(), server_default='1', nullable=False),
+            sa.Column('is_active', sa.Boolean(), server_default=sa.true(), nullable=False),
             sa.Column('created_at', sa.DateTime(), nullable=True),
         )
 
@@ -55,7 +55,7 @@ def upgrade() -> None:
             sa.Column('country', sa.String(length=100), server_default='Germany', nullable=False),
             sa.Column('address', sa.String(length=200), server_default='', nullable=False),
             sa.Column('timezone', sa.String(length=60), server_default='Europe/Berlin', nullable=False),
-            sa.Column('is_active', sa.Boolean(), server_default='1', nullable=False),
+            sa.Column('is_active', sa.Boolean(), server_default=sa.true(), nullable=False),
             sa.Column('created_at', sa.DateTime(), nullable=True),
         )
 
@@ -103,38 +103,54 @@ def upgrade() -> None:
             if not column_exists(conn, 'locations', 'site_id'):
                 batch_op.add_column(sa.Column('site_id', sa.Integer(), nullable=True))
 
-    # 6. Ensure default organization and sites exist, and backfill
-    conn.execute(sa.text("""
-        INSERT OR IGNORE INTO organizations (id, code, name, domain, tax_id, is_active, created_at)
-        VALUES (1, 'ORG-001', 'Sumant Industrial Manufacturing AG', 'cmms.test', 'DE348920194', 1, CURRENT_TIMESTAMP)
-    """))
+    # 6. Ensure default organization and sites exist (dialect-neutral for SQLite, PostgreSQL, MySQL)
+    existing_org = conn.execute(sa.text("SELECT id FROM organizations WHERE code = 'ORG-001'")).fetchone()
+    if not existing_org:
+        conn.execute(
+            sa.text("""
+                INSERT INTO organizations (code, name, domain, tax_id, is_active, created_at)
+                VALUES ('ORG-001', 'Sumant Industrial Manufacturing AG', 'cmms.test', 'DE348920194', :active, CURRENT_TIMESTAMP)
+            """),
+            {"active": True},
+        )
+        existing_org = conn.execute(sa.text("SELECT id FROM organizations WHERE code = 'ORG-001'")).fetchone()
+    org_id = existing_org[0]
 
-    conn.execute(sa.text("""
-        INSERT OR IGNORE INTO sites (id, organization_id, code, name, city, country, address, timezone, is_active, created_at)
-        VALUES (1, 1, 'SITE-01', 'Plant A - Heavy Machinery & Power', 'Stuttgart', 'Germany', 'Mercedesstrasse 120, 70372 Stuttgart', 'Europe/Berlin', 1, CURRENT_TIMESTAMP)
-    """))
-
-    conn.execute(sa.text("""
-        INSERT OR IGNORE INTO sites (id, organization_id, code, name, city, country, address, timezone, is_active, created_at)
-        VALUES (2, 1, 'SITE-02', 'Plant B - Precision Assembly & Packaging', 'Munich', 'Germany', 'Frankfurter Ring 85, 80807 Munich', 'Europe/Berlin', 1, CURRENT_TIMESTAMP)
-    """))
-
-    conn.execute(sa.text("""
-        INSERT OR IGNORE INTO sites (id, organization_id, code, name, city, country, address, timezone, is_active, created_at)
-        VALUES (3, 1, 'SITE-03', 'Central Logistics Hub', 'Frankfurt', 'Germany', 'Industriepark Höchst, 65926 Frankfurt', 'Europe/Berlin', 1, CURRENT_TIMESTAMP)
-    """))
+    sites_seed = [
+        ('SITE-01', 'Plant A - Heavy Machinery & Power', 'Stuttgart', 'Germany', 'Mercedesstrasse 120, 70372 Stuttgart', 'Europe/Berlin'),
+        ('SITE-02', 'Plant B - Precision Assembly & Packaging', 'Munich', 'Germany', 'Frankfurter Ring 85, 80807 Munich', 'Europe/Berlin'),
+        ('SITE-03', 'Central Logistics Hub', 'Frankfurt', 'Germany', 'Industriepark Höchst, 65926 Frankfurt', 'Europe/Berlin'),
+    ]
+    first_site_id = None
+    for scode, sname, scity, scountry, saddr, stz in sites_seed:
+        existing_site = conn.execute(sa.text("SELECT id FROM sites WHERE code = :code"), {"code": scode}).fetchone()
+        if not existing_site:
+            conn.execute(
+                sa.text("""
+                    INSERT INTO sites (organization_id, code, name, city, country, address, timezone, is_active, created_at)
+                    VALUES (:org_id, :code, :name, :city, :country, :address, :timezone, :active, CURRENT_TIMESTAMP)
+                """),
+                {"org_id": org_id, "code": scode, "name": sname, "city": scity, "country": scountry, "address": saddr, "timezone": stz, "active": True},
+            )
+            existing_site = conn.execute(sa.text("SELECT id FROM sites WHERE code = :code"), {"code": scode}).fetchone()
+        if first_site_id is None:
+            first_site_id = existing_site[0]
 
     if table_exists(conn, 'users'):
-        conn.execute(sa.text("UPDATE users SET organization_id = 1 WHERE organization_id IS NULL"))
-        conn.execute(sa.text("UPDATE users SET site_id = 1 WHERE site_id IS NULL"))
+        conn.execute(sa.text("UPDATE users SET organization_id = :org_id WHERE organization_id IS NULL"), {"org_id": org_id})
+        conn.execute(sa.text("UPDATE users SET site_id = :site_id WHERE site_id IS NULL"), {"site_id": first_site_id})
 
     if table_exists(conn, 'assets'):
-        conn.execute(sa.text("UPDATE assets SET organization_id = 1 WHERE organization_id IS NULL"))
-        conn.execute(sa.text("UPDATE assets SET site_id = 1 WHERE site_id IS NULL"))
+        conn.execute(sa.text("UPDATE assets SET organization_id = :org_id WHERE organization_id IS NULL"), {"org_id": org_id})
+        conn.execute(sa.text("UPDATE assets SET site_id = :site_id WHERE site_id IS NULL"), {"site_id": first_site_id})
 
     if table_exists(conn, 'locations'):
-        conn.execute(sa.text("UPDATE locations SET site_id = 1 WHERE site_id IS NULL AND name LIKE '%Plant A%'"))
-        conn.execute(sa.text("UPDATE locations SET site_id = 2 WHERE site_id IS NULL AND name LIKE '%Plant B%'"))
+        site1 = conn.execute(sa.text("SELECT id FROM sites WHERE code = 'SITE-01'")).fetchone()
+        site2 = conn.execute(sa.text("SELECT id FROM sites WHERE code = 'SITE-02'")).fetchone()
+        if site1:
+            conn.execute(sa.text("UPDATE locations SET site_id = :sid WHERE site_id IS NULL AND name LIKE '%Plant A%'"), {"sid": site1[0]})
+        if site2:
+            conn.execute(sa.text("UPDATE locations SET site_id = :sid WHERE site_id IS NULL AND name LIKE '%Plant B%'"), {"sid": site2[0]})
 
 
 def downgrade() -> None:

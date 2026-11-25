@@ -431,3 +431,26 @@ def test_first_login_password_reset_and_account_lockout_policy(client, superadmi
     # Cleanup
     client.delete(f"/api/admin/users/{user_id}", headers=superadmin)
 
+
+def test_database_config_and_health_check(client):
+    from app.db import normalize_database_url, build_engine_kwargs
+
+    assert normalize_database_url("postgres://u:p@host:5432/db") == "postgresql://u:p@host:5432/db"
+    assert normalize_database_url("mysql://u:p@host:3306/db") == "mysql+pymysql://u:p@host:3306/db"
+    assert normalize_database_url("sqlite:///./cmms.db") == "sqlite:///./cmms.db"
+
+    pg_kwargs = build_engine_kwargs("postgresql://u:p@host:5432/db")
+    assert pg_kwargs["pool_size"] >= 1
+    assert pg_kwargs["pool_recycle"] >= 60
+    assert pg_kwargs["pool_pre_ping"] is True
+
+    sqlite_kwargs = build_engine_kwargs("sqlite:///./cmms.db")
+    assert sqlite_kwargs["connect_args"]["check_same_thread"] is False
+
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    assert body["database"] == "connected"
+    assert body["dialect"] == "sqlite"
+

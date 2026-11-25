@@ -2,12 +2,12 @@
 Database Migration and Schema Synchronization Module.
 Ensures zero-downtime, safe, idempotent migrations run on every startup
 before any application models or superadmin initialization are accessed.
+Supports SQLite, PostgreSQL, and MySQL/MariaDB (MilesWeb hosting ready).
 """
-import os
-import sys
 from pathlib import Path
 from alembic.config import Config
 from alembic import command
+from sqlalchemy import inspect as sa_inspect
 from .db import engine, DATABASE_URL
 
 
@@ -28,87 +28,61 @@ def run_alembic_migrations():
 
 def run_schema_self_heal():
     """
-    Self-healing safety net: directly inspects existing SQLite or PostgreSQL tables
-    and immediately adds any newly introduced columns before any queries run.
-    Preserves all existing user, asset, and maintenance data.
+    Self-healing safety net using SQLAlchemy Inspector (SQLite, PostgreSQL, MySQL).
+    Directly inspects existing tables and adds any newly introduced columns
+    before any queries run, preserving all user, asset, and maintenance data.
     """
     with engine.connect() as conn:
-        is_sqlite = DATABASE_URL.startswith("sqlite")
+        inspector = sa_inspect(conn)
+        existing_tables = set(inspector.get_table_names())
+        dialect = conn.dialect.name  # 'sqlite', 'postgresql', 'mysql'
 
-        # 1. users table
-        try:
-            if is_sqlite:
-                cols = [r[1] for r in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()]
-            else:
-                cols = [r[0] for r in conn.exec_driver_sql("SELECT column_name FROM information_schema.columns WHERE table_name='users'").fetchall()]
+        json_type = "JSON" if dialect in ("sqlite", "postgresql", "mysql") else "TEXT"
+        ts_type = "DATETIME" if dialect == "mysql" else "TIMESTAMP"
+        bool_false_def = "BOOLEAN DEFAULT FALSE" if dialect == "postgresql" else "BOOLEAN DEFAULT 0"
 
-            user_cols_to_add = [
-                ("organization_id", "INTEGER"),
-                ("site_id", "INTEGER"),
-                ("username", "VARCHAR(60)"),
-                ("full_name", "VARCHAR(120)"),
-                ("locations", "JSON DEFAULT '[]'"),
-                ("units", "JSON DEFAULT '[]'"),
-                ("departments", "JSON DEFAULT '[]'"),
-                ("contractor_company", "VARCHAR(120) DEFAULT ''"),
-                ("phone", "VARCHAR(40) DEFAULT ''"),
-                ("failed_logins", "INTEGER DEFAULT 0"),
-                ("locked_until", "TIMESTAMP"),
-                ("must_reset_password", "BOOLEAN DEFAULT 0"),
-                ("created_at", "TIMESTAMP"),
-            ]
-            for col_name, col_def in user_cols_to_add:
-                if col_name not in cols:
+        def add_missing_columns(table_name: str, cols_spec: list[tuple[str, str]]):
+            if table_name not in existing_tables:
+                return
+            existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
+            for col_name, col_def in cols_spec:
+                if col_name not in existing_cols:
                     try:
-                        conn.exec_driver_sql(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
-                        print(f"[Migrations] Added missing column users.{col_name}")
+                        conn.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_def}")
+                        print(f"[Migrations] Added missing column {table_name}.{col_name}")
                     except Exception as ex:
-                        print(f"[Migrations] Notice adding users.{col_name}: {ex}")
-        except Exception as e:
-            print(f"[Migrations] Notice checking users table: {e}")
+                        print(f"[Migrations] Notice adding {table_name}.{col_name}: {ex}")
 
-        # 2. assets table
-        try:
-            if is_sqlite:
-                cols = [r[1] for r in conn.exec_driver_sql("PRAGMA table_info(assets)").fetchall()]
-            else:
-                cols = [r[0] for r in conn.exec_driver_sql("SELECT column_name FROM information_schema.columns WHERE table_name='assets'").fetchall()]
+        add_missing_columns("users", [
+            ("organization_id", "INTEGER"),
+            ("site_id", "INTEGER"),
+            ("username", "VARCHAR(60)"),
+            ("full_name", "VARCHAR(120)"),
+            ("locations", json_type),
+            ("units", json_type),
+            ("departments", json_type),
+            ("contractor_company", "VARCHAR(120) DEFAULT ''"),
+            ("phone", "VARCHAR(40) DEFAULT ''"),
+            ("failed_logins", "INTEGER DEFAULT 0"),
+            ("locked_until", ts_type),
+            ("must_reset_password", bool_false_def),
+            ("created_at", ts_type),
+        ])
 
-            asset_cols_to_add = [
-                ("organization_id", "INTEGER"),
-                ("site_id", "INTEGER"),
-                ("utility_type", "VARCHAR(30)"),
-            ]
-            for col_name, col_def in asset_cols_to_add:
-                if col_name not in cols:
-                    try:
-                        conn.exec_driver_sql(f"ALTER TABLE assets ADD COLUMN {col_name} {col_def}")
-                        print(f"[Migrations] Added missing column assets.{col_name}")
-                    except Exception as ex:
-                        print(f"[Migrations] Notice adding assets.{col_name}: {ex}")
-        except Exception as e:
-            print(f"[Migrations] Notice checking assets table: {e}")
+        add_missing_columns("assets", [
+            ("organization_id", "INTEGER"),
+            ("site_id", "INTEGER"),
+            ("utility_type", "VARCHAR(30)"),
+        ])
 
-        # 3. locations table
-        try:
-            if is_sqlite:
-                cols = [r[1] for r in conn.exec_driver_sql("PRAGMA table_info(locations)").fetchall()]
-            else:
-                cols = [r[0] for r in conn.exec_driver_sql("SELECT column_name FROM information_schema.columns WHERE table_name='locations'").fetchall()]
-
-            if "site_id" not in cols:
-                try:
-                    conn.exec_driver_sql("ALTER TABLE locations ADD COLUMN site_id INTEGER")
-                    print("[Migrations] Added missing column locations.site_id")
-                except Exception as ex:
-                    print(f"[Migrations] Notice adding locations.site_id: {ex}")
-        except Exception as e:
-            print(f"[Migrations] Notice checking locations table: {e}")
+        add_missing_columns("locations", [
+            ("site_id", "INTEGER"),
+        ])
 
         conn.commit()
 
 
 def run_all_migrations():
-    """Runs Alembic migrations followed by the self-healing schema check."""
+    """Runs Alembic migrations followed by the dialect-neutral self-healing schema check."""
     run_alembic_migrations()
     run_schema_self_heal()

@@ -10,7 +10,7 @@ from alembic import context
 # Ensure app is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app.db import DATABASE_URL
+from app.db import DATABASE_URL, normalize_database_url
 from app.models import Base
 
 # this is the Alembic Config object, which provides
@@ -25,10 +25,7 @@ target_metadata = Base.metadata
 
 
 def get_url():
-    url = os.getenv("DATABASE_URL", DATABASE_URL)
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
-    return url
+    return normalize_database_url(os.getenv("DATABASE_URL", DATABASE_URL))
 
 
 def run_migrations_offline() -> None:
