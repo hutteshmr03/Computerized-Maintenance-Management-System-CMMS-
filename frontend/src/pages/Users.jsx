@@ -702,29 +702,47 @@ export default function Users() {
                           {fmtDate(u.created_at)}
                         </td>
 
-                        <td style={{ textAlign: 'right' }}>
-                          <div className="row" style={{ justifyContent: 'flex-end', gap: '6px', flexWrap: 'wrap' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', flexWrap: 'nowrap' }}>
+                            {u.is_locked && (
+                              <button
+                                type="button"
+                                className="bt p"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  height: '28px',
+                                  padding: '0 10px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap',
+                                }}
+                                onClick={() => setEditingUser({ ...u, _focusPasswordReset: true })}
+                                title="Account locked — click to reset password and unlock user"
+                              >
+                                Reset Password
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               className="bt"
                               disabled={exportingId === u.id}
                               onClick={() => handleGdprExport(u)}
                               title="Download complete GDPR personal activity data archive as JSON"
-                              style={{ padding: '4px 8px', fontSize: '11px' }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                height: '28px',
+                                padding: '0 10px',
+                                fontSize: '11.5px',
+                                whiteSpace: 'nowrap',
+                              }}
                             >
                               {exportingId === u.id ? 'Exporting…' : 'GDPR Export 📥'}
                             </button>
-
-                            {u.is_locked && (
-                              <button
-                                type="button"
-                                className="bt p"
-                                style={{ padding: '4px 8px', fontSize: '11px' }}
-                                onClick={() => handleUnlock(u.id)}
-                              >
-                                Unlock 🔓
-                              </button>
-                            )}
 
                             {(isAdmin || can('user.manage')) && (
                               <button
@@ -737,7 +755,7 @@ export default function Users() {
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   width: '28px',
-                                  height: '26px',
+                                  height: '28px',
                                   padding: 0,
                                   background: 'transparent',
                                   border: '1px solid var(--bd)',
@@ -745,6 +763,7 @@ export default function Users() {
                                   color: 'var(--mu)',
                                   cursor: 'pointer',
                                   transition: 'all 0.15s ease',
+                                  flexShrink: 0,
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.color = 'var(--accent, #2563eb)'
@@ -772,7 +791,7 @@ export default function Users() {
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   width: '28px',
-                                  height: '26px',
+                                  height: '28px',
                                   padding: 0,
                                   background: 'transparent',
                                   border: '1px solid var(--bd)',
@@ -780,6 +799,7 @@ export default function Users() {
                                   color: 'var(--mu)',
                                   cursor: 'pointer',
                                   transition: 'all 0.15s ease',
+                                  flexShrink: 0,
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.color = '#dc2626'
@@ -1602,6 +1622,23 @@ function EditUserModal({ user, customRoles, onClose, onSaved }) {
         <form onSubmit={handleSubmit} className="stack" style={{ gap: '12px' }}>
           <ErrorNote error={err} />
 
+          {(user.is_locked || user._focusPasswordReset) && (
+            <div
+              style={{
+                background: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                borderLeft: '4px solid #D97706',
+                borderRadius: '6px',
+                padding: '10px 12px',
+                fontSize: '12px',
+                color: '#92400E',
+                lineHeight: 1.45,
+              }}
+            >
+              <strong>Account Locked:</strong> Enter a new temporary password below and save to unlock this account. The user will be required to set a new personal password on their next login.
+            </div>
+          )}
+
           {/* Row 1: Username | Full Name * */}
           <div className="row" style={{ gap: '12px', display: 'flex' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1748,19 +1785,22 @@ function EditUserModal({ user, customRoles, onClose, onSaved }) {
             </div>
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label htmlFor="edit-usr-password" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--mu)' }}>
-                Reset Password (Optional)
+              <label htmlFor="edit-usr-password" style={{ fontSize: '12px', fontWeight: 600, color: (user.is_locked || user._focusPasswordReset) ? '#B45309' : 'var(--mu)' }}>
+                {(user.is_locked || user._focusPasswordReset) ? 'New Temporary Password *' : 'Reset Password (Optional)'}
               </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   id="edit-usr-password"
                   type={showPassword ? 'text' : 'password'}
                   minLength={6}
-                  placeholder="Leave blank to keep current"
+                  required={Boolean(user._focusPasswordReset)}
+                  autoFocus={Boolean(user._focusPasswordReset)}
+                  placeholder={(user.is_locked || user._focusPasswordReset) ? 'Enter temporary password to unlock' : 'Leave blank to keep current'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
                     paddingRight: '38px',
+                    borderColor: (user.is_locked || user._focusPasswordReset) ? '#F59E0B' : undefined,
                   }}
                 />
                 <button
@@ -1800,7 +1840,7 @@ function EditUserModal({ user, customRoles, onClose, onSaved }) {
               className="bt p"
               disabled={saving}
             >
-              {saving ? 'Saving…' : 'Save Changes'}
+              {saving ? 'Saving…' : (user.is_locked && password.trim()) ? 'Reset Password & Unlock' : 'Save Changes'}
             </button>
           </div>
         </form>

@@ -597,7 +597,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
         user = db.scalar(select(m.User).where(func.lower(m.User.email).in_(["superadmin@cmms.test", "super@cmms.test"])))
 
     if user and user.locked_until and user.locked_until > utcnow():
-        raise HTTPException(423, "Maximum login attempts reached. Please contact your system administrator to unlock your account or reset your password.")
+        raise HTTPException(423, "Maximum login attempts reached. Please contact your system administrator to reset your password.")
 
     pw_ok = False
     if user:
@@ -613,10 +613,10 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
                 user.failed_logins = 0
                 audit(db, user, "login_locked", "user", user.id, f"Account locked after {max_attempts} wrong attempts for {user.email}")
                 db.commit()
-                raise HTTPException(423, "Maximum login attempts reached. Please contact your system administrator to unlock your account or reset your password.")
+                raise HTTPException(423, "Maximum login attempts reached. Please contact your system administrator to reset your password.")
             audit(db, user, "login_failed", "user", user.id, f"Wrong password attempt for {user.email}")
             db.commit()
-        raise HTTPException(401, "Email or password is not correct.")
+        raise HTTPException(401, "The email address or password you entered is not correct. Please check your credentials and try again.")
 
     if user.status == "inactive":
         raise HTTPException(403, "Your account has been deactivated. Please contact your system administrator.")

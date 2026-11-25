@@ -290,16 +290,21 @@ export default function Login() {
           cursor: not-allowed;
         }
 
-        .login-error {
+        .login-error-notice {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
           font-size: 13px;
-          color: #DC2626;
-          margin-top: 12px;
+          color: #334155;
+          margin-top: 14px;
           text-align: left;
-          line-height: 1.4;
-          background: #FEF2F2;
-          border: 1px solid #FEE2E2;
-          border-radius: 6px;
-          padding: 10px 12px;
+          line-height: 1.5;
+          background: #F8FAFC;
+          border: 1px solid #CBD5E1;
+          border-left: 4px solid #334155;
+          border-radius: 8px;
+          padding: 12px 14px;
+          font-weight: 500;
         }
 
         .login-lockout-notice {
@@ -431,8 +436,16 @@ export default function Login() {
                   </div>
                 </div>
               ) : (
-                <div className="login-error">
-                  {error}
+                <div className="login-error-notice" role="alert">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: '2px' }}>Incorrect Credentials</div>
+                    <div>{error}</div>
+                  </div>
                 </div>
               )
             )}
