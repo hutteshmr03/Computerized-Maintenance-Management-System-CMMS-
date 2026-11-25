@@ -505,12 +505,12 @@ export default function Users() {
                 placeholder="Search by username, name, email, or company..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ maxWidth: '320px' }}
+                style={{ minWidth: '280px', maxWidth: '380px', flex: '1 1 320px' }}
               />
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                style={{ maxWidth: '200px', width: 'auto' }}
+                style={{ maxWidth: '210px', width: 'auto' }}
               >
                 <option value="">All Roles</option>
                 {allRolesList.map((r) => (
@@ -527,16 +527,16 @@ export default function Users() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: 0 }}>
-            <table>
+          <div className="card table-wrap" style={{ padding: 0 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th>User & Email</th>
-                  <th>Role</th>
-                  <th>Plants, Units & Depts</th>
-                  <th>Status</th>
-                  <th>Registered</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '11px 14px' }}>User & Email</th>
+                  <th style={{ padding: '11px 14px' }}>Role</th>
+                  <th style={{ padding: '11px 14px' }}>Plants, Units & Depts</th>
+                  <th style={{ padding: '11px 14px' }}>Status</th>
+                  <th style={{ padding: '11px 14px' }}>Registered</th>
+                  <th style={{ padding: '11px 14px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -552,8 +552,8 @@ export default function Users() {
                     const isInactive = u.status === 'inactive'
                     return (
                       <tr key={u.id}>
-                        <td>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'normal', minWidth: '180px', wordBreak: 'break-word' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                             <strong style={{ fontSize: '13px', color: 'var(--tx)' }}>
                               {u.full_name || u.name}
                             </strong>
@@ -564,18 +564,18 @@ export default function Users() {
                           </div>
                         </td>
 
-                        <td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'normal', minWidth: '210px', maxWidth: '260px', wordBreak: 'break-word' }}>
                           <span className="b t">
                             {roleMeta.label}
                           </span>
                           {roleMeta.desc && (
-                            <div className="small muted" style={{ marginTop: '2px', maxWidth: '240px', fontSize: '11px' }}>
+                            <div className="small muted" style={{ marginTop: '4px', fontSize: '11px', lineHeight: 1.4, whiteSpace: 'normal' }}>
                               {roleMeta.desc}
                             </div>
                           )}
                         </td>
 
-                        <td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'normal', minWidth: '170px' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {u.locations && u.locations.length > 0 && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -634,7 +634,7 @@ export default function Users() {
                           </div>
                         </td>
 
-                        <td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                           {u.is_locked ? (
                             <span className="b r" title="Account locked due to multiple failed logins">
                               🔒 Locked
@@ -698,11 +698,11 @@ export default function Users() {
                           )}
                         </td>
 
-                        <td style={{ fontSize: '12px', color: 'var(--mu)' }}>
+                        <td style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--mu)', whiteSpace: 'nowrap' }}>
                           {fmtDate(u.created_at)}
                         </td>
 
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', flexWrap: 'nowrap' }}>
                             {u.is_locked && (
                               <button
@@ -871,10 +871,10 @@ export default function Users() {
                         </code>
                       </td>
 
-                      <td style={{ fontWeight: 600, color: 'var(--tx)' }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--tx)', whiteSpace: 'normal' }}>
                         {displayName}
                         {desc && (
-                          <div className="small muted" style={{ fontSize: '11px', marginTop: '2px', fontWeight: 400 }}>
+                          <div className="small muted" style={{ fontSize: '11px', marginTop: '3px', fontWeight: 400, lineHeight: 1.4, whiteSpace: 'normal' }}>
                             {desc}
                           </div>
                         )}
@@ -985,9 +985,9 @@ export default function Users() {
                       <td style={{ fontWeight: 600, fontFamily: 'monospace', color: 'var(--accent, #2563eb)' }}>
                         {st.code}
                       </td>
-                      <td>
+                      <td style={{ padding: '10px 14px', whiteSpace: 'normal' }}>
                         <div style={{ fontWeight: 600 }}>{st.name}</div>
-                        {st.address && <div className="muted" style={{ fontSize: '11px' }}>{st.address}</div>}
+                        {st.address && <div className="muted" style={{ fontSize: '11px', marginTop: '2px', lineHeight: 1.35, whiteSpace: 'normal' }}>{st.address}</div>}
                       </td>
                       <td>
                         {st.city ? `${st.city}, ${st.country || 'Germany'}` : st.country || '—'}
