@@ -29,7 +29,7 @@ def test_lockout_after_five_wrong_attempts(client):
         client.post("/api/login", json={"email": "auditor@cmms.test", "password": "bad"})
     r = client.post("/api/login", json={"email": "auditor@cmms.test", "password": "Audit@123"})
     assert r.status_code == 423
-    assert "attempt reached plz contact admin" in r.json()["detail"]
+    assert "Maximum login attempts reached" in r.json()["detail"]
 
 
 def test_requires_login(client):

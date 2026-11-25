@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
+  const [isLockedOut, setIsLockedOut] = useState(false)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
   const loc = useLocation()
@@ -17,6 +18,7 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault()
     setError('')
+    setIsLockedOut(false)
     setBusy(true)
     try {
       const u = await login(email, password)
@@ -27,6 +29,7 @@ export default function Login() {
       }
     } catch (err) {
       setError(err.message || 'Login failed')
+      setIsLockedOut(err.status === 423)
     } finally {
       setBusy(false)
     }
@@ -299,6 +302,23 @@ export default function Login() {
           padding: 10px 12px;
         }
 
+        .login-lockout-notice {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          font-size: 13px;
+          color: #92400E;
+          margin-top: 14px;
+          text-align: left;
+          line-height: 1.5;
+          background: #FFFBEB;
+          border: 1px solid #FDE68A;
+          border-left: 4px solid #D97706;
+          border-radius: 8px;
+          padding: 12px 14px;
+          font-weight: 500;
+        }
+
         /* Mobile (< 768px) */
         @media (max-width: 768px) {
           .login-split-page {
@@ -399,9 +419,22 @@ export default function Login() {
             </button>
 
             {error && (
-              <div className="login-error">
-                {error}
-              </div>
+              isLockedOut ? (
+                <div className="login-lockout-notice" role="alert">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '1px' }}>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#78350F', marginBottom: '2px' }}>Account Locked</div>
+                    <div>{error}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="login-error">
+                  {error}
+                </div>
+              )
             )}
           </form>
         </div>

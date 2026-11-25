@@ -408,12 +408,12 @@ def test_first_login_password_reset_and_account_lockout_policy(client, superadmi
     assert bad2.status_code == 401
     bad3 = client.post("/api/login", json={"email": email, "password": "wrong3"})
     assert bad3.status_code == 423
-    assert bad3.json()["detail"] == "attempt reached plz contact admin"
+    assert "Maximum login attempts reached" in bad3.json()["detail"]
 
     # Even with correct password, account stays locked with exact message
     locked_try = client.post("/api/login", json={"email": email, "password": "MyPersonalPass@999"})
     assert locked_try.status_code == 423
-    assert locked_try.json()["detail"] == "attempt reached plz contact admin"
+    assert "Maximum login attempts reached" in locked_try.json()["detail"]
 
     # 7. Admin resets the locked user's password via Edit User
     admin_reset = client.put(
