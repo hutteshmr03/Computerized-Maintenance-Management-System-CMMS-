@@ -54,6 +54,7 @@ def run_schema_self_heal():
                 ("phone", "VARCHAR(40) DEFAULT ''"),
                 ("failed_logins", "INTEGER DEFAULT 0"),
                 ("locked_until", "TIMESTAMP"),
+                ("must_reset_password", "BOOLEAN DEFAULT 0"),
                 ("created_at", "TIMESTAMP"),
             ]
             for col_name, col_def in user_cols_to_add:

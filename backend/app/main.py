@@ -316,6 +316,7 @@ def user_payload(u: m.User, db: Session | None = None) -> dict:
         "departments": u.departments or [],
         "status": u.status or "active",
         "contractor_company": u.contractor_company,
+        "must_reset_password": bool(getattr(u, "must_reset_password", False)),
         "permissions": perms,
         "menu": menu,
     }
@@ -596,8 +597,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
         user = db.scalar(select(m.User).where(func.lower(m.User.email).in_(["superadmin@cmms.test", "super@cmms.test"])))
 
     if user and user.locked_until and user.locked_until > utcnow():
-        mins = int((user.locked_until - utcnow()).total_seconds() // 60) + 1
-        raise HTTPException(423, f"Too many wrong attempts. Try again in about {mins} minute(s).")
+        raise HTTPException(423, "attempt reached plz contact admin")
 
     pw_ok = False
     if user:
@@ -608,11 +608,12 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
             user.failed_logins += 1
             sec = db.get(m.SecuritySettings, 1)
             max_attempts = sec.max_login_attempts if (sec and sec.max_login_attempts is not None) else MAX_FAILED_LOGINS
-            if max_attempts <= 0:
-                max_attempts = 999999  # Unlimited
-            if user.failed_logins >= max_attempts:
-                user.locked_until = utcnow() + timedelta(minutes=LOCK_MINUTES)
+            if max_attempts > 0 and user.failed_logins >= max_attempts:
+                user.locked_until = utcnow() + timedelta(days=3650)
                 user.failed_logins = 0
+                audit(db, user, "login_locked", "user", user.id, f"Account locked after {max_attempts} wrong attempts for {user.email}")
+                db.commit()
+                raise HTTPException(423, "attempt reached plz contact admin")
             audit(db, user, "login_failed", "user", user.id, f"Wrong password attempt for {user.email}")
             db.commit()
         raise HTTPException(401, "Email or password is not correct.")
@@ -625,6 +626,32 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     audit(db, user, "login", "user", user.id, f"User {user.name} ({user.role}) logged in")
     db.commit()
     return {"token": make_token(user), "user": user_payload(user, db)}
+
+
+class SelfPasswordResetIn(BaseModel):
+    new_password: str
+
+
+@app.post("/api/auth/reset-password")
+def self_reset_password(
+    body: SelfPasswordResetIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    new_pw = body.new_password.strip()
+    if len(new_pw) < 6:
+        raise HTTPException(400, "New password must be at least 6 characters long.")
+    if verify_password(new_pw, user.password_hash):
+        raise HTTPException(400, "New password must be different from your temporary password.")
+
+    user.password_hash = hash_password(new_pw)
+    user.must_reset_password = False
+    user.failed_logins = 0
+    user.locked_until = None
+    audit(db, user, "password_reset_self", "user", user.id, f"User {user.email} completed required password reset")
+    db.commit()
+    db.refresh(user)
+    return {"message": "Password reset successfully.", "user": user_payload(user, db)}
 
 
 @app.post("/api/auth/sso/callback")
@@ -2280,6 +2307,7 @@ def admin_list_users(db: Session = Depends(get_db), user: m.User = Depends(requi
             "contractor_company": u.contractor_company,
             "phone": u.phone,
             "is_locked": bool(u.locked_until and u.locked_until > utcnow()),
+            "must_reset_password": bool(getattr(u, "must_reset_password", False)),
             "created_at": u.created_at.isoformat(),
         }
         for u in users
@@ -2346,6 +2374,7 @@ def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m
         status=body.status or "active",
         contractor_company=body.contractor_company.strip(),
         phone=body.phone.strip(),
+        must_reset_password=True,
     )
     db.add(new_u)
     audit(db, user, "create_user", "user", None, f"Created {new_u.name} ({new_u.role})")
@@ -2362,6 +2391,7 @@ def admin_create_user(body: UserCreateIn, db: Session = Depends(get_db), user: m
         "units": new_u.units,
         "departments": new_u.departments,
         "status": new_u.status,
+        "must_reset_password": True,
         "message": "User created successfully."
     }
 
@@ -2403,6 +2433,9 @@ def admin_update_user(
 
     if body.password is not None and body.password.strip():
         target.password_hash = hash_password(body.password.strip())
+        target.must_reset_password = True
+        target.locked_until = None
+        target.failed_logins = 0
 
     if body.locations is not None:
         target.locations = body.locations

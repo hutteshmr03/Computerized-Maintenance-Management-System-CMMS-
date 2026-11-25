@@ -4,6 +4,7 @@ import { api } from './api'
 import { useAuth } from './auth.jsx'
 import { Loading, OfflineBanner, fmtDateTime } from './ui.jsx'
 import Login from './pages/Login.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Home from './pages/Home.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Hierarchy from './pages/Hierarchy.jsx'
@@ -154,6 +155,7 @@ function Shell() {
 
   if (!ready) return <div className="page"><Loading /></div>
   if (!user) return <Navigate to="/login" state={{ from: loc.pathname }} replace />
+  if (user.must_reset_password) return <Navigate to="/reset-password" replace />
 
   const allowedTabs = ['home', ...(user.menu || [])]
     .map((k) => TAB_MAP[k])
@@ -213,6 +215,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<Shell />}>
         <Route index element={<Home />} />
         <Route path="dashboard" element={<Dashboard />} />

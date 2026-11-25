@@ -12,15 +12,19 @@ export default function Login() {
   const navigate = useNavigate()
   const loc = useLocation()
 
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to={user.must_reset_password ? '/reset-password' : '/'} replace />
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     setBusy(true)
     try {
-      await login(email, password)
-      navigate(loc.state?.from || '/', { replace: true })
+      const u = await login(email, password)
+      if (u?.must_reset_password) {
+        navigate('/reset-password', { replace: true })
+      } else {
+        navigate(loc.state?.from || '/', { replace: true })
+      }
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {

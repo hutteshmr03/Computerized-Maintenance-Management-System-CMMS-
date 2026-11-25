@@ -348,3 +348,86 @@ def test_organizations_and_sites_crud(client, superadmin):
     get_res = client.get(f"/api/sites/{new_site['id']}", headers=superadmin)
     assert get_res.status_code == 200
     assert get_res.json()["city"] == "Erlangen"
+
+
+def test_first_login_password_reset_and_account_lockout_policy(client, superadmin):
+    # 1. Admin creates a brand new user
+    email = "new_operator@cmms.test"
+    create_res = client.post(
+        "/api/admin/users",
+        headers=superadmin,
+        json={
+            "full_name": "New Operator",
+            "username": "new_op",
+            "email": email,
+            "password": "TempPass@123",
+            "role": "technician",
+            "locations": ["Plant A"],
+        },
+    )
+    assert create_res.status_code == 201
+    user_id = create_res.json()["id"]
+    assert create_res.json()["must_reset_password"] is True
+
+    # 2. First login must indicate must_reset_password == True
+    login1 = client.post("/api/login", json={"email": email, "password": "TempPass@123"})
+    assert login1.status_code == 200
+    assert login1.json()["user"]["must_reset_password"] is True
+    op_headers = {"Authorization": f"Bearer {login1.json()['token']}"}
+
+    # 3. User resets their password via /api/auth/reset-password
+    reset_res = client.post(
+        "/api/auth/reset-password",
+        headers=op_headers,
+        json={"new_password": "MyPersonalPass@999"},
+    )
+    assert reset_res.status_code == 200
+    assert reset_res.json()["user"]["must_reset_password"] is False
+
+    # 4. Subsequent login with personal password has must_reset_password == False
+    login2 = client.post("/api/login", json={"email": email, "password": "MyPersonalPass@999"})
+    assert login2.status_code == 200
+    assert login2.json()["user"]["must_reset_password"] is False
+
+    # 5. Admin sets Account Policy max_login_attempts = 3
+    sec_res = client.put(
+        "/api/security-settings",
+        headers=superadmin,
+        json={
+            "password_expiry_days": 90,
+            "session_timeout_minutes": 30,
+            "max_login_attempts": 3,
+        },
+    )
+    assert sec_res.status_code == 200
+
+    # 6. User fails 3 times -> gets exact lockout message on reaching limit and afterwards
+    bad1 = client.post("/api/login", json={"email": email, "password": "wrong1"})
+    assert bad1.status_code == 401
+    bad2 = client.post("/api/login", json={"email": email, "password": "wrong2"})
+    assert bad2.status_code == 401
+    bad3 = client.post("/api/login", json={"email": email, "password": "wrong3"})
+    assert bad3.status_code == 423
+    assert bad3.json()["detail"] == "attempt reached plz contact admin"
+
+    # Even with correct password, account stays locked with exact message
+    locked_try = client.post("/api/login", json={"email": email, "password": "MyPersonalPass@999"})
+    assert locked_try.status_code == 423
+    assert locked_try.json()["detail"] == "attempt reached plz contact admin"
+
+    # 7. Admin resets the locked user's password via Edit User
+    admin_reset = client.put(
+        f"/api/admin/users/{user_id}",
+        headers=superadmin,
+        json={"password": "AdminReset@777"},
+    )
+    assert admin_reset.status_code == 200
+
+    # 8. User logs in 1st time with admin-reset password -> unlocked and must_reset_password == True
+    login3 = client.post("/api/login", json={"email": email, "password": "AdminReset@777"})
+    assert login3.status_code == 200
+    assert login3.json()["user"]["must_reset_password"] is True
+
+    # Cleanup
+    client.delete(f"/api/admin/users/{user_id}", headers=superadmin)
+
