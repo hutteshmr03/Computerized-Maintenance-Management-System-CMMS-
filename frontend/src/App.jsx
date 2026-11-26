@@ -16,6 +16,7 @@ import Plans from './pages/Plans.jsx'
 import Jobs from './pages/Jobs.jsx'
 import JobNew from './pages/JobNew.jsx'
 import JobDetail from './pages/JobDetail.jsx'
+import Requests from './pages/Requests.jsx'
 import Parts from './pages/Parts.jsx'
 import Procurement from './pages/Procurement.jsx'
 import Readings from './pages/Readings.jsx'
@@ -53,6 +54,7 @@ const ROLE_LABELS = {
   store_manager: 'Store Manager',
   production_manager: 'Production Manager',
   purchase_manager: 'Purchase Manager',
+  quality_manager: 'Quality Manager',
   auditor: 'Auditor',
 }
 
@@ -228,6 +230,7 @@ export default function App() {
         <Route path="jobs" element={<Jobs />} />
         <Route path="jobs/new" element={<JobNew />} />
         <Route path="jobs/:id" element={<JobDetail />} />
+        <Route path="requests" element={<Requests />} />
         <Route path="parts" element={<Parts />} />
         <Route path="procurement" element={<Procurement />} />
         <Route path="readings" element={<Readings />} />

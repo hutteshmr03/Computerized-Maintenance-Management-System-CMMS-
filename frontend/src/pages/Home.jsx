@@ -128,7 +128,7 @@ export default function Home() {
       }}
     >
       {/* Welcome header — compact */}
-      <div style={{ marginBottom: '18px', flexShrink: 0 }}>
+      <div style={{ marginBottom: '18px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <h1
           style={{
             margin: 0,
@@ -140,6 +140,30 @@ export default function Home() {
         >
           Welcome back, {firstName} 👋
         </h1>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <Link
+            to="/requests?action=new"
+            className="bt p"
+            style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12.5px', padding: '7px 14px' }}
+          >
+            ⚡ Report Breakdown
+          </Link>
+          <Link
+            to="/requests"
+            className="bt"
+            style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12.5px', padding: '7px 14px' }}
+          >
+            📋 Operator Requests
+          </Link>
+          <Link
+            to="/scan"
+            className="bt"
+            style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12.5px', padding: '7px 14px' }}
+          >
+            📷 Scan QR
+          </Link>
+        </div>
       </div>
 
       {/* Module Cards Grid */}

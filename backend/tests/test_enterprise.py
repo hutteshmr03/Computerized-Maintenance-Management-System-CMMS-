@@ -454,3 +454,99 @@ def test_database_config_and_health_check(client):
     assert body["database"] == "connected"
     assert body["dialect"] == "sqlite"
 
+
+def test_operator_maintenance_request_portal_lifecycle(client, superadmin, manager, tech):
+    # Create a dedicated clean machine for operator request testing
+    loc = client.get("/api/locations", headers=superadmin).json()[0]["id"]
+    asset = client.post(
+        "/api/assets",
+        headers=superadmin,
+        json={"name": "Packaging Line Conveyor B2", "criticality": "A", "location_id": loc},
+    ).json()
+
+    prod_h = login(client, "production@cmms.test", "Prod@123")
+
+    # 1. Production operator submits a breakdown request (SCR-014)
+    req_res = client.post(
+        "/api/requests",
+        headers=prod_h,
+        json={
+            "asset_id": asset["id"],
+            "title": "Conveyor drive motor tripped on overload",
+            "description": "Belt stopped suddenly with burning smell from motor terminal box.",
+            "category": "electrical",
+            "severity": "critical",
+            "machine_stopped": True,
+        },
+    )
+    assert req_res.status_code == 201, req_res.text
+    req_data = req_res.json()
+    req_id = req_data["id"]
+    assert req_data["req_number"].startswith("REQ-")
+    assert req_data["status"] == "submitted"
+    assert req_data["machine_stopped"] is True
+
+    # 2. Verify manager received TC-004 notification
+    notifs = client.get("/api/notifications", headers=manager).json()["items"]
+    assert any(req_data["req_number"] in n["message"] for n in notifs)
+
+    # 3. Upload photo evidence
+    photo_res = client.post(
+        f"/api/requests/{req_id}/photo",
+        headers=prod_h,
+        files={"file": ("motor_fault.jpg", b"fake-jpeg-bytes", "image/jpeg")},
+    )
+    assert photo_res.status_code == 200
+    assert photo_res.json()["photo_url"].startswith("/uploads/")
+
+    # 4. Non-manager (technician) cannot triage/convert
+    forbidden = client.post(
+        f"/api/requests/{req_id}/convert",
+        headers=tech,
+        json={"priority": "critical"},
+    )
+    assert forbidden.status_code == 403
+
+    # 5. Maintenance Manager triages & converts to Work Order assigning technician
+    tech_user = [u for u in client.get("/api/users", headers=manager).json() if u["role"] == "technician"][0]
+    convert_res = client.post(
+        f"/api/requests/{req_id}/convert",
+        headers=manager,
+        json={
+            "priority": "critical",
+            "assigned_to": tech_user["id"],
+            "loto_required": True,
+            "estimated_hours": 3.5,
+            "notes": "Isolate 415V feeder before opening motor box.",
+        },
+    )
+    assert convert_res.status_code == 200, convert_res.text
+    conv_data = convert_res.json()
+    assert conv_data["request"]["status"] == "converted"
+    assert conv_data["request"]["converted_job_id"] == conv_data["job"]["id"]
+    assert conv_data["job"]["status"] == "approved"
+    assert conv_data["job"]["loto_required"] is True
+    assert len(conv_data["job"]["photos"]) >= 1
+
+    # 6. Create a second request and test rejection flow
+    req2 = client.post(
+        "/api/requests",
+        headers=prod_h,
+        json={
+            "asset_id": asset["id"],
+            "title": "Minor belt squeak duplicate report",
+            "category": "abnormal_noise",
+            "severity": "low",
+            "machine_stopped": False,
+        },
+    ).json()
+    rej_res = client.post(
+        f"/api/requests/{req2['id']}/reject",
+        headers=manager,
+        json={"reason": "Duplicate of active repair WO already dispatched."},
+    )
+    assert rej_res.status_code == 200
+    assert rej_res.json()["status"] == "rejected"
+    assert "Duplicate" in rej_res.json()["rejection_reason"]
+
+

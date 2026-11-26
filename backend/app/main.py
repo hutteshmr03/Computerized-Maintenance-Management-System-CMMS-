@@ -3540,3 +3540,290 @@ def get_live_downtime(db: Session = Depends(get_db), user: m.User = Depends(curr
     # Sort by hours_down descending
     res.sort(key=lambda x: x["hours_down"], reverse=True)
     return res
+
+
+# ---------------------------------------------------------------- OPERATOR MAINTENANCE REQUEST PORTAL (SCR-013 to SCR-015)
+class MaintenanceRequestCreateIn(BaseModel):
+    asset_id: int
+    title: str
+    description: str = ""
+    category: str = "breakdown"  # breakdown | abnormal_noise | leakage | overheating | electrical | safety | other
+    severity: str = "high"  # low | medium | high | critical
+    machine_stopped: bool = True
+    reported_down_at: datetime | None = None
+
+
+class MaintenanceRequestConvertIn(BaseModel):
+    priority: str | None = None
+    assigned_to: int | None = None
+    loto_required: bool = False
+    due_date: date | None = None
+    estimated_hours: float = 2.0
+    notes: str = ""
+
+
+class MaintenanceRequestRejectIn(BaseModel):
+    reason: str
+
+
+def request_dict(db: Session, req: m.MaintenanceRequest) -> dict:
+    asset = req.asset or db.get(m.Asset, req.asset_id)
+    requester = db.get(m.User, req.requested_by) if req.requested_by else None
+    reviewer = db.get(m.User, req.reviewed_by) if req.reviewed_by else None
+    converted_job = db.get(m.Job, req.converted_job_id) if req.converted_job_id else None
+
+    return {
+        "id": req.id,
+        "req_number": req.req_number,
+        "organization_id": req.organization_id,
+        "site_id": req.site_id,
+        "asset_id": req.asset_id,
+        "asset_code": asset.code if asset else "",
+        "asset_name": asset.name if asset else "Unknown Equipment",
+        "asset_criticality": asset.criticality if asset else "B",
+        "asset_location": asset.location.name if asset and asset.location else "Plant",
+        "title": req.title,
+        "description": req.description,
+        "category": req.category,
+        "severity": req.severity,
+        "machine_stopped": bool(req.machine_stopped),
+        "reported_down_at": req.reported_down_at.isoformat() if req.reported_down_at else None,
+        "photo_filename": req.photo_filename or "",
+        "photo_url": f"/uploads/{req.photo_filename}" if req.photo_filename else None,
+        "status": req.status,
+        "requested_by": req.requested_by,
+        "requester_name": (requester.full_name or requester.name) if requester else "Operator",
+        "requester_role": requester.role if requester else "",
+        "reviewed_by": req.reviewed_by,
+        "reviewer_name": (reviewer.full_name or reviewer.name) if reviewer else None,
+        "reviewed_at": req.reviewed_at.isoformat() if req.reviewed_at else None,
+        "rejection_reason": req.rejection_reason or "",
+        "converted_job_id": req.converted_job_id,
+        "converted_wo_number": converted_job.wo_number if converted_job else None,
+        "created_at": req.created_at.isoformat() if req.created_at else None,
+    }
+
+
+@app.get("/api/requests")
+def list_maintenance_requests(
+    status: str = "",
+    asset_id: int | None = None,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    stmt = (
+        select(m.MaintenanceRequest)
+        .options(joinedload(m.MaintenanceRequest.asset).joinedload(m.Asset.location))
+        .order_by(m.MaintenanceRequest.created_at.desc(), m.MaintenanceRequest.id.desc())
+    )
+    if status and status != "all":
+        stmt = stmt.where(m.MaintenanceRequest.status == status)
+    if asset_id:
+        stmt = stmt.where(m.MaintenanceRequest.asset_id == asset_id)
+    rows = db.scalars(stmt).all()
+    return [request_dict(db, r) for r in rows]
+
+
+@app.post("/api/requests", status_code=201)
+def create_maintenance_request(
+    body: MaintenanceRequestCreateIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    asset = db.get(m.Asset, body.asset_id)
+    if not asset:
+        raise HTTPException(422, "Selected equipment was not found.")
+    if not body.title or not body.title.strip():
+        raise HTTPException(422, "Please provide a brief issue summary.")
+
+    n = (db.scalar(select(func.max(m.MaintenanceRequest.id))) or 0) + 1
+    req_number = f"REQ-{date.today().year}-{n:04d}"
+
+    req = m.MaintenanceRequest(
+        req_number=req_number,
+        organization_id=asset.organization_id or user.organization_id or 1,
+        site_id=asset.site_id or user.site_id or 1,
+        asset_id=asset.id,
+        title=body.title.strip(),
+        description=body.description.strip(),
+        category=body.category.strip() or "breakdown",
+        severity=body.severity.strip() or "high",
+        machine_stopped=bool(body.machine_stopped),
+        reported_down_at=body.reported_down_at or utcnow(),
+        status="submitted",
+        requested_by=user.id,
+    )
+    db.add(req)
+    db.flush()
+
+    sev_tag = f"[{req.severity.upper()}] " if req.severity in ("high", "critical") else ""
+    stop_tag = " (MACHINE STOPPED)" if req.machine_stopped else ""
+    notify(
+        db,
+        users_with_role(db, "maintenance_manager", "maintenance_engineer", "admin"),
+        f"{sev_tag}New breakdown request {req.req_number} on {asset.name}{stop_tag}: {req.title}",
+        "/requests",
+    )
+    audit(db, user, "create_maintenance_request", "maintenance_request", req.id, f"Submitted {req.req_number} for {asset.code} ({req.category}, {req.severity})")
+    db.commit()
+    db.refresh(req)
+    return request_dict(db, req)
+
+
+@app.get("/api/requests/{req_id}")
+def get_maintenance_request(
+    req_id: int,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    req = db.get(m.MaintenanceRequest, req_id)
+    if not req:
+        raise HTTPException(404, "Maintenance request not found.")
+    return request_dict(db, req)
+
+
+@app.post("/api/requests/{req_id}/photo")
+def upload_request_photo(
+    req_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    req = db.get(m.MaintenanceRequest, req_id)
+    if not req:
+        raise HTTPException(404, "Maintenance request not found.")
+
+    ext = Path(file.filename or "").suffix or ".jpg"
+    filename = f"req_{req.id}_{uuid.uuid4().hex[:8]}{ext}"
+    dest = UPLOAD_DIR / filename
+    with dest.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    req.photo_filename = filename
+    audit(db, user, "upload_request_photo", "maintenance_request", req.id, f"Attached photo {filename} to {req.req_number}")
+    db.commit()
+    db.refresh(req)
+    return request_dict(db, req)
+
+
+@app.post("/api/requests/{req_id}/convert")
+def convert_request_to_job(
+    req_id: int,
+    body: MaintenanceRequestConvertIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    perms = get_user_permissions(user, db)
+    if user.role not in ("admin", "super_admin", "maintenance_manager", "maintenance_engineer") and "*" not in perms and "job.approve" not in perms:
+        raise HTTPException(403, "Only Maintenance Managers or Engineers can triage requests into Work Orders.")
+
+    req = db.get(m.MaintenanceRequest, req_id)
+    if not req:
+        raise HTTPException(404, "Maintenance request not found.")
+    if req.status != "submitted":
+        raise HTTPException(409, f"Request {req.req_number} is already '{req.status}'.")
+
+    asset = db.get(m.Asset, req.asset_id)
+    if not asset:
+        raise HTTPException(422, "Associated equipment not found.")
+
+    existing = open_job_for(db, asset.id)
+    if existing:
+        raise HTTPException(409, f"Equipment {asset.code} already has an open Work Order (#{existing.id}: {existing.title}).")
+
+    n = (db.scalar(select(func.max(m.Job.id))) or 0) + 1
+    wo_number = f"WO-{date.today().year}-{n:04d}"
+    loto_req = body.loto_required or asset.criticality == "A" or "press" in asset.name.lower() or req.category in ("electrical", "safety")
+    prio = (body.priority or req.severity or "high").strip()
+
+    extra_notes = f"\n\n[Manager Triage Notes]: {body.notes.strip()}" if body.notes.strip() else ""
+    desc = f"Converted from Operator Request {req.req_number} (Category: {req.category}, Machine Stopped: {'Yes' if req.machine_stopped else 'No'}).\n{req.description}{extra_notes}".strip()
+
+    job = m.Job(
+        wo_number=wo_number,
+        type="repair",
+        din_type="repair",
+        asset_id=asset.id,
+        title=req.title,
+        description=desc,
+        priority=prio,
+        status="approved" if body.assigned_to else "created",
+        estimated_hours=body.estimated_hours or 2.0,
+        due_date=body.due_date,
+        cost_centre_id=asset.cost_centre_id,
+        created_by=req.requested_by or user.id,
+        assigned_to=body.assigned_to or user.id,
+        loto_required=loto_req,
+        warranty_at_creation=asset.under_warranty,
+    )
+    db.add(job)
+    db.flush()
+
+    for b in asset.boms:
+        db.add(m.JobPart(job_id=job.id, part_id=b.part_id, qty=b.qty_recommended, unit_cost=b.part.unit_cost))
+
+    tasks = [
+        f"Verify operator-reported symptom ({req.category}) on {asset.name}",
+        "Inspect faulty assembly & perform DIN 31051 repair",
+        "Conduct trial run with operator & clean work area",
+    ]
+    for idx, t in enumerate(tasks, start=1):
+        db.add(m.WorkOrderChecklist(job_id=job.id, step_number=idx, task_description=t, is_mandatory=True))
+
+    if loto_req:
+        db.add(m.WorkOrderLOTO(job_id=job.id, step_number=1, hazard_description="Main breaker isolated & padlock locked", loto_type="electrical"))
+        db.add(m.WorkOrderLOTO(job_id=job.id, step_number=2, hazard_description="Stored hydraulic/pneumatic energy bled to zero", loto_type="hydraulic"))
+        db.add(m.WorkOrderLOTO(job_id=job.id, step_number=3, hazard_description="PPE verified before opening guards", loto_type="ppe"))
+
+    if req.photo_filename:
+        db.add(m.JobPhoto(job_id=job.id, filename=req.photo_filename, note=f"Operator photo from {req.req_number}"))
+
+    req.status = "converted"
+    req.reviewed_by = user.id
+    req.reviewed_at = utcnow()
+    req.converted_job_id = job.id
+
+    if body.assigned_to:
+        notify(db, [body.assigned_to], f"Work Order {job.wo_number} assigned from {req.req_number}: {job.title}", f"/jobs/{job.id}")
+    if req.requested_by:
+        notify(db, [req.requested_by], f"Your breakdown request {req.req_number} was approved -> {job.wo_number}", f"/jobs/{job.id}")
+
+    audit(db, user, "convert_maintenance_request", "maintenance_request", req.id, f"Converted {req.req_number} -> Work Order {job.wo_number} (#{job.id})")
+    db.commit()
+    db.refresh(req)
+    return {"request": request_dict(db, req), "job": job_dict(db, job, user)}
+
+
+@app.post("/api/requests/{req_id}/reject")
+def reject_maintenance_request(
+    req_id: int,
+    body: MaintenanceRequestRejectIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    perms = get_user_permissions(user, db)
+    if user.role not in ("admin", "super_admin", "maintenance_manager", "maintenance_engineer") and "*" not in perms and "job.approve" not in perms:
+        raise HTTPException(403, "Only Maintenance Managers or Engineers can reject maintenance requests.")
+
+    req = db.get(m.MaintenanceRequest, req_id)
+    if not req:
+        raise HTTPException(404, "Maintenance request not found.")
+    if req.status != "submitted":
+        raise HTTPException(409, f"Request {req.req_number} is already '{req.status}'.")
+
+    reason = body.reason.strip()
+    if not reason:
+        raise HTTPException(422, "Please provide a reason for rejecting this request.")
+
+    req.status = "rejected"
+    req.rejection_reason = reason
+    req.reviewed_by = user.id
+    req.reviewed_at = utcnow()
+
+    if req.requested_by:
+        notify(db, [req.requested_by], f"Request {req.req_number} was closed/rejected: {reason}", "/requests")
+
+    audit(db, user, "reject_maintenance_request", "maintenance_request", req.id, f"Rejected {req.req_number}: {reason}")
+    db.commit()
+    db.refresh(req)
+    return request_dict(db, req)

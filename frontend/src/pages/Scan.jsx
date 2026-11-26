@@ -589,12 +589,13 @@ export default function Scan() {
           </div>
 
           {/* Action buttons (min 48px height for glove-friendly use) */}
-          <div className="row" style={{ gap: '10px', marginTop: '4px' }}>
+          <div className="row" style={{ gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
             <Link
-              to={`/jobs/new?asset_id=${assetContext.id}`}
+              to={`/requests?asset_id=${assetContext.id}&action=new`}
               className="btn primary"
               style={{
                 flex: 1,
+                minWidth: '170px',
                 minHeight: '48px',
                 display: 'flex',
                 alignItems: 'center',
@@ -603,7 +604,24 @@ export default function Scan() {
                 textAlign: 'center',
               }}
             >
-              ⚠️ Report Problem / Raise WO
+              ⚡ Report Breakdown Request
+            </Link>
+
+            <Link
+              to={`/jobs/new?asset_id=${assetContext.id}`}
+              className="btn"
+              style={{
+                flex: 1,
+                minWidth: '150px',
+                minHeight: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 600,
+                textAlign: 'center',
+              }}
+            >
+              ⚠️ Raise WO
             </Link>
 
             <Link

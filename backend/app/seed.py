@@ -730,6 +730,44 @@ def seed(db: Session):
     ast_comp.utility_type = "compressor"
     ast_gen.utility_type = "generator"
 
+    # 15b. Seed Sample Operator Maintenance Requests (SCR-013 to SCR-015)
+    prod_user = users.get("production@cmms.test") or list(users.values())[0]
+    mgr_user = users.get("manager@cmms.test") or list(users.values())[0]
+    db.add_all([
+        m.MaintenanceRequest(
+            req_number=f"REQ-{year}-0001",
+            organization_id=org.id,
+            site_id=sites_map["SITE-01"].id,
+            asset_id=ast_comp.id,
+            title="Unusual air compressor knocking sound & 5.8 bar pressure drop",
+            description="Operator heard metallic knocking during shift handover. Line pressure dropped below 6 bar threshold.",
+            category="abnormal_noise",
+            severity="high",
+            machine_stopped=False,
+            reported_down_at=now - timedelta(hours=2),
+            status="submitted",
+            requested_by=prod_user.id,
+            created_at=now - timedelta(hours=2),
+        ),
+        m.MaintenanceRequest(
+            req_number=f"REQ-{year}-0002",
+            organization_id=org.id,
+            site_id=sites_map["SITE-01"].id,
+            asset_id=ast_gen.id,
+            title="Diesel generator starter battery warning alarm",
+            description="Automated startup check failed with low cranking voltage warning.",
+            category="electrical",
+            severity="critical",
+            machine_stopped=True,
+            reported_down_at=now - timedelta(days=3),
+            status="converted",
+            requested_by=prod_user.id,
+            reviewed_by=mgr_user.id,
+            reviewed_at=now - timedelta(days=3) + timedelta(minutes=25),
+            created_at=now - timedelta(days=3),
+        ),
+    ])
+
     # 16. Initial Audit Entries
     db.add(m.AuditLog(user_name="Anita Manager", action="seed_database", entity="system", detail="Initialized Enterprise CMMS DIN 31051 baseline"))
     db.commit()

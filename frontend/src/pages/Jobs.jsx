@@ -18,6 +18,8 @@ export default function Jobs() {
   const [params, setParams] = useSearchParams()
   const filter = params.get('filter') || 'open'
   const { data, error, loading } = useLoad(() => api.get('/api/jobs'), [])
+  const reqs = useLoad(() => api.get('/api/requests?status=submitted').catch(() => []), [])
+  const pendingReqCount = (reqs.data || []).length
 
   const OPEN = ['created', 'sent_for_approval', 'approved', 'in_progress']
   const test = {
@@ -36,7 +38,12 @@ export default function Jobs() {
     <div>
       <div className="page-head">
         <div><h1>Jobs</h1><p className="lead">Repairs and scheduled servicing.</p></div>
-        {can('job.create') && <Link className="btn primary right" to="/jobs/new">New job</Link>}
+        <div className="row right" style={{ gap: '8px' }}>
+          <Link className="btn" to="/requests">
+            Operator Requests{pendingReqCount > 0 ? ` (${pendingReqCount})` : ''}
+          </Link>
+          {can('job.create') && <Link className="btn primary" to="/jobs/new">New job</Link>}
+        </div>
       </div>
       <div className="chips" role="group" aria-label="Filter jobs">
         {FILTERS.map(([k, label]) => (

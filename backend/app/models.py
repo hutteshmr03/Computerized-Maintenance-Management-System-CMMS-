@@ -482,3 +482,31 @@ class SecuritySettings(Base):
     max_login_attempts = Column(Integer, default=5)
     updated_by = Column(String(120), nullable=True)
     updated_at = Column(DateTime, default=utcnow)
+
+
+class MaintenanceRequest(Base):
+    """
+    Dedicated Operator Maintenance Request Portal (Module 3: SCR-013 to SCR-015, URS-024 to URS-027).
+    Lifecycle: submitted -> converted | rejected
+    """
+    __tablename__ = "maintenance_requests"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    req_number: Mapped[str] = mapped_column(String(30), unique=True)
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), nullable=True)
+    site_id: Mapped[int | None] = mapped_column(ForeignKey("sites.id"), nullable=True)
+    asset_id: Mapped[int] = mapped_column(ForeignKey("assets.id"))
+    asset: Mapped[Asset] = relationship()
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text, default="")
+    category: Mapped[str] = mapped_column(String(40), default="breakdown")  # breakdown | abnormal_noise | leakage | overheating | electrical | safety | other
+    severity: Mapped[str] = mapped_column(String(20), default="high")  # low | medium | high | critical
+    machine_stopped: Mapped[bool] = mapped_column(Boolean, default=True)
+    reported_down_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    photo_filename: Mapped[str] = mapped_column(String(200), default="")
+    status: Mapped[str] = mapped_column(String(20), default="submitted")  # submitted | converted | rejected
+    requested_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rejection_reason: Mapped[str] = mapped_column(Text, default="")
+    converted_job_id: Mapped[int | None] = mapped_column(ForeignKey("jobs.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
