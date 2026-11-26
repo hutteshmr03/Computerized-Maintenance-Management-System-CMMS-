@@ -251,6 +251,24 @@ def open_job_for(db: Session, asset_id: int, exclude_id: int | None = None):
     return db.scalar(q)
 
 
+def compute_job_downtime_minutes(job: m.Job) -> float:
+    """Compute precise equipment downtime in minutes from breakdown_start_at -> breakdown_end_at or fallback start_time -> end_time."""
+    if getattr(job, "breakdown_start_at", None) and getattr(job, "breakdown_end_at", None):
+        mins = (job.breakdown_end_at - job.breakdown_start_at).total_seconds() / 60.0
+        return round(max(0.0, mins), 1)
+    if getattr(job, "downtime_minutes", 0) and job.downtime_minutes > 0:
+        return round(float(job.downtime_minutes), 1)
+    if job.start_time and job.end_time:
+        return round(max(0.0, (job.end_time - job.start_time).total_seconds() / 60.0), 1)
+    if getattr(job, "breakdown_start_at", None) and job.status in OPEN_STATES:
+        return round(max(0.0, (utcnow() - job.breakdown_start_at).total_seconds() / 60.0), 1)
+    return 0.0
+
+
+def compute_job_downtime_hours(job: m.Job) -> float:
+    return round(compute_job_downtime_minutes(job) / 60.0, 2)
+
+
 _user_name_cache: dict[int, str] = {}
 
 
@@ -543,7 +561,16 @@ def job_dict(db: Session, job: m.Job, user: m.User) -> dict:
         "parts_cost": round(parts_cost, 2),
         "labour_cost": round(labour, 2),
         "total_cost": round(total, 2),
-        "downtime_hours": hours_between(job.start_time, job.end_time),
+        "downtime_hours": compute_job_downtime_hours(job),
+        "downtime_minutes": compute_job_downtime_minutes(job),
+        "downtime_type": getattr(job, "downtime_type", "unplanned") or "unplanned",
+        "breakdown_start_at": job.breakdown_start_at.isoformat() if getattr(job, "breakdown_start_at", None) else None,
+        "breakdown_end_at": job.breakdown_end_at.isoformat() if getattr(job, "breakdown_end_at", None) else None,
+        "root_cause_analysis": getattr(job, "root_cause_analysis", "") or "",
+        "corrective_action": getattr(job, "corrective_action", "") or "",
+        "preventive_action": getattr(job, "preventive_action", "") or "",
+        "production_confirmed_by": getattr(job, "production_confirmed_by", "") or "",
+        "production_confirmed_at": job.production_confirmed_at.isoformat() if getattr(job, "production_confirmed_at", None) else None,
         "actions": job_actions(job, user),
     }
 
@@ -1529,6 +1556,8 @@ def create_job(body: JobIn, db: Session = Depends(get_db), user: m.User = Depend
         contractor_id=body.contractor_id,
         loto_required=loto_req,
         warranty_at_creation=asset.under_warranty,
+        breakdown_start_at=utcnow() if (body.type == "repair" or body.din_type == "repair") else None,
+        downtime_type="unplanned" if (body.type == "repair" or body.din_type == "repair") else "planned",
     )
     db.add(job)
     db.flush()
@@ -1749,6 +1778,13 @@ def perform_job_action(
 
         job.status = "completed"  # keep "completed" for backward compatibility with existing tests
         job.end_time = now
+        if job.type == "repair" or job.din_type == "repair":
+            if not job.breakdown_start_at:
+                job.breakdown_start_at = job.start_time or job.created_at or now
+            if not job.breakdown_end_at:
+                job.breakdown_end_at = now
+            job.downtime_minutes = compute_job_downtime_minutes(job)
+
         if "action_taken" in body:
             job.action_taken = body["action_taken"]
         if "breakdown_reason" in body:
@@ -1759,6 +1795,12 @@ def perform_job_action(
             job.failure_cause = body["failure_cause"]
         if "failure_effect" in body:
             job.failure_effect = body["failure_effect"]
+        if "root_cause_analysis" in body:
+            job.root_cause_analysis = body["root_cause_analysis"]
+        if "corrective_action" in body:
+            job.corrective_action = body["corrective_action"]
+        if "preventive_action" in body:
+            job.preventive_action = body["preventive_action"]
 
         for jp in job.parts:
             part = jp.part
@@ -2893,7 +2935,7 @@ def get_en13306_kpis(year: int | None = None, db: Session = Depends(get_db), use
 
     # MTBF (Mean Time Between Failures) & MTTR (Mean Time To Repair)
     failure_count = max(1, len(repairs))
-    total_repair_downtime = sum(hours_between(j.start_time, j.end_time) for j in repairs)
+    total_repair_downtime = sum(compute_job_downtime_hours(j) for j in repairs)
     total_operating_hours = (365 * 24 * 7) - total_repair_downtime  # Approx 7 major assets
     mtbf = round(total_operating_hours / failure_count, 1)
     mttr = round(total_repair_downtime / failure_count, 1)
@@ -2938,7 +2980,7 @@ def get_oee_metrics(db: Session = Depends(get_db), user: m.User = Depends(curren
     for a in assets:
         # Calculate availability from logged downtime
         jobs = db.scalars(select(m.Job).where(m.Job.asset_id == a.id, m.Job.status.in_(["completed", "closed"]))).all()
-        downtime = sum(hours_between(j.start_time, j.end_time) for j in jobs)
+        downtime = sum(compute_job_downtime_hours(j) for j in jobs)
         operating_window = 720.0  # 30 days * 24 hours
         availability = max(0.5, round((operating_window - min(operating_window, downtime)) / operating_window, 3))
         performance = 0.94  # standard rated speed achievement
@@ -2990,7 +3032,7 @@ def get_downtime_report(asset_id: int | None = None, year: int | None = None, db
     for j in db.scalars(stmt):
         m_idx = j.created_at.month - 1
         m_name = months[m_idx]
-        dt = hours_between(j.start_time, j.end_time)
+        dt = compute_job_downtime_hours(j)
         if j.type == "repair" or j.din_type == "repair":
             monthly[m_name]["repair"] += dt
             monthly[m_name]["downtime_hours"] += dt
@@ -3020,7 +3062,7 @@ def get_mtbf_report(asset_id: int | None = None, year: int | None = None, db: Se
         stmt = stmt.where(m.Job.asset_id == asset_id)
     repairs = db.scalars(stmt).all()
     failures = len(repairs)
-    downtime = sum(hours_between(j.start_time, j.end_time) for j in repairs)
+    downtime = sum(compute_job_downtime_hours(j) for j in repairs)
     uptime = max(0.0, elapsed_hours - downtime)
     mtbf = round(uptime / max(1, failures), 1)
     mttr = round(downtime / max(1, failures), 1)
@@ -3522,7 +3564,8 @@ def get_live_downtime(db: Session = Depends(get_db), user: m.User = Depends(curr
     jobs = db.scalars(stmt).all()
     res = []
     for j in jobs:
-        dt_hours = round(max(0.0, (now - j.created_at).total_seconds() / 3600.0), 1)
+        start_ref = getattr(j, "breakdown_start_at", None) or j.created_at
+        dt_hours = round(max(0.0, (now - start_ref).total_seconds() / 3600.0), 1)
         res.append({
             "id": j.id,
             "job_id": j.id,
@@ -3755,6 +3798,8 @@ def convert_request_to_job(
         assigned_to=body.assigned_to or user.id,
         loto_required=loto_req,
         warranty_at_creation=asset.under_warranty,
+        breakdown_start_at=req.reported_down_at or req.created_at or utcnow(),
+        downtime_type="unplanned" if req.machine_stopped else "minor_stop",
     )
     db.add(job)
     db.flush()
@@ -3827,3 +3872,202 @@ def reject_maintenance_request(
     db.commit()
     db.refresh(req)
     return request_dict(db, req)
+
+
+# ---------------------------------------------------------------- BREAKDOWN REGISTER & RCA (SCR-026 to SCR-028)
+class BreakdownRCAUpdateIn(BaseModel):
+    breakdown_start_at: datetime | None = None
+    breakdown_end_at: datetime | None = None
+    downtime_type: str | None = None  # unplanned | planned | minor_stop | none
+    breakdown_reason: str | None = None
+    failure_mode: str | None = None
+    failure_cause: str | None = None
+    failure_effect: str | None = None
+    root_cause_analysis: str | None = None
+    corrective_action: str | None = None
+    preventive_action: str | None = None
+    production_confirmed_by: str | None = None
+    confirm_production_restart: bool = False
+
+
+def breakdown_summary_dict(db: Session, job: m.Job) -> dict:
+    asset = job.asset or db.get(m.Asset, job.asset_id)
+    down_start = getattr(job, "breakdown_start_at", None) or job.created_at
+    down_end = getattr(job, "breakdown_end_at", None) or job.end_time
+    dt_mins = compute_job_downtime_minutes(job)
+    dt_hours = round(dt_mins / 60.0, 2)
+
+    mtta_mins = 0.0
+    if down_start and job.start_time:
+        mtta_mins = round(max(0.0, (job.start_time - down_start).total_seconds() / 60.0), 1)
+
+    mttr_mins = 0.0
+    if job.start_time and job.end_time:
+        mttr_mins = round(max(0.0, (job.end_time - job.start_time).total_seconds() / 60.0), 1)
+
+    rca_done = bool(
+        (getattr(job, "root_cause_analysis", "") or job.breakdown_reason or job.failure_cause)
+        and (getattr(job, "corrective_action", "") or job.action_taken)
+    )
+
+    return {
+        "id": job.id,
+        "wo_number": job.wo_number,
+        "title": job.title,
+        "description": job.description,
+        "status": job.status,
+        "priority": job.priority,
+        "asset_id": job.asset_id,
+        "asset_code": asset.code if asset else "",
+        "asset_name": asset.name if asset else "Unknown Equipment",
+        "asset_category": asset.category if asset else "",
+        "asset_criticality": asset.criticality if asset else "B",
+        "asset_location": asset.location.name if asset and asset.location else "Plant",
+        "assigned_to": job.assigned_to,
+        "assigned_to_name": user_name(db, job.assigned_to) or "Unassigned",
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "breakdown_start_at": down_start.isoformat() if down_start else None,
+        "start_time": job.start_time.isoformat() if job.start_time else None,
+        "end_time": job.end_time.isoformat() if job.end_time else None,
+        "breakdown_end_at": down_end.isoformat() if down_end else None,
+        "downtime_minutes": dt_mins,
+        "downtime_hours": dt_hours,
+        "mtta_minutes": mtta_mins,
+        "mttr_minutes": mttr_mins,
+        "downtime_type": getattr(job, "downtime_type", "unplanned") or "unplanned",
+        "breakdown_reason": job.breakdown_reason or "",
+        "failure_mode": job.failure_mode or "",
+        "failure_cause": job.failure_cause or "",
+        "failure_effect": job.failure_effect or "",
+        "action_taken": job.action_taken or "",
+        "root_cause_analysis": getattr(job, "root_cause_analysis", "") or "",
+        "corrective_action": getattr(job, "corrective_action", "") or "",
+        "preventive_action": getattr(job, "preventive_action", "") or "",
+        "production_confirmed_by": getattr(job, "production_confirmed_by", "") or "",
+        "production_confirmed_at": job.production_confirmed_at.isoformat() if getattr(job, "production_confirmed_at", None) else None,
+        "rca_completed": rca_done,
+        "parts_cost": round(sum(p.qty * p.unit_cost for p in job.parts), 2),
+        "labour_cost": round(job.labour_hours * job.labour_rate, 2),
+    }
+
+
+@app.get("/api/breakdowns")
+def list_breakdown_register(
+    status: str = "",
+    asset_id: int | None = None,
+    downtime_type: str = "",
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    stmt = (
+        select(m.Job)
+        .options(joinedload(m.Job.asset).joinedload(m.Asset.location), selectinload(m.Job.parts))
+        .where(or_(m.Job.din_type == "repair", m.Job.type == "repair"))
+        .order_by(m.Job.created_at.desc())
+    )
+    if asset_id:
+        stmt = stmt.where(m.Job.asset_id == asset_id)
+    if downtime_type and downtime_type != "all":
+        stmt = stmt.where(m.Job.downtime_type == downtime_type)
+
+    jobs = db.scalars(stmt).all()
+    items = [breakdown_summary_dict(db, j) for j in jobs]
+
+    if status == "active":
+        filtered = [x for x in items if x["status"] in OPEN_STATES]
+    elif status == "needs_rca":
+        filtered = [x for x in items if not x["rca_completed"]]
+    elif status == "closed":
+        filtered = [x for x in items if x["status"] in ("completed", "closed")]
+    else:
+        filtered = items
+
+    total_breakdowns = len(items)
+    active_breakdowns = sum(1 for x in items if x["status"] in OPEN_STATES)
+    total_downtime_hours = round(sum(x["downtime_hours"] for x in items), 1)
+    closed_items = [x for x in items if x["status"] in ("completed", "closed")]
+    avg_mttr_hours = round(sum(x["mttr_minutes"] for x in closed_items) / 60.0 / max(1, len(closed_items)), 2) if closed_items else 0.0
+    rca_done_count = sum(1 for x in items if x["rca_completed"])
+    rca_completed_pct = round((rca_done_count / max(1, total_breakdowns)) * 100.0, 1) if total_breakdowns else 100.0
+
+    return {
+        "summary": {
+            "total_breakdowns": total_breakdowns,
+            "active_breakdowns": active_breakdowns,
+            "total_downtime_hours": total_downtime_hours,
+            "avg_mttr_hours": avg_mttr_hours,
+            "rca_completed_pct": rca_completed_pct,
+        },
+        "items": filtered,
+    }
+
+
+@app.get("/api/breakdowns/{job_id}")
+def get_breakdown_detail(
+    job_id: int,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    job = db.scalar(
+        select(m.Job)
+        .options(joinedload(m.Job.asset).joinedload(m.Asset.location), selectinload(m.Job.parts))
+        .where(m.Job.id == job_id)
+    )
+    if not job:
+        raise HTTPException(404, "Breakdown record not found.")
+    return breakdown_summary_dict(db, job)
+
+
+@app.put("/api/breakdowns/{job_id}/rca")
+def update_breakdown_rca(
+    job_id: int,
+    body: BreakdownRCAUpdateIn,
+    db: Session = Depends(get_db),
+    user: m.User = Depends(current_user),
+):
+    if user.role in ("auditor", "store_manager", "purchase_manager"):
+        raise HTTPException(403, "Read-only role cannot update breakdown Root Cause Analysis.")
+
+    job = db.get(m.Job, job_id)
+    if not job:
+        raise HTTPException(404, "Breakdown record not found.")
+
+    if body.breakdown_start_at is not None:
+        job.breakdown_start_at = body.breakdown_start_at.replace(tzinfo=None)
+    if body.breakdown_end_at is not None:
+        job.breakdown_end_at = body.breakdown_end_at.replace(tzinfo=None)
+    if body.downtime_type is not None:
+        job.downtime_type = body.downtime_type.strip()
+    if body.breakdown_reason is not None:
+        job.breakdown_reason = body.breakdown_reason.strip()
+    if body.failure_mode is not None:
+        job.failure_mode = body.failure_mode.strip()
+    if body.failure_cause is not None:
+        job.failure_cause = body.failure_cause.strip()
+    if body.failure_effect is not None:
+        job.failure_effect = body.failure_effect.strip()
+    if body.root_cause_analysis is not None:
+        job.root_cause_analysis = body.root_cause_analysis.strip()
+    if body.corrective_action is not None:
+        job.corrective_action = body.corrective_action.strip()
+        if not job.action_taken and body.corrective_action.strip():
+            job.action_taken = body.corrective_action.strip()
+    if body.preventive_action is not None:
+        job.preventive_action = body.preventive_action.strip()
+
+    if body.confirm_production_restart:
+        confirmer = (body.production_confirmed_by or user.full_name or user.name or user.email).strip()
+        job.production_confirmed_by = confirmer
+        job.production_confirmed_at = utcnow()
+        if not job.breakdown_end_at:
+            job.breakdown_end_at = job.production_confirmed_at
+
+    if job.breakdown_start_at and job.breakdown_end_at:
+        if job.breakdown_end_at < job.breakdown_start_at:
+            raise HTTPException(422, "Restoration timestamp cannot be earlier than breakdown start timestamp.")
+        job.downtime_minutes = compute_job_downtime_minutes(job)
+
+    audit(db, user, "update_breakdown_rca", "job", job.id, f"Updated downtime & RCA for {job.wo_number} ({job.downtime_minutes} mins)")
+    db.commit()
+    db.refresh(job)
+    return breakdown_summary_dict(db, job)

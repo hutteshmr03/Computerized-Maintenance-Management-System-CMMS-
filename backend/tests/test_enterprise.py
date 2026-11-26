@@ -550,3 +550,102 @@ def test_operator_maintenance_request_portal_lifecycle(client, superadmin, manag
     assert "Duplicate" in rej_res.json()["rejection_reason"]
 
 
+def test_breakdown_register_downtime_precision_and_rca(client):
+    """Verify SCR-026 Breakdown Register, SCR-027 timeline/downtime precision, and SCR-028 5-Why RCA."""
+    manager = login(client, "manager@cmms.test", "Manager@123")
+    auditor = login(client, "auditor@cmms.test", "Audit@123")
+
+    assets_payload = client.get("/api/assets", headers=manager).json()
+    assets = assets_payload if isinstance(assets_payload, list) else assets_payload["items"]
+    assert assets, "Seeded assets required for breakdown test"
+
+    # 1. Create a breakdown job with exact stoppage timestamp on an asset without an open WO
+    create_res = None
+    for candidate in reversed(assets):
+        res = client.post(
+            "/api/jobs",
+            headers=manager,
+            json={
+                "asset_id": candidate["id"],
+                "title": "Spindle Bearing Breakdown Test",
+                "job_type": "breakdown",
+                "priority": "critical",
+                "description": "Excessive spindle vibration stopped line",
+                "breakdown_start_at": "2026-11-26T08:00:00Z",
+                "downtime_type": "unplanned",
+                "breakdown_reason": "Bearing seizure",
+            },
+        )
+        if res.status_code != 409:
+            create_res = res
+            break
+    assert create_res is not None and create_res.status_code in (200, 201), getattr(create_res, "text", "All assets had open WOs")
+    job_id = create_res.json()["id"]
+
+    # 2. Verify SCR-026 Breakdown Register returns summary and the new breakdown
+    reg_res = client.get("/api/breakdowns", headers=manager)
+    assert reg_res.status_code == 200, reg_res.text
+    reg = reg_res.json()
+    for key in ("total_breakdowns", "active_breakdowns", "total_downtime_hours", "avg_mttr_hours", "rca_completed_pct"):
+        assert key in reg["summary"]
+    assert any(item["id"] == job_id for item in reg["items"])
+
+    # 3. Verify SCR-027 Breakdown Detail endpoint
+    det_res = client.get(f"/api/breakdowns/{job_id}", headers=manager)
+    assert det_res.status_code == 200, det_res.text
+    assert det_res.json()["id"] == job_id
+
+    # 4. Enforce RBAC: auditor cannot modify RCA
+    forb = client.put(
+        f"/api/breakdowns/{job_id}/rca",
+        headers=auditor,
+        json={"root_cause_analysis": "Unauthorized update"},
+    )
+    assert forb.status_code == 403
+
+    # 5. Enforce timestamp validation: breakdown_end_at before breakdown_start_at -> 422
+    bad_ts = client.put(
+        f"/api/breakdowns/{job_id}/rca",
+        headers=manager,
+        json={
+            "breakdown_start_at": "2026-11-26T10:00:00Z",
+            "breakdown_end_at": "2026-11-26T09:00:00Z",
+        },
+    )
+    assert bad_ts.status_code == 422
+
+    # 6. Update SCR-028 RCA, ISO 14224 failure taxonomy, exact 90-min downtime, and restart sign-off
+    rca_res = client.put(
+        f"/api/breakdowns/{job_id}/rca",
+        headers=manager,
+        json={
+            "breakdown_start_at": "2026-11-26T08:00:00Z",
+            "breakdown_end_at": "2026-11-26T09:30:00Z",
+            "downtime_type": "unplanned",
+            "breakdown_reason": "Bearing seizure",
+            "failure_mode": "Vibration",
+            "failure_cause": "Lubrication failure",
+            "failure_effect": "Line stoppage",
+            "root_cause_analysis": "Why 1: Spindle jammed. Why 2: Dry bearing. Why 3: Auto-lubricator clogged.",
+            "corrective_action": "Replaced spindle bearing and flushed lubrication line.",
+            "preventive_action": "Added weekly lubrication pressure check to PM plan.",
+            "confirm_production_restart": True,
+            "production_confirmed_by": "Arjun Production",
+        },
+    )
+    assert rca_res.status_code == 200, rca_res.text
+    updated = rca_res.json()
+    assert updated["downtime_minutes"] == 90.0
+    assert updated["downtime_hours"] == 1.5
+    assert updated["rca_completed"] is True
+    assert updated["production_confirmed_by"] == "Arjun Production"
+    assert updated["production_confirmed_at"] is not None
+    assert "Lubrication failure" in updated["failure_cause"]
+    assert "weekly lubrication pressure check" in updated["preventive_action"]
+
+    # 7. Verify KPI and downtime analytics endpoints respond cleanly
+    assert client.get("/api/reports/kpis", headers=manager).status_code == 200
+    assert client.get("/api/reports/downtime", headers=manager).status_code == 200
+
+
+

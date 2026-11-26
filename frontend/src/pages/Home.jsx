@@ -157,6 +157,13 @@ export default function Home() {
             📋 Operator Requests
           </Link>
           <Link
+            to="/breakdowns"
+            className="bt"
+            style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12.5px', padding: '7px 14px' }}
+          >
+            📉 Breakdown &amp; RCA
+          </Link>
+          <Link
             to="/scan"
             className="bt"
             style={{ textDecoration: 'none', fontWeight: 600, fontSize: '12.5px', padding: '7px 14px' }}

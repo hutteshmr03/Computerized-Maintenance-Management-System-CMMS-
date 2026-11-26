@@ -348,6 +348,17 @@ class Job(Base):
     action_taken: Mapped[str] = mapped_column(Text, default="")
     rejection_reason: Mapped[str] = mapped_column(Text, default="")
 
+    # Step 4: Enhanced Breakdown & Downtime Precision + Root Cause Analysis (SCR-026 to SCR-028)
+    breakdown_start_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    breakdown_end_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    downtime_minutes: Mapped[float] = mapped_column(Float, default=0.0)
+    downtime_type: Mapped[str] = mapped_column(String(30), default="unplanned")  # unplanned | planned | minor_stop | none
+    root_cause_analysis: Mapped[str] = mapped_column(Text, default="")
+    corrective_action: Mapped[str] = mapped_column(Text, default="")
+    preventive_action: Mapped[str] = mapped_column(Text, default="")
+    production_confirmed_by: Mapped[str] = mapped_column(String(100), default="")
+    production_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # Safety LOTO permit
     loto_required: Mapped[bool] = mapped_column(Boolean, default=False)
     loto_signed: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -17,6 +17,7 @@ import Jobs from './pages/Jobs.jsx'
 import JobNew from './pages/JobNew.jsx'
 import JobDetail from './pages/JobDetail.jsx'
 import Requests from './pages/Requests.jsx'
+import Breakdowns from './pages/Breakdowns.jsx'
 import Parts from './pages/Parts.jsx'
 import Procurement from './pages/Procurement.jsx'
 import Readings from './pages/Readings.jsx'
@@ -231,6 +232,7 @@ export default function App() {
         <Route path="jobs/new" element={<JobNew />} />
         <Route path="jobs/:id" element={<JobDetail />} />
         <Route path="requests" element={<Requests />} />
+        <Route path="breakdowns" element={<Breakdowns />} />
         <Route path="parts" element={<Parts />} />
         <Route path="procurement" element={<Procurement />} />
         <Route path="readings" element={<Readings />} />

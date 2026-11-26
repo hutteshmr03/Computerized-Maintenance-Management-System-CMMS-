@@ -79,6 +79,18 @@ def run_schema_self_heal():
             ("site_id", "INTEGER"),
         ])
 
+        add_missing_columns("jobs", [
+            ("breakdown_start_at", ts_type),
+            ("breakdown_end_at", ts_type),
+            ("downtime_minutes", "FLOAT DEFAULT 0"),
+            ("downtime_type", "VARCHAR(30) DEFAULT 'unplanned'"),
+            ("root_cause_analysis", "TEXT DEFAULT ''"),
+            ("corrective_action", "TEXT DEFAULT ''"),
+            ("preventive_action", "TEXT DEFAULT ''"),
+            ("production_confirmed_by", "VARCHAR(100) DEFAULT ''"),
+            ("production_confirmed_at", ts_type),
+        ])
+
         conn.commit()
 
 

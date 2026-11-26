@@ -39,6 +39,9 @@ export default function Jobs() {
       <div className="page-head">
         <div><h1>Jobs</h1><p className="lead">Repairs and scheduled servicing.</p></div>
         <div className="row right" style={{ gap: '8px' }}>
+          <Link className="btn" to="/breakdowns">
+            Breakdown &amp; RCA
+          </Link>
           <Link className="btn" to="/requests">
             Operator Requests{pendingReqCount > 0 ? ` (${pendingReqCount})` : ''}
           </Link>

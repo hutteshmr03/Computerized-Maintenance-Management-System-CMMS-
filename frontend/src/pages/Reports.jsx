@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { api } from '../api'
 import { CriticalityBadge, ErrorNote, Loading, Modal, money, num, useLoad, useToast } from '../ui.jsx'
@@ -100,6 +101,9 @@ export default function Reports() {
           </p>
         </div>
         <div className="right row" style={{ gap: '8px' }}>
+          <Link to="/breakdowns" className="btn small">
+            📉 Breakdown &amp; RCA Register
+          </Link>
           <button onClick={handleExportCsv} className="btn small">
             📥 Export CSV
           </button>
